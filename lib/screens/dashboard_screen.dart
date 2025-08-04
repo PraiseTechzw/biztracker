@@ -5,6 +5,9 @@ import '../services/database_service.dart';
 import '../models/business_data.dart';
 import 'capital_screen.dart';
 import 'stock_screen.dart';
+import 'sales_screen.dart';
+import 'expenses_screen.dart';
+import 'reports_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -109,6 +112,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             _buildQuickActions(),
                             const SizedBox(height: 24),
                             _buildRecentActivity(),
+                            const SizedBox(height: 24),
+                            _buildReportsSection(),
                           ],
                         ),
                     ],
@@ -337,21 +342,90 @@ class _DashboardScreenState extends State<DashboardScreen> {
         );
         break;
       case 'sale':
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Sales feature coming soon!'),
-            backgroundColor: GlassmorphismTheme.primaryColor,
-          ),
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const SalesScreen()),
         );
         break;
       case 'expense':
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Expense tracking coming soon!'),
-            backgroundColor: GlassmorphismTheme.primaryColor,
-          ),
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const ExpensesScreen()),
         );
         break;
     }
+  }
+
+  Widget _buildReportsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Reports & Analytics',
+          style: TextStyle(
+            color: GlassmorphismTheme.textColor,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 16),
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ReportsScreen()),
+            );
+          },
+          child: GlassmorphismTheme.glassmorphismContainer(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: GlassmorphismTheme.accentColor.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.analytics,
+                    color: GlassmorphismTheme.accentColor,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Business Reports',
+                        style: TextStyle(
+                          color: GlassmorphismTheme.textColor,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'View detailed analytics and profit reports',
+                        style: TextStyle(
+                          color: GlassmorphismTheme.textSecondaryColor,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(
+                  Icons.arrow_forward_ios,
+                  color: GlassmorphismTheme.textSecondaryColor,
+                  size: 16,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
