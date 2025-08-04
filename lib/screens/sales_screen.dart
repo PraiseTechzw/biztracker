@@ -81,26 +81,13 @@ class _SalesScreenState extends State<SalesScreen> {
   Widget _buildAppBar() {
     return Container(
       padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: const Icon(
-              Icons.arrow_back,
-              color: GlassmorphismTheme.textColor,
-            ),
-          ),
-          const Expanded(
-            child: Text(
-              'Sales Management',
-              style: TextStyle(
-                color: GlassmorphismTheme.textColor,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
+      child: const Text(
+        'Sales Management',
+        style: TextStyle(
+          color: GlassmorphismTheme.textColor,
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }

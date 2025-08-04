@@ -1,13 +1,13 @@
+import 'package:biztracker/screens/capital_screen.dart';
+import 'package:biztracker/screens/expenses_screen.dart';
+import 'package:biztracker/screens/sales_screen.dart';
+import 'package:biztracker/screens/stock_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../utils/glassmorphism_theme.dart';
 import '../services/database_service.dart';
 import '../models/business_data.dart';
-import 'capital_screen.dart';
-import 'stock_screen.dart';
-import 'sales_screen.dart';
-import 'expenses_screen.dart';
-import 'reports_screen.dart';
+import 'settings_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -71,24 +71,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: SafeArea(
           child: CustomScrollView(
             slivers: [
-              SliverAppBar(
-                expandedHeight: 120,
-                floating: false,
-                pinned: true,
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                flexibleSpace: FlexibleSpaceBar(
-                  title: const Text(
-                    'BizTracker',
-                    style: TextStyle(
-                      color: GlassmorphismTheme.textColor,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  background: Container(
-                    decoration: const BoxDecoration(
-                      gradient: GlassmorphismTheme.primaryGradient,
-                    ),
+              SliverToBoxAdapter(
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'BizTracker',
+                          style: TextStyle(
+                            color: GlassmorphismTheme.textColor,
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const SettingsScreen(),
+                            ),
+                          );
+                        },
+                        icon: const Icon(
+                          Icons.settings,
+                          color: GlassmorphismTheme.textColor,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -109,11 +121,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           children: [
                             _buildOverviewCards(),
                             const SizedBox(height: 24),
-                            _buildQuickActions(),
+                            _buildQuickStats(),
                             const SizedBox(height: 24),
                             _buildRecentActivity(),
-                            const SizedBox(height: 24),
-                            _buildReportsSection(),
                           ],
                         ),
                     ],
@@ -214,12 +224,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildQuickActions() {
+  Widget _buildQuickStats() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Quick Actions',
+          'Quick Stats',
           style: TextStyle(
             color: GlassmorphismTheme.textColor,
             fontSize: 20,
@@ -227,33 +237,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        GridView.count(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: 2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: 1.5,
+        Row(
           children: [
-            _buildActionCard(
-              'Add Capital',
-              Icons.add_circle,
-              () => _navigateToSection('capital'),
+            Expanded(
+              child: _buildStatCard(
+                'Profit Margin',
+                '${((netProfit / (totalSales > 0 ? totalSales : 1)) * 100).toStringAsFixed(1)}%',
+                Icons.trending_up,
+                netProfit >= 0 ? Colors.green : Colors.red,
+              ),
             ),
-            _buildActionCard(
-              'Manage Stock',
-              Icons.inventory_2,
-              () => _navigateToSection('stock'),
-            ),
-            _buildActionCard(
-              'Record Sale',
-              Icons.point_of_sale,
-              () => _navigateToSection('sale'),
-            ),
-            _buildActionCard(
-              'Add Expense',
-              Icons.receipt_long,
-              () => _navigateToSection('expense'),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildStatCard(
+                'ROI',
+                '${((netProfit / (totalCapital > 0 ? totalCapital : 1)) * 100).toStringAsFixed(1)}%',
+                Icons.analytics,
+                GlassmorphismTheme.accentColor,
+              ),
             ),
           ],
         ),
@@ -261,27 +262,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildActionCard(String title, IconData icon, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: GlassmorphismTheme.glassmorphismContainer(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: GlassmorphismTheme.primaryColor, size: 32),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: const TextStyle(
-                color: GlassmorphismTheme.textColor,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-              textAlign: TextAlign.center,
+  Widget _buildStatCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
+    return GlassmorphismTheme.glassmorphismContainer(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: const TextStyle(
+              color: GlassmorphismTheme.textSecondaryColor,
+              fontSize: 12,
             ),
-          ],
-        ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              color: GlassmorphismTheme.textColor,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }
@@ -321,108 +332,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ],
               ),
             ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  void _navigateToSection(String section) {
-    switch (section) {
-      case 'capital':
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const CapitalScreen()),
-        );
-        break;
-      case 'stock':
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const StockScreen()),
-        );
-        break;
-      case 'sale':
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const SalesScreen()),
-        );
-        break;
-      case 'expense':
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const ExpensesScreen()),
-        );
-        break;
-    }
-  }
-
-  Widget _buildReportsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Reports & Analytics',
-          style: TextStyle(
-            color: GlassmorphismTheme.textColor,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 16),
-        GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const ReportsScreen()),
-            );
-          },
-          child: GlassmorphismTheme.glassmorphismContainer(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: GlassmorphismTheme.accentColor.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.analytics,
-                    color: GlassmorphismTheme.accentColor,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Business Reports',
-                        style: TextStyle(
-                          color: GlassmorphismTheme.textColor,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'View detailed analytics and profit reports',
-                        style: TextStyle(
-                          color: GlassmorphismTheme.textSecondaryColor,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Icon(
-                  Icons.arrow_forward_ios,
-                  color: GlassmorphismTheme.textSecondaryColor,
-                  size: 16,
-                ),
-              ],
-            ),
           ),
         ),
       ],

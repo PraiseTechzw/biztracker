@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../utils/glassmorphism_theme.dart';
 import '../services/database_service.dart';
 import '../models/business_data.dart';
+import '../utils/search_filter_utils.dart';
 
 class StockScreen extends StatefulWidget {
   const StockScreen({super.key});
@@ -13,7 +14,10 @@ class StockScreen extends StatefulWidget {
 
 class _StockScreenState extends State<StockScreen> {
   List<Stock> stocks = [];
+  List<Stock> filteredStocks = [];
   bool isLoading = true;
+  String searchQuery = '';
+  String sortBy = 'date_desc';
 
   @override
   void initState() {
@@ -30,6 +34,7 @@ class _StockScreenState extends State<StockScreen> {
       final data = await DatabaseService.getAllStocks();
       setState(() {
         stocks = data;
+        filteredStocks = data;
         isLoading = false;
       });
     } catch (e) {
@@ -81,26 +86,51 @@ class _StockScreenState extends State<StockScreen> {
   Widget _buildAppBar() {
     return Container(
       padding: const EdgeInsets.all(16),
-      child: Row(
+      child: Column(
         children: [
-          IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: const Icon(
-              Icons.arrow_back,
-              color: GlassmorphismTheme.textColor,
-            ),
-          ),
-          const Expanded(
-            child: Text(
-              'Stock Management',
-              style: TextStyle(
-                color: GlassmorphismTheme.textColor,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Stock Management',
+                  style: TextStyle(
+                    color: GlassmorphismTheme.textColor,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
-            ),
+              IconButton(
+                onPressed: _showSortDialog,
+                icon: const Icon(
+                  Icons.sort,
+                  color: GlassmorphismTheme.textColor,
+                ),
+              ),
+            ],
           ),
+          const SizedBox(height: 16),
+          _buildSearchBar(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return GlassmorphismTheme.glassmorphismContainer(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: TextField(
+        onChanged: _onSearchChanged,
+        decoration: const InputDecoration(
+          hintText: 'Search stocks...',
+          prefixIcon: Icon(
+            Icons.search,
+            color: GlassmorphismTheme.textSecondaryColor,
+          ),
+          border: InputBorder.none,
+          hintStyle: TextStyle(color: GlassmorphismTheme.textSecondaryColor),
+        ),
+        style: const TextStyle(color: GlassmorphismTheme.textColor),
       ),
     );
   }
@@ -142,9 +172,9 @@ class _StockScreenState extends State<StockScreen> {
     }
 
     return ListView.builder(
-      itemCount: stocks.length,
+      itemCount: filteredStocks.length,
       itemBuilder: (context, index) {
-        final stock = stocks[index];
+        final stock = filteredStocks[index];
         return GlassmorphismTheme.glassmorphismContainer(
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(16),
@@ -440,6 +470,68 @@ class _StockScreenState extends State<StockScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  void _onSearchChanged(String query) {
+    setState(() {
+      searchQuery = query;
+      _applyFilters();
+    });
+  }
+
+  void _applyFilters() {
+    var filtered = SearchFilterUtils.searchStocks(stocks, searchQuery);
+    filtered = SearchFilterUtils.sortStocks(filtered, sortBy);
+    setState(() {
+      filteredStocks = filtered;
+    });
+  }
+
+  void _showSortDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: GlassmorphismTheme.surfaceColor,
+        title: const Text(
+          'Sort By',
+          style: TextStyle(color: GlassmorphismTheme.textColor),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildSortOption('Name (A-Z)', 'name'),
+            _buildSortOption('Name (Z-A)', 'name_desc'),
+            _buildSortOption('Price (Low-High)', 'price'),
+            _buildSortOption('Price (High-Low)', 'price_desc'),
+            _buildSortOption('Quantity (Low-High)', 'quantity'),
+            _buildSortOption('Quantity (High-Low)', 'quantity_desc'),
+            _buildSortOption('Value (Low-High)', 'value'),
+            _buildSortOption('Value (High-Low)', 'value_desc'),
+            _buildSortOption('Date (Newest)', 'date_desc'),
+            _buildSortOption('Date (Oldest)', 'date'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSortOption(String title, String value) {
+    return ListTile(
+      title: Text(
+        title,
+        style: const TextStyle(color: GlassmorphismTheme.textColor),
+      ),
+      trailing: sortBy == value
+          ? const Icon(Icons.check, color: GlassmorphismTheme.primaryColor)
+          : null,
+      onTap: () {
+        setState(() {
+          sortBy = value;
+        });
+        _applyFilters();
+        Navigator.pop(context);
+      },
     );
   }
 
