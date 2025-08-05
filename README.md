@@ -65,15 +65,15 @@ The business profile system includes:
 ### Installation
 
 1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/biztracker.git
-cd biztracker
-```
+   ```bash
+   git clone https://github.com/yourusername/biztracker.git
+   cd biztracker
+   ```
 
 2. Install dependencies:
-```bash
-flutter pub get
-```
+   ```bash
+   flutter pub get
+   ```
 
 3. Run the app:
 ```bash
@@ -85,9 +85,9 @@ flutter run
 The app uses Isar database for local data storage. The database is automatically initialized when the app starts.
 
 To generate the necessary database schema files:
-```bash
-dart run build_runner build
-```
+   ```bash
+   dart run build_runner build
+   ```
 
 ## Project Structure
 
