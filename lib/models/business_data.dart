@@ -49,8 +49,14 @@ class Sale {
   late double quantity;
   late double unitPrice;
   late double totalAmount;
+  late double amountPaid; // Amount paid so far
   late String customerName;
+  late String customerPhone; // Customer phone for credit tracking
   late String notes;
+  late String paymentStatus; // 'paid', 'partial', 'credit'
+  late String paymentMethod; // 'cash', 'card', 'bank_transfer', 'credit'
+  late DateTime? dueDate; // Due date for credit sales
+  late DateTime? lastPaymentDate; // Date of last payment
 
   @Index()
   late DateTime saleDate;

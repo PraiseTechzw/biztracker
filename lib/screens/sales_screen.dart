@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'dart:io';
 import '../utils/glassmorphism_theme.dart';
 import '../services/database_service.dart';
 import '../models/business_data.dart';
@@ -17,6 +18,9 @@ class _SalesScreenState extends State<SalesScreen> {
   bool isLoading = true;
   double totalSales = 0.0;
   double totalProfit = 0.0;
+  double totalPaid = 0.0;
+  double totalCredit = 0.0;
+  String selectedPaymentFilter = 'All'; // All, Paid, Credit, Partial
 
   @override
   void initState() {
@@ -36,9 +40,14 @@ class _SalesScreenState extends State<SalesScreen> {
       // Calculate totals
       double salesTotal = 0.0;
       double profitTotal = 0.0;
+      double paidTotal = 0.0;
+      double creditTotal = 0.0;
 
       for (var sale in salesData) {
         salesTotal += sale.totalAmount;
+        paidTotal += sale.amountPaid;
+        creditTotal += (sale.totalAmount - sale.amountPaid);
+
         // Find corresponding stock to calculate profit
         final stock = stocksData.firstWhere(
           (stock) => stock.name.toLowerCase() == sale.productName.toLowerCase(),
@@ -56,12 +65,27 @@ class _SalesScreenState extends State<SalesScreen> {
         stocks = stocksData;
         totalSales = salesTotal;
         totalProfit = profitTotal;
+        totalPaid = paidTotal;
+        totalCredit = creditTotal;
         isLoading = false;
       });
     } catch (e) {
       setState(() {
         isLoading = false;
       });
+    }
+  }
+
+  List<Sale> getFilteredSales() {
+    switch (selectedPaymentFilter) {
+      case 'Paid':
+        return sales.where((sale) => sale.paymentStatus == 'paid').toList();
+      case 'Credit':
+        return sales.where((sale) => sale.paymentStatus == 'credit').toList();
+      case 'Partial':
+        return sales.where((sale) => sale.paymentStatus == 'partial').toList();
+      default:
+        return sales;
     }
   }
 
@@ -138,45 +162,144 @@ class _SalesScreenState extends State<SalesScreen> {
                   ),
                 ),
               ),
+              IconButton(
+                onPressed: _showPaymentFilter,
+                icon: const Icon(
+                  Icons.filter_list,
+                  color: GlassmorphismTheme.textColor,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 16),
           _buildSalesSummary(),
+          const SizedBox(height: 12),
+          _buildPaymentFilterChip(),
         ],
       ),
     );
   }
 
   Widget _buildSalesSummary() {
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: _buildSummaryCard(
-            'Total Sales',
-            '\$${NumberFormat('#,##0.00').format(totalSales)}',
-            Icons.trending_up,
-            Colors.green,
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: _buildSummaryCard(
+                'Total Sales',
+                '\$${NumberFormat('#,##0.00').format(totalSales)}',
+                Icons.trending_up,
+                Colors.green,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildSummaryCard(
+                'Total Profit',
+                '\$${NumberFormat('#,##0.00').format(totalProfit)}',
+                Icons.attach_money,
+                totalProfit >= 0 ? Colors.green : Colors.red,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildSummaryCard(
+                'Total Orders',
+                sales.length.toString(),
+                Icons.shopping_cart,
+                GlassmorphismTheme.primaryColor,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildSummaryCard(
-            'Total Profit',
-            '\$${NumberFormat('#,##0.00').format(totalProfit)}',
-            Icons.attach_money,
-            totalProfit >= 0 ? Colors.green : Colors.red,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildSummaryCard(
-            'Total Orders',
-            sales.length.toString(),
-            Icons.shopping_cart,
-            GlassmorphismTheme.primaryColor,
-          ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildSummaryCard(
+                'Amount Paid',
+                '\$${NumberFormat('#,##0.00').format(totalPaid)}',
+                Icons.check_circle,
+                Colors.green,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildSummaryCard(
+                'Credit Amount',
+                '\$${NumberFormat('#,##0.00').format(totalCredit)}',
+                Icons.credit_card,
+                Colors.orange,
+              ),
+            ),
+          ],
         ),
       ],
+    );
+  }
+
+  Widget _buildPaymentFilterChip() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: ['All', 'Paid', 'Credit', 'Partial'].map((filter) {
+          final isSelected = selectedPaymentFilter == filter;
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: FilterChip(
+              label: Text(filter),
+              selected: isSelected,
+              onSelected: (selected) {
+                setState(() {
+                  selectedPaymentFilter = filter;
+                });
+              },
+              backgroundColor: GlassmorphismTheme.surfaceColor.withOpacity(0.5),
+              selectedColor: GlassmorphismTheme.primaryColor.withOpacity(0.3),
+              labelStyle: TextStyle(
+                color: isSelected ? Colors.white : GlassmorphismTheme.textColor,
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  void _showPaymentFilter() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: GlassmorphismTheme.surfaceColor,
+        title: const Text(
+          'Filter by Payment Status',
+          style: TextStyle(color: GlassmorphismTheme.textColor),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: ['All', 'Paid', 'Credit', 'Partial'].map((filter) {
+            return ListTile(
+              title: Text(
+                filter,
+                style: const TextStyle(color: GlassmorphismTheme.textColor),
+              ),
+              trailing: selectedPaymentFilter == filter
+                  ? const Icon(
+                      Icons.check,
+                      color: GlassmorphismTheme.primaryColor,
+                    )
+                  : null,
+              onTap: () {
+                setState(() {
+                  selectedPaymentFilter = filter;
+                });
+                Navigator.pop(context);
+              },
+            );
+          }).toList(),
+        ),
+      ),
     );
   }
 
@@ -253,9 +376,9 @@ class _SalesScreenState extends State<SalesScreen> {
       onRefresh: _refreshSales,
       color: GlassmorphismTheme.primaryColor,
       child: ListView.builder(
-        itemCount: sales.length,
+        itemCount: getFilteredSales().length,
         itemBuilder: (context, index) {
-          final sale = sales[index];
+          final sale = getFilteredSales()[index];
           return _buildSaleCard(sale);
         },
       ),
@@ -277,6 +400,11 @@ class _SalesScreenState extends State<SalesScreen> {
     final profitMargin = sale.unitPrice > 0
         ? (profitPerUnit / sale.unitPrice) * 100
         : 0;
+    final remainingAmount = sale.totalAmount - sale.amountPaid;
+    final isOverdue =
+        sale.dueDate != null &&
+        sale.dueDate!.isBefore(DateTime.now()) &&
+        remainingAmount > 0;
 
     return GlassmorphismTheme.glassmorphismContainer(
       margin: const EdgeInsets.only(bottom: 12),
@@ -287,16 +415,30 @@ class _SalesScreenState extends State<SalesScreen> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
+                width: 60,
+                height: 60,
                 decoration: BoxDecoration(
-                  color: GlassmorphismTheme.primaryColor.withOpacity(0.2),
+                  color: GlassmorphismTheme.primaryColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(
-                  Icons.point_of_sale,
-                  color: GlassmorphismTheme.primaryColor,
-                  size: 24,
-                ),
+                child: stock.imagePath != null && stock.imagePath!.isNotEmpty
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.file(
+                          File(stock.imagePath!),
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Icon(
+                            Icons.point_of_sale,
+                            color: GlassmorphismTheme.primaryColor,
+                            size: 30,
+                          ),
+                        ),
+                      )
+                    : Icon(
+                        Icons.point_of_sale,
+                        color: GlassmorphismTheme.primaryColor,
+                        size: 30,
+                      ),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -349,6 +491,15 @@ class _SalesScreenState extends State<SalesScreen> {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
+                  if (remainingAmount > 0)
+                    Text(
+                      'Remaining: \$${NumberFormat('#,##0.00').format(remainingAmount)}',
+                      style: TextStyle(
+                        color: isOverdue ? Colors.red : Colors.orange,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                 ],
               ),
             ],
@@ -479,21 +630,67 @@ class _SalesScreenState extends State<SalesScreen> {
                           items: stocks.map((stock) {
                             return DropdownMenuItem(
                               value: stock,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
+                              child: Row(
                                 children: [
-                                  Text(
-                                    stock.name,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
+                                  Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: GlassmorphismTheme.primaryColor
+                                          .withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(8),
                                     ),
+                                    child:
+                                        stock.imagePath != null &&
+                                            stock.imagePath!.isNotEmpty
+                                        ? ClipRRect(
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                            child: Image.file(
+                                              File(stock.imagePath!),
+                                              fit: BoxFit.cover,
+                                              errorBuilder:
+                                                  (
+                                                    context,
+                                                    error,
+                                                    stackTrace,
+                                                  ) => Icon(
+                                                    Icons.inventory,
+                                                    color: GlassmorphismTheme
+                                                        .primaryColor,
+                                                    size: 20,
+                                                  ),
+                                            ),
+                                          )
+                                        : Icon(
+                                            Icons.inventory,
+                                            color:
+                                                GlassmorphismTheme.primaryColor,
+                                            size: 20,
+                                          ),
                                   ),
-                                  Text(
-                                    'Stock: ${stock.quantity} | Price: \$${NumberFormat('#,##0.00').format(stock.unitSellingPrice)}',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey,
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          stock.name,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Stock: ${stock.quantity} | Price: \$${NumberFormat('#,##0.00').format(stock.unitSellingPrice)}',
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ],
