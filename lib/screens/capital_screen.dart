@@ -212,43 +212,49 @@ class _CapitalScreenState extends State<CapitalScreen> {
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: capital.type == 'initial'
-                                    ? GlassmorphismTheme.primaryColor
-                                          .withOpacity(0.13)
-                                    : Colors.green.withOpacity(0.13),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                capital.type == 'initial'
-                                    ? 'Initial Capital'
-                                    : 'Additional Capital',
-                                style: TextStyle(
+                            Flexible(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
                                   color: capital.type == 'initial'
                                       ? GlassmorphismTheme.primaryColor
-                                      : Colors.green,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
+                                            .withOpacity(0.13)
+                                      : Colors.green.withOpacity(0.13),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  capital.type == 'initial'
+                                      ? 'Initial Capital'
+                                      : 'Additional Capital',
+                                  style: TextStyle(
+                                    color: capital.type == 'initial'
+                                        ? GlassmorphismTheme.primaryColor
+                                        : Colors.green,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 10),
+                            const SizedBox(width: 8),
                             Icon(
                               Icons.calendar_today,
                               size: 13,
                               color: GlassmorphismTheme.textSecondaryColor,
                             ),
                             const SizedBox(width: 3),
-                            Text(
-                              DateFormat('MMM dd, yyyy').format(capital.date),
-                              style: const TextStyle(
-                                color: GlassmorphismTheme.textSecondaryColor,
-                                fontSize: 12,
+                            Flexible(
+                              child: Text(
+                                DateFormat('MMM dd, yyyy').format(capital.date),
+                                style: const TextStyle(
+                                  color: GlassmorphismTheme.textSecondaryColor,
+                                  fontSize: 12,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
