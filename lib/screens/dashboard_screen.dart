@@ -5,9 +5,33 @@ import 'package:biztracker/screens/reports_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../utils/glassmorphism_theme.dart';
+import '../utils/toast_utils.dart';
 import '../services/database_service.dart';
+import '../models/business_data.dart';
 import 'settings_screen.dart';
 import 'notifications_screen.dart';
+
+enum ActivityType { sale, expense, capital, stock }
+
+class ActivityItem {
+  final ActivityType type;
+  final String title;
+  final String subtitle;
+  final double amount;
+  final DateTime date;
+  final IconData icon;
+  final Color color;
+
+  ActivityItem({
+    required this.type,
+    required this.title,
+    required this.subtitle,
+    required this.amount,
+    required this.date,
+    required this.icon,
+    required this.color,
+  });
+}
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -28,6 +52,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   String errorMessage = '';
   int unreadNotifications = 0;
   String businessName = '';
+  List<ActivityItem> recentActivities = [];
   late AnimationController _cardAnimController;
   late Animation<double> _cardAnim;
 
@@ -36,6 +61,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     super.initState();
     _loadDashboardData();
     _loadBusinessName();
+    _loadRecentActivities();
     _cardAnimController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
@@ -99,10 +125,86 @@ class _DashboardScreenState extends State<DashboardScreen>
         businessName = profile?.businessName ?? '';
       });
     } catch (e) {
-      // Don't show error for business name, just use default
+      // Handle error silently
+    }
+  }
+
+  Future<void> _loadRecentActivities() async {
+    try {
+      final activities = <ActivityItem>[];
+
+      // Get recent sales (last 5)
+      final recentSales = await DatabaseService.getAllSales();
+      for (final sale in recentSales.take(5)) {
+        activities.add(
+          ActivityItem(
+            type: ActivityType.sale,
+            title: 'Sale recorded',
+            subtitle: '${sale.productName} - ${sale.customerName}',
+            amount: sale.totalAmount,
+            date: sale.saleDate,
+            icon: Icons.shopping_cart,
+            color: Colors.green,
+          ),
+        );
+      }
+
+      // Get recent expenses (last 5)
+      final recentExpenses = await DatabaseService.getAllExpenses();
+      for (final expense in recentExpenses.take(5)) {
+        activities.add(
+          ActivityItem(
+            type: ActivityType.expense,
+            title: 'Expense recorded',
+            subtitle: '${expense.category} - ${expense.description}',
+            amount: expense.amount,
+            date: expense.expenseDate,
+            icon: Icons.receipt,
+            color: Colors.red,
+          ),
+        );
+      }
+
+      // Get recent capital additions (last 5)
+      final recentCapitals = await DatabaseService.getAllCapitals();
+      for (final capital in recentCapitals.take(5)) {
+        activities.add(
+          ActivityItem(
+            type: ActivityType.capital,
+            title: 'Capital added',
+            subtitle: capital.description,
+            amount: capital.amount,
+            date: capital.date,
+            icon: Icons.account_balance_wallet,
+            color: Colors.blue,
+          ),
+        );
+      }
+
+      // Get recent stock updates (last 5)
+      final recentStocks = await DatabaseService.getAllStocks();
+      for (final stock in recentStocks.take(5)) {
+        activities.add(
+          ActivityItem(
+            type: ActivityType.stock,
+            title: 'Stock updated',
+            subtitle: '${stock.name} - Qty: ${stock.quantity}',
+            amount: stock.unitSellingPrice * stock.quantity,
+            date: stock.updatedAt,
+            icon: Icons.inventory,
+            color: Colors.orange,
+          ),
+        );
+      }
+
+      // Sort all activities by date (most recent first) and take top 10
+      activities.sort((a, b) => b.date.compareTo(a.date));
+
       setState(() {
-        businessName = '';
+        recentActivities = activities.take(10).toList();
       });
+    } catch (e) {
+      // Handle error silently, activities will remain empty
     }
   }
 
@@ -116,7 +218,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   Future<void> _refreshData() async {
     await _loadDashboardData();
-    await _loadBusinessName();
+    await _loadRecentActivities();
   }
 
   @override
@@ -478,35 +580,78 @@ class _DashboardScreenState extends State<DashboardScreen>
           ),
         ),
         const SizedBox(height: 16),
-        GlassmorphismTheme.glassmorphismContainer(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            children: [
-              Icon(
-                Icons.info_outline,
-                color: GlassmorphismTheme.textSecondaryColor,
-                size: 32,
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: recentActivities.length,
+          itemBuilder: (context, index) {
+            final activity = recentActivities[index];
+            return GlassmorphismTheme.glassmorphismContainer(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: activity.color.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Icon(
+                          activity.icon,
+                          color: activity.color,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              activity.title,
+                              style: const TextStyle(
+                                color: GlassmorphismTheme.textColor,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              activity.subtitle,
+                              style: TextStyle(
+                                color: GlassmorphismTheme.textSecondaryColor,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        DateFormat('MM/dd HH:mm').format(activity.date),
+                        style: TextStyle(
+                          color: GlassmorphismTheme.textSecondaryColor,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '\$${NumberFormat('#,##0.00').format(activity.amount)}',
+                    style: TextStyle(
+                      color: activity.color,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
-              const Text(
-                'No recent activity yet',
-                style: TextStyle(
-                  color: GlassmorphismTheme.textSecondaryColor,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'Your recent business activity will appear here.',
-                style: TextStyle(
-                  color: GlassmorphismTheme.textSecondaryColor,
-                  fontSize: 13,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ],
     );
