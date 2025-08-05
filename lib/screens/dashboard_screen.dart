@@ -8,6 +8,8 @@ import '../utils/glassmorphism_theme.dart';
 import '../services/database_service.dart';
 import '../models/business_data.dart';
 import 'settings_screen.dart';
+import 'notifications_screen.dart';
+import '../models/business_profile.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -16,18 +18,40 @@ class DashboardScreen extends StatefulWidget {
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardScreenState extends State<DashboardScreen>
+    with SingleTickerProviderStateMixin {
   double totalCapital = 0.0;
   double totalStockValue = 0.0;
   double totalSales = 0.0;
   double totalExpenses = 0.0;
   double netProfit = 0.0;
   bool isLoading = true;
+  int unreadNotifications = 0;
+  String businessName = '';
+  late AnimationController _cardAnimController;
+  late Animation<double> _cardAnim;
 
   @override
   void initState() {
     super.initState();
     _loadDashboardData();
+    _loadUnreadNotifications();
+    _loadBusinessName();
+    _cardAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _cardAnim = CurvedAnimation(
+      parent: _cardAnimController,
+      curve: Curves.easeOutBack,
+    );
+    _cardAnimController.forward();
+  }
+
+  @override
+  void dispose() {
+    _cardAnimController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadDashboardData() async {
@@ -57,6 +81,71 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  Future<void> _loadUnreadNotifications() {
+    // Sample notifications (should be replaced with real data/service)
+    final notifications = [
+      NotificationItem(
+        id: '1',
+        title: 'Low Stock Alert',
+        message: '',
+        timestamp: DateTime.now(),
+        type: NotificationType.warning,
+        isRead: false,
+      ),
+      NotificationItem(
+        id: '2',
+        title: 'High Sales Day',
+        message: '',
+        timestamp: DateTime.now(),
+        type: NotificationType.success,
+        isRead: false,
+      ),
+      NotificationItem(
+        id: '3',
+        title: 'Expense Reminder',
+        message: '',
+        timestamp: DateTime.now(),
+        type: NotificationType.info,
+        isRead: true,
+      ),
+      NotificationItem(
+        id: '4',
+        title: 'Profit Milestone',
+        message: '',
+        timestamp: DateTime.now(),
+        type: NotificationType.success,
+        isRead: false,
+      ),
+      NotificationItem(
+        id: '5',
+        title: 'System Update',
+        message: '',
+        timestamp: DateTime.now(),
+        type: NotificationType.info,
+        isRead: true,
+      ),
+    ];
+    setState(() {
+      unreadNotifications = notifications.where((n) => !n.isRead).length;
+    });
+    return Future.value();
+  }
+
+  Future<void> _loadBusinessName() async {
+    final profile = await DatabaseService.getBusinessProfile();
+    setState(() {
+      businessName = profile?.businessName ?? '';
+    });
+    return;
+  }
+
+  void _openNotificationsScreen() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const NotificationsScreen()),
+    );
+    _loadUnreadNotifications();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -74,31 +163,62 @@ class _DashboardScreenState extends State<DashboardScreen> {
               SliverToBoxAdapter(
                 child: Container(
                   padding: const EdgeInsets.all(16),
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Expanded(
-                        child: Text(
-                          'BizTracker',
-                          style: TextStyle(
-                            color: GlassmorphismTheme.textColor,
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const SettingsScreen(),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  businessName.isNotEmpty
+                                      ? 'Hello, $businessName!'
+                                      : 'Welcome!',
+                                  style: const TextStyle(
+                                    color: GlassmorphismTheme.textColor,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                const Text(
+                                  'Here’s your business at a glance',
+                                  style: TextStyle(
+                                    color:
+                                        GlassmorphismTheme.textSecondaryColor,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
                             ),
-                          );
-                        },
-                        icon: const Icon(
-                          Icons.settings,
-                          color: GlassmorphismTheme.textColor,
-                        ),
+                          ),
+                          _buildNotificationsIcon(
+                            context,
+                            unreadCount: unreadNotifications,
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const SettingsScreen(),
+                                ),
+                              );
+                            },
+                            icon: const Icon(
+                              Icons.settings,
+                              color: GlassmorphismTheme.textColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      FadeTransition(
+                        opacity: _cardAnim,
+                        child: _buildOverviewCards(),
                       ),
                     ],
                   ),
@@ -119,8 +239,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       else
                         Column(
                           children: [
-                            _buildOverviewCards(),
-                            const SizedBox(height: 24),
                             _buildQuickStats(),
                             const SizedBox(height: 24),
                             _buildRecentActivity(),
@@ -156,7 +274,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           crossAxisCount: 2,
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
-          childAspectRatio: 1.2,
+          childAspectRatio: 1.15,
           children: [
             _buildOverviewCard(
               'Total Capital',
@@ -195,26 +313,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
     Color color,
   ) {
     return GlassmorphismTheme.glassmorphismContainer(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: color, size: 32),
-          const SizedBox(height: 8),
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(22),
+            ),
+            child: Icon(icon, color: color, size: 26),
+          ),
+          const SizedBox(height: 10),
           Text(
             title,
             style: const TextStyle(
               color: GlassmorphismTheme.textSecondaryColor,
-              fontSize: 12,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
             ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 4),
           Text(
-            '\$${NumberFormat('#,##0.00').format(value)}',
-            style: const TextStyle(
-              color: GlassmorphismTheme.textColor,
-              fontSize: 16,
+            ' 24${NumberFormat('#,##0.00').format(value)}',
+            style: TextStyle(
+              color: color,
+              fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
             textAlign: TextAlign.center,
@@ -272,22 +399,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          Icon(icon, color: color, size: 24),
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
           const SizedBox(height: 8),
           Text(
             title,
             style: const TextStyle(
               color: GlassmorphismTheme.textSecondaryColor,
               fontSize: 12,
+              fontWeight: FontWeight.w500,
             ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 4),
           Text(
             value,
-            style: const TextStyle(
-              color: GlassmorphismTheme.textColor,
-              fontSize: 16,
+            style: TextStyle(
+              color: color,
+              fontSize: 15,
               fontWeight: FontWeight.bold,
             ),
             textAlign: TextAlign.center,
@@ -298,6 +434,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildRecentActivity() {
+    // For now, always show empty state
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -311,29 +448,74 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         const SizedBox(height: 16),
         GlassmorphismTheme.glassmorphismContainer(
-          padding: const EdgeInsets.all(16),
-          child: const Column(
+          padding: const EdgeInsets.all(24),
+          child: Column(
             children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.info_outline,
-                    color: GlassmorphismTheme.textSecondaryColor,
-                    size: 20,
-                  ),
-                  SizedBox(width: 8),
-                  Text(
-                    'No recent activity',
-                    style: TextStyle(
-                      color: GlassmorphismTheme.textSecondaryColor,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
+              Icon(
+                Icons.info_outline,
+                color: GlassmorphismTheme.textSecondaryColor,
+                size: 32,
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'No recent activity yet',
+                style: TextStyle(
+                  color: GlassmorphismTheme.textSecondaryColor,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Your recent business activity will appear here.',
+                style: TextStyle(
+                  color: GlassmorphismTheme.textSecondaryColor,
+                  fontSize: 13,
+                ),
+                textAlign: TextAlign.center,
               ),
             ],
           ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildNotificationsIcon(BuildContext context, {int unreadCount = 0}) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        IconButton(
+          icon: const Icon(
+            Icons.notifications,
+            color: GlassmorphismTheme.primaryColor,
+          ),
+          tooltip: 'Notifications',
+          onPressed: _openNotificationsScreen,
+        ),
+        if (unreadCount > 0)
+          Positioned(
+            right: 6,
+            top: 6,
+            child: Container(
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                color: Colors.red,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.white, width: 1),
+              ),
+              constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+              child: Text(
+                unreadCount.toString(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
       ],
     );
   }
