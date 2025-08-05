@@ -598,6 +598,28 @@ class _SalesScreenState extends State<SalesScreen> {
   }
 
   void _showAddSaleDialog() {
+    // Don't show dialog if data is still loading
+    if (isLoading) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please wait while data is loading...'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    // Ensure stocks list is properly initialized
+    if (stocks.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No products in stock. Please add products first.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     final formKey = GlobalKey<FormState>();
     final productNameController = TextEditingController();
     final quantityController = TextEditingController();
@@ -609,7 +631,7 @@ class _SalesScreenState extends State<SalesScreen> {
     DateTime selectedDate = DateTime.now();
     DateTime? selectedDueDate;
     Stock? selectedStock;
-    bool isLoading = false;
+    bool isSubmitting = false;
     String selectedPaymentStatus = 'paid';
     String selectedPaymentMethod = 'cash';
 
@@ -620,9 +642,10 @@ class _SalesScreenState extends State<SalesScreen> {
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) => Container(
           height: MediaQuery.of(context).size.height * 0.9,
-          decoration: const BoxDecoration(
-            color: GlassmorphismTheme.surfaceColor,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          decoration: BoxDecoration(
+            color: GlassmorphismTheme.surfaceColor.withOpacity(0.95),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
           ),
           child: Padding(
             padding: EdgeInsets.only(
@@ -662,24 +685,59 @@ class _SalesScreenState extends State<SalesScreen> {
                       children: [
                         // Product Selection
                         DropdownButtonFormField<Stock>(
-                          decoration: const InputDecoration(
+                          dropdownColor: GlassmorphismTheme.surfaceColor,
+                          style: const TextStyle(
+                            color: GlassmorphismTheme.textColor,
+                          ),
+                          decoration: InputDecoration(
                             labelText: 'Select Product from Stock',
-                            prefixIcon: Icon(Icons.inventory),
-                            border: OutlineInputBorder(),
+                            labelStyle: const TextStyle(
+                              color: GlassmorphismTheme.textColor,
+                            ),
+                            prefixIcon: const Icon(
+                              Icons.inventory,
+                              color: GlassmorphismTheme.primaryColor,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: Colors.white.withOpacity(0.3),
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: Colors.white.withOpacity(0.3),
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(
+                                color: GlassmorphismTheme.primaryColor,
+                                width: 2,
+                              ),
+                            ),
+                            filled: true,
+                            fillColor: Colors.white.withOpacity(0.1),
                             hintText: 'Choose a product to sell...',
+                            hintStyle: TextStyle(
+                              color: GlassmorphismTheme.textSecondaryColor,
+                            ),
                           ),
                           value: selectedStock,
                           items:
-                              stocks
-                                  .where((stock) => stock.quantity > 0)
-                                  .isEmpty
+                              (stocks.isEmpty ||
+                                  stocks
+                                      .where((stock) => stock.quantity > 0)
+                                      .isEmpty)
                               ? [
                                   const DropdownMenuItem<Stock>(
                                     enabled: false,
                                     child: Text(
                                       'No products available in stock',
                                       style: TextStyle(
-                                        color: Colors.grey,
+                                        color: GlassmorphismTheme
+                                            .textSecondaryColor,
                                         fontStyle: FontStyle.italic,
                                       ),
                                     ),
@@ -690,83 +748,11 @@ class _SalesScreenState extends State<SalesScreen> {
                                 ) {
                                   return DropdownMenuItem(
                                     value: stock,
-                                    child: Row(
-                                      children: [
-                                        Container(
-                                          width: 40,
-                                          height: 40,
-                                          decoration: BoxDecoration(
-                                            color: GlassmorphismTheme
-                                                .primaryColor
-                                                .withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(
-                                              8,
-                                            ),
-                                          ),
-                                          child:
-                                              stock.imagePath != null &&
-                                                  stock.imagePath!.isNotEmpty
-                                              ? ClipRRect(
-                                                  borderRadius:
-                                                      BorderRadius.circular(8),
-                                                  child: Image.file(
-                                                    File(stock.imagePath!),
-                                                    fit: BoxFit.cover,
-                                                    errorBuilder:
-                                                        (
-                                                          context,
-                                                          error,
-                                                          stackTrace,
-                                                        ) => Icon(
-                                                          Icons.inventory,
-                                                          color:
-                                                              GlassmorphismTheme
-                                                                  .primaryColor,
-                                                          size: 20,
-                                                        ),
-                                                  ),
-                                                )
-                                              : Icon(
-                                                  Icons.inventory,
-                                                  color: GlassmorphismTheme
-                                                      .primaryColor,
-                                                  size: 20,
-                                                ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Text(
-                                                stock.name,
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                              Text(
-                                                'Available: ${stock.quantity} | Price: \$${NumberFormat('#,##0.00').format(stock.unitSellingPrice)}',
-                                                style: const TextStyle(
-                                                  fontSize: 12,
-                                                  color: Colors.grey,
-                                                ),
-                                              ),
-                                              if (stock.quantity <=
-                                                  stock.reorderLevel)
-                                                const Text(
-                                                  '⚠️ Low Stock',
-                                                  style: TextStyle(
-                                                    fontSize: 11,
-                                                    color: Colors.orange,
-                                                    fontWeight: FontWeight.w500,
-                                                  ),
-                                                ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
+                                    child: Text(
+                                      '${stock.name} - \$${NumberFormat('#,##0.00').format(stock.unitSellingPrice)} (${stock.quantity} available)',
+                                      style: const TextStyle(
+                                        color: GlassmorphismTheme.textColor,
+                                      ),
                                     ),
                                   );
                                 }).toList(),
@@ -804,10 +790,39 @@ class _SalesScreenState extends State<SalesScreen> {
 
                         TextFormField(
                           controller: productNameController,
-                          decoration: const InputDecoration(
+                          style: const TextStyle(
+                            color: GlassmorphismTheme.textColor,
+                          ),
+                          decoration: InputDecoration(
                             labelText: 'Product Name',
-                            prefixIcon: Icon(Icons.shopping_bag),
-                            border: OutlineInputBorder(),
+                            labelStyle: const TextStyle(
+                              color: GlassmorphismTheme.textColor,
+                            ),
+                            prefixIcon: const Icon(
+                              Icons.shopping_bag,
+                              color: GlassmorphismTheme.primaryColor,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: Colors.white.withOpacity(0.3),
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: Colors.white.withOpacity(0.3),
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(
+                                color: GlassmorphismTheme.primaryColor,
+                                width: 2,
+                              ),
+                            ),
+                            filled: true,
+                            fillColor: Colors.white.withOpacity(0.1),
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
@@ -824,10 +839,39 @@ class _SalesScreenState extends State<SalesScreen> {
                               child: TextFormField(
                                 controller: quantityController,
                                 keyboardType: TextInputType.number,
-                                decoration: const InputDecoration(
+                                style: const TextStyle(
+                                  color: GlassmorphismTheme.textColor,
+                                ),
+                                decoration: InputDecoration(
                                   labelText: 'Quantity',
-                                  prefixIcon: Icon(Icons.shopping_cart),
-                                  border: OutlineInputBorder(),
+                                  labelStyle: const TextStyle(
+                                    color: GlassmorphismTheme.textColor,
+                                  ),
+                                  prefixIcon: const Icon(
+                                    Icons.shopping_cart,
+                                    color: GlassmorphismTheme.primaryColor,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color: Colors.white.withOpacity(0.3),
+                                    ),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color: Colors.white.withOpacity(0.3),
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(
+                                      color: GlassmorphismTheme.primaryColor,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.white.withOpacity(0.1),
                                 ),
                                 onChanged: (value) {
                                   setModalState(() {});
@@ -856,11 +900,43 @@ class _SalesScreenState extends State<SalesScreen> {
                               child: TextFormField(
                                 controller: unitPriceController,
                                 keyboardType: TextInputType.number,
-                                decoration: const InputDecoration(
+                                style: const TextStyle(
+                                  color: GlassmorphismTheme.textColor,
+                                ),
+                                decoration: InputDecoration(
                                   labelText: 'Unit Price',
+                                  labelStyle: const TextStyle(
+                                    color: GlassmorphismTheme.textColor,
+                                  ),
                                   prefixText: '\$',
-                                  prefixIcon: Icon(Icons.attach_money),
-                                  border: OutlineInputBorder(),
+                                  prefixStyle: const TextStyle(
+                                    color: GlassmorphismTheme.textColor,
+                                  ),
+                                  prefixIcon: const Icon(
+                                    Icons.attach_money,
+                                    color: GlassmorphismTheme.primaryColor,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color: Colors.white.withOpacity(0.3),
+                                    ),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color: Colors.white.withOpacity(0.3),
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(
+                                      color: GlassmorphismTheme.primaryColor,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.white.withOpacity(0.1),
                                 ),
                                 onChanged: (value) {
                                   setModalState(() {});
@@ -885,10 +961,39 @@ class _SalesScreenState extends State<SalesScreen> {
                             Expanded(
                               child: TextFormField(
                                 controller: customerNameController,
-                                decoration: const InputDecoration(
+                                style: const TextStyle(
+                                  color: GlassmorphismTheme.textColor,
+                                ),
+                                decoration: InputDecoration(
                                   labelText: 'Customer Name (Optional)',
-                                  prefixIcon: Icon(Icons.person),
-                                  border: OutlineInputBorder(),
+                                  labelStyle: const TextStyle(
+                                    color: GlassmorphismTheme.textColor,
+                                  ),
+                                  prefixIcon: const Icon(
+                                    Icons.person,
+                                    color: GlassmorphismTheme.primaryColor,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color: Colors.white.withOpacity(0.3),
+                                    ),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color: Colors.white.withOpacity(0.3),
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(
+                                      color: GlassmorphismTheme.primaryColor,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.white.withOpacity(0.1),
                                 ),
                               ),
                             ),
@@ -896,10 +1001,39 @@ class _SalesScreenState extends State<SalesScreen> {
                             Expanded(
                               child: TextFormField(
                                 controller: customerPhoneController,
-                                decoration: const InputDecoration(
+                                style: const TextStyle(
+                                  color: GlassmorphismTheme.textColor,
+                                ),
+                                decoration: InputDecoration(
                                   labelText: 'Phone (Optional)',
-                                  prefixIcon: Icon(Icons.phone),
-                                  border: OutlineInputBorder(),
+                                  labelStyle: const TextStyle(
+                                    color: GlassmorphismTheme.textColor,
+                                  ),
+                                  prefixIcon: const Icon(
+                                    Icons.phone,
+                                    color: GlassmorphismTheme.primaryColor,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color: Colors.white.withOpacity(0.3),
+                                    ),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color: Colors.white.withOpacity(0.3),
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(
+                                      color: GlassmorphismTheme.primaryColor,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.white.withOpacity(0.1),
                                 ),
                               ),
                             ),
@@ -909,24 +1043,69 @@ class _SalesScreenState extends State<SalesScreen> {
 
                         // Payment Status Selection
                         DropdownButtonFormField<String>(
-                          decoration: const InputDecoration(
+                          dropdownColor: GlassmorphismTheme.surfaceColor,
+                          style: const TextStyle(
+                            color: GlassmorphismTheme.textColor,
+                          ),
+                          decoration: InputDecoration(
                             labelText: 'Payment Status',
-                            prefixIcon: Icon(Icons.payment),
-                            border: OutlineInputBorder(),
+                            labelStyle: const TextStyle(
+                              color: GlassmorphismTheme.textColor,
+                            ),
+                            prefixIcon: const Icon(
+                              Icons.payment,
+                              color: GlassmorphismTheme.primaryColor,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: Colors.white.withOpacity(0.3),
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: Colors.white.withOpacity(0.3),
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(
+                                color: GlassmorphismTheme.primaryColor,
+                                width: 2,
+                              ),
+                            ),
+                            filled: true,
+                            fillColor: Colors.white.withOpacity(0.1),
                           ),
                           value: selectedPaymentStatus,
                           items: [
                             DropdownMenuItem(
                               value: 'paid',
-                              child: Text('Paid'),
+                              child: const Text(
+                                'Paid',
+                                style: TextStyle(
+                                  color: GlassmorphismTheme.textColor,
+                                ),
+                              ),
                             ),
                             DropdownMenuItem(
                               value: 'partial',
-                              child: Text('Partial Payment'),
+                              child: const Text(
+                                'Partial Payment',
+                                style: TextStyle(
+                                  color: GlassmorphismTheme.textColor,
+                                ),
+                              ),
                             ),
                             DropdownMenuItem(
                               value: 'credit',
-                              child: Text('Credit'),
+                              child: const Text(
+                                'Credit',
+                                style: TextStyle(
+                                  color: GlassmorphismTheme.textColor,
+                                ),
+                              ),
                             ),
                           ],
                           onChanged: (value) {
@@ -949,28 +1128,78 @@ class _SalesScreenState extends State<SalesScreen> {
 
                         // Payment Method Selection
                         DropdownButtonFormField<String>(
-                          decoration: const InputDecoration(
+                          dropdownColor: GlassmorphismTheme.surfaceColor,
+                          style: const TextStyle(
+                            color: GlassmorphismTheme.textColor,
+                          ),
+                          decoration: InputDecoration(
                             labelText: 'Payment Method',
-                            prefixIcon: Icon(Icons.credit_card),
-                            border: OutlineInputBorder(),
+                            labelStyle: const TextStyle(
+                              color: GlassmorphismTheme.textColor,
+                            ),
+                            prefixIcon: const Icon(
+                              Icons.credit_card,
+                              color: GlassmorphismTheme.primaryColor,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: Colors.white.withOpacity(0.3),
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: Colors.white.withOpacity(0.3),
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(
+                                color: GlassmorphismTheme.primaryColor,
+                                width: 2,
+                              ),
+                            ),
+                            filled: true,
+                            fillColor: Colors.white.withOpacity(0.1),
                           ),
                           value: selectedPaymentMethod,
                           items: [
                             DropdownMenuItem(
                               value: 'cash',
-                              child: Text('Cash'),
+                              child: const Text(
+                                'Cash',
+                                style: TextStyle(
+                                  color: GlassmorphismTheme.textColor,
+                                ),
+                              ),
                             ),
                             DropdownMenuItem(
                               value: 'card',
-                              child: Text('Card'),
+                              child: const Text(
+                                'Card',
+                                style: TextStyle(
+                                  color: GlassmorphismTheme.textColor,
+                                ),
+                              ),
                             ),
                             DropdownMenuItem(
                               value: 'bank_transfer',
-                              child: Text('Bank Transfer'),
+                              child: const Text(
+                                'Bank Transfer',
+                                style: TextStyle(
+                                  color: GlassmorphismTheme.textColor,
+                                ),
+                              ),
                             ),
                             DropdownMenuItem(
                               value: 'credit',
-                              child: Text('Credit'),
+                              child: const Text(
+                                'Credit',
+                                style: TextStyle(
+                                  color: GlassmorphismTheme.textColor,
+                                ),
+                              ),
                             ),
                           ],
                           onChanged: (value) {
@@ -986,11 +1215,43 @@ class _SalesScreenState extends State<SalesScreen> {
                           TextFormField(
                             controller: amountPaidController,
                             keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
+                            style: const TextStyle(
+                              color: GlassmorphismTheme.textColor,
+                            ),
+                            decoration: InputDecoration(
                               labelText: 'Amount Paid',
+                              labelStyle: const TextStyle(
+                                color: GlassmorphismTheme.textColor,
+                              ),
                               prefixText: '\$',
-                              prefixIcon: Icon(Icons.attach_money),
-                              border: OutlineInputBorder(),
+                              prefixStyle: const TextStyle(
+                                color: GlassmorphismTheme.textColor,
+                              ),
+                              prefixIcon: const Icon(
+                                Icons.attach_money,
+                                color: GlassmorphismTheme.primaryColor,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: Colors.white.withOpacity(0.3),
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: Colors.white.withOpacity(0.3),
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                  color: GlassmorphismTheme.primaryColor,
+                                  width: 2,
+                                ),
+                              ),
+                              filled: true,
+                              fillColor: Colors.white.withOpacity(0.1),
                             ),
                             onChanged: (value) {
                               setModalState(() {});
@@ -1073,10 +1334,39 @@ class _SalesScreenState extends State<SalesScreen> {
 
                         TextFormField(
                           controller: notesController,
-                          decoration: const InputDecoration(
+                          style: const TextStyle(
+                            color: GlassmorphismTheme.textColor,
+                          ),
+                          decoration: InputDecoration(
                             labelText: 'Notes (Optional)',
-                            prefixIcon: Icon(Icons.note),
-                            border: OutlineInputBorder(),
+                            labelStyle: const TextStyle(
+                              color: GlassmorphismTheme.textColor,
+                            ),
+                            prefixIcon: const Icon(
+                              Icons.note,
+                              color: GlassmorphismTheme.primaryColor,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: Colors.white.withOpacity(0.3),
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: Colors.white.withOpacity(0.3),
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(
+                                color: GlassmorphismTheme.primaryColor,
+                                width: 2,
+                              ),
+                            ),
+                            filled: true,
+                            fillColor: Colors.white.withOpacity(0.1),
                           ),
                           maxLines: 3,
                         ),
@@ -1336,11 +1626,11 @@ class _SalesScreenState extends State<SalesScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: isLoading
+                    onPressed: isSubmitting
                         ? null
                         : () async {
                             if (formKey.currentState!.validate()) {
-                              setModalState(() => isLoading = true);
+                              setModalState(() => isSubmitting = true);
                               try {
                                 final quantity = double.parse(
                                   quantityController.text,
@@ -1396,7 +1686,7 @@ class _SalesScreenState extends State<SalesScreen> {
                                   ),
                                 );
                               } finally {
-                                setModalState(() => isLoading = false);
+                                setModalState(() => isSubmitting = false);
                               }
                             }
                           },
@@ -1407,7 +1697,7 @@ class _SalesScreenState extends State<SalesScreen> {
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
-                    child: isLoading
+                    child: isSubmitting
                         ? const SizedBox(
                             width: 20,
                             height: 20,
