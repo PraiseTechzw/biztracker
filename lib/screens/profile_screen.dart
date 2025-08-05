@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../utils/glassmorphism_theme.dart';
 import '../utils/formatters.dart';
 import 'profile_update_screen.dart';
+import '../models/business_profile.dart';
+import '../services/database_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -11,21 +13,8 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final TextEditingController _businessNameController = TextEditingController(
-    text: 'My Business',
-  );
-  final TextEditingController _ownerNameController = TextEditingController(
-    text: 'John Doe',
-  );
-  final TextEditingController _emailController = TextEditingController(
-    text: 'john@mybusiness.com',
-  );
-  final TextEditingController _phoneController = TextEditingController(
-    text: '+1 (555) 123-4567',
-  );
-  final TextEditingController _addressController = TextEditingController(
-    text: '123 Business St, City, State 12345',
-  );
+  BusinessProfile? _profile;
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -33,8 +22,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadProfileData();
   }
 
-  void _loadProfileData() {
-    // In a real app, this would load from a service or database
+  Future<void> _loadProfileData() async {
+    setState(() {
+      _isLoading = true;
+    });
+    final profile = await DatabaseService.getBusinessProfile();
+    setState(() {
+      _profile = profile;
+      _isLoading = false;
+    });
   }
 
   @override
@@ -49,18 +45,271 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
         child: SafeArea(
-          child: Column(
-            children: [
-              _buildAppBar(),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: _buildProfileContent(),
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _profile == null
+              ? _buildNoProfileView()
+              : Column(
+                  children: [
+                    _buildAppBar(),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: _buildProfileContent(),
+                      ),
+                    ),
+                  ],
+                ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNoProfileView() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.business,
+              size: 60,
+              color: GlassmorphismTheme.primaryColor,
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'No Business Profile Found',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: GlassmorphismTheme.textColor,
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'You have not set up your business profile yet. Please create one to get started.',
+              style: TextStyle(
+                fontSize: 16,
+                color: GlassmorphismTheme.textSecondaryColor,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context)
+                    .push(
+                      MaterialPageRoute(
+                        builder: (context) => const ProfileUpdateScreen(),
+                      ),
+                    )
+                    .then((_) => _loadProfileData());
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: GlassmorphismTheme.primaryColor,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 16,
                 ),
               ),
-            ],
-          ),
+              child: const Text(
+                'Create Business Profile',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildProfileContent() {
+    final p = _profile!;
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          _buildProfileHeader(),
+          const SizedBox(height: 24),
+          _buildInfoCard('Business Information', [
+            _buildInfoRow('Business Name', p.businessName),
+            _buildInfoRow('Type', p.businessType),
+            if (p.businessDescription != null &&
+                p.businessDescription!.isNotEmpty)
+              _buildInfoRow('Description', p.businessDescription!),
+          ]),
+          const SizedBox(height: 16),
+          _buildInfoCard('Contact', [
+            if (p.phoneNumber != null && p.phoneNumber!.isNotEmpty)
+              _buildInfoRow('Phone', p.phoneNumber!),
+            if (p.email != null && p.email!.isNotEmpty)
+              _buildInfoRow('Email', p.email!),
+            if (p.website != null && p.website!.isNotEmpty)
+              _buildInfoRow('Website', p.website!),
+          ]),
+          const SizedBox(height: 16),
+          if (p.fullAddress.isNotEmpty)
+            _buildInfoCard('Address', [
+              _buildInfoRow('Address', p.fullAddress),
+            ]),
+          if (p.fullAddress.isNotEmpty) const SizedBox(height: 16),
+          _buildInfoCard('Business Details', [
+            if (p.industry != null && p.industry!.isNotEmpty)
+              _buildInfoRow('Industry', p.industry!),
+            if (p.currency != null && p.currency!.isNotEmpty)
+              _buildInfoRow('Currency', p.currency!),
+            if (p.taxId != null && p.taxId!.isNotEmpty)
+              _buildInfoRow('Tax ID', p.taxId!),
+            if (p.registrationNumber != null &&
+                p.registrationNumber!.isNotEmpty)
+              _buildInfoRow('Registration', p.registrationNumber!),
+          ]),
+          const SizedBox(height: 16),
+          if (p.ownerName != null && p.ownerName!.isNotEmpty)
+            _buildInfoCard('Owner', [
+              _buildInfoRow('Name', p.ownerName!),
+              if (p.ownerPhone != null && p.ownerPhone!.isNotEmpty)
+                _buildInfoRow('Phone', p.ownerPhone!),
+              if (p.ownerEmail != null && p.ownerEmail!.isNotEmpty)
+                _buildInfoRow('Email', p.ownerEmail!),
+            ]),
+          if (p.ownerName != null && p.ownerName!.isNotEmpty)
+            const SizedBox(height: 16),
+          _buildInfoCard('Status', [
+            _buildInfoRow('Active', p.isActive ? 'Yes' : 'No'),
+            _buildInfoRow(
+              'Created',
+              p.createdAt.toLocal().toString().split(' ').first,
+            ),
+            _buildInfoRow(
+              'Updated',
+              p.updatedAt.toLocal().toString().split(' ').first,
+            ),
+          ]),
+          const SizedBox(height: 32),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context)
+                  .push(
+                    MaterialPageRoute(
+                      builder: (context) => ProfileUpdateScreen(),
+                    ),
+                  )
+                  .then((_) => _loadProfileData());
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: GlassmorphismTheme.primaryColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+            ),
+            child: const Text(
+              'Edit Profile',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileHeader() {
+    final p = _profile!;
+    return GlassmorphismTheme.glassmorphismContainer(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        children: [
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [
+                  GlassmorphismTheme.primaryColor,
+                  GlassmorphismTheme.secondaryColor,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(40),
+            ),
+            child: const Icon(Icons.business, color: Colors.white, size: 40),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            p.displayName,
+            style: const TextStyle(
+              color: GlassmorphismTheme.textColor,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            p.businessType.toUpperCase(),
+            style: const TextStyle(
+              color: GlassmorphismTheme.textSecondaryColor,
+              fontSize: 14,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoCard(String title, List<Widget> children) {
+    if (children.isEmpty) return const SizedBox.shrink();
+    return GlassmorphismTheme.glassmorphismContainer(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: GlassmorphismTheme.textColor,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 110,
+            child: Text(
+              '$label:',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: GlassmorphismTheme.textSecondaryColor,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 14,
+                color: GlassmorphismTheme.textColor,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -87,176 +336,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
     );
-  }
-
-  Widget _buildProfileContent() {
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          _buildProfileHeader(),
-          const SizedBox(height: 24),
-          _buildBusinessInfo(),
-          const SizedBox(height: 24),
-          _buildContactInfo(),
-          const SizedBox(height: 24),
-          _buildPreferences(),
-          const SizedBox(height: 24),
-          _buildAccountActions(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProfileHeader() {
-    return GlassmorphismTheme.glassmorphismContainer(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [
-                  GlassmorphismTheme.primaryColor,
-                  GlassmorphismTheme.secondaryColor,
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(40),
-            ),
-            child: const Icon(Icons.business, color: Colors.white, size: 40),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            _businessNameController.text,
-            style: const TextStyle(
-              color: GlassmorphismTheme.textColor,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Business Owner',
-            style: const TextStyle(
-              color: GlassmorphismTheme.textSecondaryColor,
-              fontSize: 14,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBusinessInfo() {
-    return _buildSection('Business Information', [
-      _buildTextField(
-        controller: _businessNameController,
-        label: 'Business Name',
-        icon: Icons.business,
-      ),
-      const SizedBox(height: 16),
-      _buildTextField(
-        controller: _ownerNameController,
-        label: 'Owner Name',
-        icon: Icons.person,
-      ),
-    ]);
-  }
-
-  Widget _buildContactInfo() {
-    return _buildSection('Contact Information', [
-      _buildTextField(
-        controller: _emailController,
-        label: 'Email',
-        icon: Icons.email,
-        keyboardType: TextInputType.emailAddress,
-      ),
-      const SizedBox(height: 16),
-      _buildTextField(
-        controller: _phoneController,
-        label: 'Phone',
-        icon: Icons.phone,
-        keyboardType: TextInputType.phone,
-      ),
-      const SizedBox(height: 16),
-      _buildTextField(
-        controller: _addressController,
-        label: 'Address',
-        icon: Icons.location_on,
-        maxLines: 3,
-      ),
-    ]);
-  }
-
-  Widget _buildPreferences() {
-    return _buildSection('Preferences', [
-      _buildSwitchTile(
-        'Dark Mode',
-        'Use dark theme',
-        Icons.dark_mode,
-        true,
-        (value) {},
-      ),
-      _buildSwitchTile(
-        'Notifications',
-        'Receive business alerts',
-        Icons.notifications,
-        true,
-        (value) {},
-      ),
-      _buildSwitchTile(
-        'Auto Backup',
-        'Automatically backup data',
-        Icons.backup,
-        false,
-        (value) {},
-      ),
-    ]);
-  }
-
-  Widget _buildAccountActions() {
-    return _buildSection('Account', [
-      _buildActionTile(
-        'Business Profile',
-        'View and edit your business profile',
-        Icons.business,
-        () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => const ProfileUpdateScreen(),
-            ),
-          );
-        },
-      ),
-      _buildActionTile(
-        'Export Data',
-        'Download your business data',
-        Icons.download,
-        () {},
-      ),
-      _buildActionTile(
-        'Import Data',
-        'Restore from backup',
-        Icons.upload,
-        () {},
-      ),
-      _buildActionTile(
-        'Change Password',
-        'Update your account password',
-        Icons.lock,
-        () {},
-      ),
-      _buildActionTile(
-        'Delete Account',
-        'Permanently delete your account',
-        Icons.delete_forever,
-        _showDeleteAccountDialog,
-        isDestructive: true,
-      ),
-    ]);
   }
 
   Widget _buildSection(String title, List<Widget> children) {

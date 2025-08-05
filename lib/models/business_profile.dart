@@ -8,66 +8,68 @@ class BusinessProfile {
 
   // Basic Information
   late String businessName;
-  late String businessType; // 'retail', 'wholesale', 'service', 'manufacturing', etc.
-  late String? businessDescription;
-  
+  late String
+  businessType; // 'retail', 'wholesale', 'service', 'manufacturing', etc.
+  String? businessDescription;
+
   // Contact Information
-  late String? phoneNumber;
-  late String? email;
-  late String? website;
-  
+  String? phoneNumber;
+  String? email;
+  String? website;
+
   // Address Information
-  late String? address;
-  late String? city;
-  late String? state;
-  late String? country;
-  late String? postalCode;
-  
+  String? address;
+  String? city;
+  String? state;
+  String? country;
+  String? postalCode;
+
   // Business Details
-  late String? taxId;
-  late String? registrationNumber;
-  late String? industry;
-  late String? currency; // Default currency for transactions
-  
+  String? taxId;
+  String? registrationNumber;
+  String? industry;
+  String? currency; // Default currency for transactions
+
   // Owner Information
-  late String? ownerName;
-  late String? ownerPhone;
-  late String? ownerEmail;
-  
+  String? ownerName;
+  String? ownerPhone;
+  String? ownerEmail;
+
   // Business Settings
   late bool isActive;
-  late String? logoPath; // Path to stored logo image
-  late String? bannerPath; // Path to stored banner image
-  
+  String? logoPath; // Path to stored logo image
+  String? bannerPath; // Path to stored banner image
+
   // Timestamps
   @Index()
   late DateTime createdAt;
-  
+
   @Index()
   late DateTime updatedAt;
-  
+
   // Helper method to check if profile is complete
   bool get isProfileComplete {
-    return businessName.isNotEmpty && 
-           businessType.isNotEmpty && 
-           phoneNumber != null && 
-           phoneNumber!.isNotEmpty;
+    return businessName.isNotEmpty &&
+        businessType.isNotEmpty &&
+        phoneNumber != null &&
+        phoneNumber!.isNotEmpty;
   }
-  
+
   // Helper method to get full address
   String get fullAddress {
     List<String> addressParts = [];
     if (address != null && address!.isNotEmpty) addressParts.add(address!);
     if (city != null && city!.isNotEmpty) addressParts.add(city!);
     if (state != null && state!.isNotEmpty) addressParts.add(state!);
-    if (postalCode != null && postalCode!.isNotEmpty) addressParts.add(postalCode!);
+    if (postalCode != null && postalCode!.isNotEmpty)
+      addressParts.add(postalCode!);
     if (country != null && country!.isNotEmpty) addressParts.add(country!);
-    
+
     return addressParts.join(', ');
   }
-  
+
   // Helper method to get display name
   String get displayName {
     return businessName.isNotEmpty ? businessName : 'Unnamed Business';
   }
-} 
+}

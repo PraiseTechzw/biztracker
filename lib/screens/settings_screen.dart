@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../utils/glassmorphism_theme.dart';
 import '../services/database_service.dart';
+import 'notifications_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -61,6 +62,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 fontWeight: FontWeight.bold,
               ),
             ),
+          ),
+          IconButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const NotificationsScreen(),
+                ),
+              );
+            },
+            icon: const Icon(
+              Icons.notifications,
+              color: GlassmorphismTheme.primaryColor,
+            ),
+            tooltip: 'Notifications',
           ),
         ],
       ),

@@ -43,6 +43,7 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
   String _selectedCurrency = 'USD';
   bool _isLoading = false;
   bool _isActive = true;
+  bool _showMoreDetails = false;
 
   final List<String> _businessTypes = [
     'retail',
@@ -238,6 +239,20 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
     }
   }
 
+  void _skipProfile() {
+    Navigator.of(context).pushAndRemoveUntil(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            const MainNavigationScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+        transitionDuration: const Duration(milliseconds: 500),
+      ),
+      (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -269,14 +284,24 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Basic Information Section
-                      _buildSectionHeader('Basic Information', Icons.business),
+                      // Friendly intro
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: Text(
+                          'Let’s get started! Just tell us your business name and type. You can add more details later.',
+                          style: TextStyle(
+                            color: GlassmorphismTheme.textSecondaryColor,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                      // Basic Information Section (Required)
+                      _buildSectionHeader('Basic Info', Icons.business),
                       const SizedBox(height: 16),
-
                       _buildTextField(
                         controller: _businessNameController,
                         label: 'Business Name',
-                        hint: 'Enter your business name',
+                        hint: 'e.g. Sarah’s Shop',
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
                             return 'Business name is required';
@@ -284,9 +309,7 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
                           return null;
                         },
                       ),
-
                       const SizedBox(height: 16),
-
                       _buildDropdownField(
                         label: 'Business Type',
                         value: _selectedBusinessType,
@@ -304,277 +327,284 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
                           });
                         },
                       ),
-
                       const SizedBox(height: 16),
-
-                      _buildTextField(
-                        controller: _businessDescriptionController,
-                        label: 'Business Description',
-                        hint: 'Describe your business (optional)',
-                        maxLines: 3,
-                      ),
-
-                      const SizedBox(height: 32),
-
-                      // Contact Information Section
-                      _buildSectionHeader(
-                        'Contact Information',
-                        Icons.contact_phone,
-                      ),
-                      const SizedBox(height: 16),
-
                       _buildTextField(
                         controller: _phoneController,
-                        label: 'Phone Number',
-                        hint: 'Enter business phone number',
+                        label: 'Phone (optional)',
+                        hint: 'e.g. +1 555 123 4567',
                         keyboardType: TextInputType.phone,
+                        validator: null,
                       ),
-
-                      const SizedBox(height: 16),
-
-                      _buildTextField(
-                        controller: _emailController,
-                        label: 'Email Address',
-                        hint: 'Enter business email',
-                        keyboardType: TextInputType.emailAddress,
-                        validator: (value) {
-                          if (value != null && value.isNotEmpty) {
-                            if (!RegExp(
-                              r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                            ).hasMatch(value)) {
-                              return 'Please enter a valid email address';
-                            }
-                          }
-                          return null;
-                        },
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      _buildTextField(
-                        controller: _websiteController,
-                        label: 'Website',
-                        hint: 'Enter website URL (optional)',
-                        keyboardType: TextInputType.url,
-                      ),
-
-                      const SizedBox(height: 32),
-
-                      // Address Section
-                      _buildSectionHeader(
-                        'Address Information',
-                        Icons.location_on,
-                      ),
-                      const SizedBox(height: 16),
-
-                      _buildTextField(
-                        controller: _addressController,
-                        label: 'Street Address',
-                        hint: 'Enter street address',
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildTextField(
-                              controller: _cityController,
-                              label: 'City',
-                              hint: 'Enter city',
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: _buildTextField(
-                              controller: _stateController,
-                              label: 'State/Province',
-                              hint: 'Enter state',
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildTextField(
-                              controller: _countryController,
-                              label: 'Country',
-                              hint: 'Enter country',
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: _buildTextField(
-                              controller: _postalCodeController,
-                              label: 'Postal Code',
-                              hint: 'Enter postal code',
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 32),
-
-                      // Business Details Section
-                      _buildSectionHeader(
-                        'Business Details',
-                        Icons.receipt_long,
-                      ),
-                      const SizedBox(height: 16),
-
-                      _buildTextField(
-                        controller: _taxIdController,
-                        label: 'Tax ID',
-                        hint: 'Enter tax identification number (optional)',
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      _buildTextField(
-                        controller: _registrationNumberController,
-                        label: 'Registration Number',
-                        hint: 'Enter business registration number (optional)',
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      _buildTextField(
-                        controller: _industryController,
-                        label: 'Industry',
-                        hint: 'Enter your industry (optional)',
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      _buildDropdownField(
-                        label: 'Default Currency',
-                        value: _selectedCurrency,
-                        items: _currencies
-                            .map(
-                              (currency) => DropdownMenuItem(
-                                value: currency,
-                                child: Text(currency),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (value) {
+                      const SizedBox(height: 24),
+                      // More Details (Optional)
+                      GestureDetector(
+                        onTap: () {
                           setState(() {
-                            _selectedCurrency = value!;
+                            _showMoreDetails = !_showMoreDetails;
                           });
                         },
-                      ),
-
-                      const SizedBox(height: 32),
-
-                      // Owner Information Section
-                      _buildSectionHeader('Owner Information', Icons.person),
-                      const SizedBox(height: 16),
-
-                      _buildTextField(
-                        controller: _ownerNameController,
-                        label: 'Owner Name',
-                        hint: 'Enter owner name (optional)',
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      _buildTextField(
-                        controller: _ownerPhoneController,
-                        label: 'Owner Phone',
-                        hint: 'Enter owner phone (optional)',
-                        keyboardType: TextInputType.phone,
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      _buildTextField(
-                        controller: _ownerEmailController,
-                        label: 'Owner Email',
-                        hint: 'Enter owner email (optional)',
-                        keyboardType: TextInputType.emailAddress,
-                      ),
-
-                      const SizedBox(height: 32),
-
-                      // Settings Section
-                      _buildSectionHeader('Settings', Icons.settings),
-                      const SizedBox(height: 16),
-
-                      GlassmorphismTheme.glassmorphismContainer(
-                        padding: const EdgeInsets.all(16),
                         child: Row(
                           children: [
-                            const Icon(
-                              Icons.check_circle,
+                            Icon(
+                              _showMoreDetails
+                                  ? Icons.expand_less
+                                  : Icons.expand_more,
                               color: GlassmorphismTheme.primaryColor,
                             ),
-                            const SizedBox(width: 16),
-                            const Expanded(
-                              child: Text(
-                                'Active Business',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  color: GlassmorphismTheme.textColor,
-                                ),
+                            const SizedBox(width: 8),
+                            Text(
+                              _showMoreDetails
+                                  ? 'Hide More Details'
+                                  : 'Add More Details (Optional)',
+                              style: TextStyle(
+                                color: GlassmorphismTheme.primaryColor,
+                                fontWeight: FontWeight.w600,
                               ),
-                            ),
-                            Switch(
-                              value: _isActive,
-                              onChanged: (value) {
-                                setState(() {
-                                  _isActive = value;
-                                });
-                              },
-                              activeColor: GlassmorphismTheme.primaryColor,
                             ),
                           ],
                         ),
                       ),
-
-                      const SizedBox(height: 100), // Bottom padding
+                      AnimatedCrossFade(
+                        firstChild: const SizedBox.shrink(),
+                        secondChild: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 16),
+                            _buildTextField(
+                              controller: _businessDescriptionController,
+                              label: 'Business Description',
+                              hint: 'Describe your business (optional)',
+                              maxLines: 3,
+                            ),
+                            const SizedBox(height: 16),
+                            _buildTextField(
+                              controller: _emailController,
+                              label: 'Email Address',
+                              hint: 'Enter business email',
+                              keyboardType: TextInputType.emailAddress,
+                              validator: null,
+                            ),
+                            const SizedBox(height: 16),
+                            _buildTextField(
+                              controller: _websiteController,
+                              label: 'Website',
+                              hint: 'Enter website URL (optional)',
+                              keyboardType: TextInputType.url,
+                              validator: null,
+                            ),
+                            const SizedBox(height: 16),
+                            _buildTextField(
+                              controller: _addressController,
+                              label: 'Street Address',
+                              hint: 'Enter street address',
+                              validator: null,
+                            ),
+                            const SizedBox(height: 16),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildTextField(
+                                    controller: _cityController,
+                                    label: 'City',
+                                    hint: 'Enter city',
+                                    validator: null,
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: _buildTextField(
+                                    controller: _stateController,
+                                    label: 'State/Province',
+                                    hint: 'Enter state',
+                                    validator: null,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildTextField(
+                                    controller: _countryController,
+                                    label: 'Country',
+                                    hint: 'Enter country',
+                                    validator: null,
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: _buildTextField(
+                                    controller: _postalCodeController,
+                                    label: 'Postal Code',
+                                    hint: 'Enter postal code',
+                                    validator: null,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            _buildTextField(
+                              controller: _taxIdController,
+                              label: 'Tax ID',
+                              hint:
+                                  'Enter tax identification number (optional)',
+                              validator: null,
+                            ),
+                            const SizedBox(height: 16),
+                            _buildTextField(
+                              controller: _registrationNumberController,
+                              label: 'Registration Number',
+                              hint:
+                                  'Enter business registration number (optional)',
+                              validator: null,
+                            ),
+                            const SizedBox(height: 16),
+                            _buildTextField(
+                              controller: _industryController,
+                              label: 'Industry',
+                              hint: 'Enter your industry (optional)',
+                              validator: null,
+                            ),
+                            const SizedBox(height: 16),
+                            _buildDropdownField(
+                              label: 'Default Currency',
+                              value: _selectedCurrency,
+                              items: _currencies
+                                  .map(
+                                    (currency) => DropdownMenuItem(
+                                      value: currency,
+                                      child: Text(currency),
+                                    ),
+                                  )
+                                  .toList(),
+                              onChanged: (value) {
+                                setState(() {
+                                  _selectedCurrency = value!;
+                                });
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                            _buildTextField(
+                              controller: _ownerNameController,
+                              label: 'Owner Name',
+                              hint: 'Enter owner name (optional)',
+                              validator: null,
+                            ),
+                            const SizedBox(height: 16),
+                            _buildTextField(
+                              controller: _ownerPhoneController,
+                              label: 'Owner Phone',
+                              hint: 'Enter owner phone (optional)',
+                              keyboardType: TextInputType.phone,
+                              validator: null,
+                            ),
+                            const SizedBox(height: 16),
+                            _buildTextField(
+                              controller: _ownerEmailController,
+                              label: 'Owner Email',
+                              hint: 'Enter owner email (optional)',
+                              keyboardType: TextInputType.emailAddress,
+                              validator: null,
+                            ),
+                            const SizedBox(height: 16),
+                            GlassmorphismTheme.glassmorphismContainer(
+                              padding: const EdgeInsets.all(16),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.check_circle,
+                                    color: GlassmorphismTheme.primaryColor,
+                                  ),
+                                  const SizedBox(width: 16),
+                                  const Expanded(
+                                    child: Text(
+                                      'Active Business',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                        color: GlassmorphismTheme.textColor,
+                                      ),
+                                    ),
+                                  ),
+                                  Switch(
+                                    value: _isActive,
+                                    onChanged: (value) {
+                                      setState(() {
+                                        _isActive = value;
+                                      });
+                                    },
+                                    activeColor:
+                                        GlassmorphismTheme.primaryColor,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        crossFadeState: _showMoreDetails
+                            ? CrossFadeState.showSecond
+                            : CrossFadeState.showFirst,
+                        duration: const Duration(milliseconds: 300),
+                      ),
+                      const SizedBox(height: 100),
                     ],
                   ),
                 ),
               ),
-
-              // Save Button
+              // Save & Skip Buttons
               Container(
                 padding: const EdgeInsets.all(16),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _saveProfile,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: GlassmorphismTheme.primaryColor,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: _isLoading ? null : _skipProfile,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: GlassmorphismTheme.primaryColor,
+                          side: const BorderSide(
+                            color: GlassmorphismTheme.primaryColor,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child: const Text('Skip for now'),
                       ),
                     ),
-                    child: _isLoading
-                        ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : Text(
-                            widget.existingProfile != null
-                                ? 'Update Profile'
-                                : 'Create Profile',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                            ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _saveProfile,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: GlassmorphismTheme.primaryColor,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
                           ),
-                  ),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Text(
+                                widget.existingProfile != null
+                                    ? 'Update Profile'
+                                    : 'Save & Continue',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],

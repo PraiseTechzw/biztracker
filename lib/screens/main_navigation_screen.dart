@@ -27,7 +27,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     const SalesScreen(),
     const ExpensesScreen(),
     const ReportsScreen(),
-    const NotificationsScreen(),
     const ProfileScreen(),
   ];
 
@@ -106,10 +105,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               BottomNavigationBarItem(
                 icon: Icon(Icons.analytics),
                 label: 'Reports',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.notifications),
-                label: 'Alerts',
               ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.person),
