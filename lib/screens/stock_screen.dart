@@ -545,7 +545,12 @@ class _StockScreenState extends State<StockScreen> {
             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: EdgeInsets.only(
+              left: 16.0,
+              right: 16.0,
+              top: 16.0,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 16.0,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -579,14 +584,26 @@ class _StockScreenState extends State<StockScreen> {
                         Center(
                           child: GestureDetector(
                             onTap: () async {
-                              final ImagePicker picker = ImagePicker();
-                              final XFile? image = await picker.pickImage(
-                                source: ImageSource.gallery,
-                              );
-                              if (image != null) {
-                                setModalState(() {
-                                  selectedImagePath = image.path;
-                                });
+                              try {
+                                final ImagePicker picker = ImagePicker();
+                                final XFile? image = await picker.pickImage(
+                                  source: ImageSource.gallery,
+                                  maxWidth: 800,
+                                  maxHeight: 800,
+                                  imageQuality: 80,
+                                );
+                                if (image != null) {
+                                  setModalState(() {
+                                    selectedImagePath = image.path;
+                                  });
+                                }
+                              } catch (e) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Error picking image: $e'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
                               }
                             },
                             child: Container(
@@ -609,6 +626,14 @@ class _StockScreenState extends State<StockScreen> {
                                       child: Image.file(
                                         File(selectedImagePath!),
                                         fit: BoxFit.cover,
+                                        errorBuilder:
+                                            (context, error, stackTrace) =>
+                                                const Icon(
+                                                  Icons.add_a_photo,
+                                                  color: GlassmorphismTheme
+                                                      .primaryColor,
+                                                  size: 40,
+                                                ),
                                       ),
                                     )
                                   : const Icon(
@@ -627,6 +652,7 @@ class _StockScreenState extends State<StockScreen> {
                           decoration: const InputDecoration(
                             labelText: 'Item Name',
                             prefixIcon: Icon(Icons.inventory),
+                            border: OutlineInputBorder(),
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
@@ -642,6 +668,7 @@ class _StockScreenState extends State<StockScreen> {
                           decoration: const InputDecoration(
                             labelText: 'Description (Optional)',
                             prefixIcon: Icon(Icons.description),
+                            border: OutlineInputBorder(),
                           ),
                           maxLines: 3,
                         ),
@@ -652,6 +679,7 @@ class _StockScreenState extends State<StockScreen> {
                           decoration: const InputDecoration(
                             labelText: 'Category',
                             prefixIcon: Icon(Icons.category),
+                            border: OutlineInputBorder(),
                           ),
                           items: categories.where((cat) => cat != 'All').map((
                             category,
@@ -663,7 +691,9 @@ class _StockScreenState extends State<StockScreen> {
                           }).toList(),
                           onChanged: (value) {
                             if (value != null) {
-                              categoryController.text = value;
+                              setModalState(() {
+                                categoryController.text = value;
+                              });
                             }
                           },
                         ),
@@ -675,6 +705,7 @@ class _StockScreenState extends State<StockScreen> {
                           decoration: const InputDecoration(
                             labelText: 'Supplier Name (Optional)',
                             prefixIcon: Icon(Icons.business),
+                            border: OutlineInputBorder(),
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -684,6 +715,7 @@ class _StockScreenState extends State<StockScreen> {
                           decoration: const InputDecoration(
                             labelText: 'Supplier Contact (Optional)',
                             prefixIcon: Icon(Icons.phone),
+                            border: OutlineInputBorder(),
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -698,6 +730,7 @@ class _StockScreenState extends State<StockScreen> {
                                 decoration: const InputDecoration(
                                   labelText: 'Quantity',
                                   prefixIcon: Icon(Icons.shopping_cart),
+                                  border: OutlineInputBorder(),
                                 ),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
@@ -718,6 +751,7 @@ class _StockScreenState extends State<StockScreen> {
                                 decoration: const InputDecoration(
                                   labelText: 'Reorder Level',
                                   prefixIcon: Icon(Icons.warning),
+                                  border: OutlineInputBorder(),
                                 ),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
@@ -744,6 +778,7 @@ class _StockScreenState extends State<StockScreen> {
                                   labelText: 'Cost Price',
                                   prefixText: '\$',
                                   prefixIcon: Icon(Icons.price_change),
+                                  border: OutlineInputBorder(),
                                 ),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
@@ -765,6 +800,7 @@ class _StockScreenState extends State<StockScreen> {
                                   labelText: 'Selling Price',
                                   prefixText: '\$',
                                   prefixIcon: Icon(Icons.sell),
+                                  border: OutlineInputBorder(),
                                 ),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
@@ -844,6 +880,7 @@ class _StockScreenState extends State<StockScreen> {
                               ],
                             ),
                           ),
+                        const SizedBox(height: 20),
                       ],
                     ),
                   ),
