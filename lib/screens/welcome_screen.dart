@@ -220,211 +220,233 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         child: SafeArea(
           child: Stack(
             children: [
-              // Background decorative elements
               _buildBackgroundElements(),
-
-              // Main content
+              // Make main content scrollable to avoid overflow
               Padding(
                 padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  children: [
-                    // Version indicator
-                    Align(
-                      alignment: Alignment.topRight,
-                      child: FadeTransition(
-                        opacity: _fadeAnimation,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: Colors.white.withOpacity(0.2),
-                              width: 1,
-                            ),
-                          ),
-                          child: const Text(
-                            'v1.0.0',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: GlassmorphismTheme.textSecondaryColor,
-                              fontWeight: FontWeight.w500,
-                            ),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minHeight: constraints.maxHeight,
+                        ),
+                        child: IntrinsicHeight(
+                          child: Column(
+                            children: [
+                              Align(
+                                alignment: Alignment.topRight,
+                                child: FadeTransition(
+                                  opacity: _fadeAnimation,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: Colors.white.withOpacity(0.2),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: const Text(
+                                      'v1.0.0',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: GlassmorphismTheme
+                                            .textSecondaryColor,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              FadeTransition(
+                                opacity: _fadeAnimation,
+                                child: Column(
+                                  children: [
+                                    AnimatedBuilder(
+                                      animation: _pulseAnimation,
+                                      builder: (context, child) {
+                                        return Transform.scale(
+                                          scale: _pulseAnimation.value,
+                                          child: Container(
+                                            width: 140,
+                                            height: 140,
+                                            decoration: BoxDecoration(
+                                              gradient: GlassmorphismTheme
+                                                  .primaryGradient,
+                                              borderRadius:
+                                                  BorderRadius.circular(35),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: GlassmorphismTheme
+                                                      .primaryColor
+                                                      .withOpacity(0.4),
+                                                  blurRadius: 30,
+                                                  spreadRadius: 5,
+                                                ),
+                                              ],
+                                            ),
+                                            child: const Icon(
+                                              Icons.business,
+                                              size: 70,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                    const SizedBox(height: 24),
+                                    const Text(
+                                      'BizTracker',
+                                      style: TextStyle(
+                                        fontSize: 42,
+                                        fontWeight: FontWeight.bold,
+                                        color: GlassmorphismTheme.textColor,
+                                        letterSpacing: 1.2,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    const Text(
+                                      'Your Business, Simplified',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        color: GlassmorphismTheme
+                                            .textSecondaryColor,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 32),
+                              FadeTransition(
+                                opacity: _fadeAnimation,
+                                child: _buildFeatureHighlight(),
+                              ),
+                              const SizedBox(height: 32),
+                              SlideTransition(
+                                position: _slideAnimation,
+                                child: Column(
+                                  children: [
+                                    _buildActionButton(
+                                      title: 'Create Business Profile',
+                                      subtitle:
+                                          'Set up your business information',
+                                      icon: Icons.add_business,
+                                      gradient:
+                                          GlassmorphismTheme.primaryGradient,
+                                      onTap: () {
+                                        Navigator.of(context).push(
+                                          PageRouteBuilder(
+                                            pageBuilder:
+                                                (
+                                                  context,
+                                                  animation,
+                                                  secondaryAnimation,
+                                                ) =>
+                                                    const BusinessProfileScreen(),
+                                            transitionsBuilder:
+                                                (
+                                                  context,
+                                                  animation,
+                                                  secondaryAnimation,
+                                                  child,
+                                                ) {
+                                                  return SlideTransition(
+                                                    position: Tween<Offset>(
+                                                      begin: const Offset(
+                                                        1.0,
+                                                        0.0,
+                                                      ),
+                                                      end: Offset.zero,
+                                                    ).animate(animation),
+                                                    child: child,
+                                                  );
+                                                },
+                                            transitionDuration: const Duration(
+                                              milliseconds: 300,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                    const SizedBox(height: 16),
+                                    _buildActionButton(
+                                      title: 'Continue with Existing',
+                                      subtitle:
+                                          'Load your saved business profile',
+                                      icon: Icons.business,
+                                      gradient:
+                                          GlassmorphismTheme.accentGradient,
+                                      onTap: _isCheckingProfile
+                                          ? null
+                                          : _checkExistingProfile,
+                                      isLoading: _isCheckingProfile,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Spacer(),
+                              FadeTransition(
+                                opacity: _fadeAnimation,
+                                child: Column(
+                                  children: [
+                                    const SizedBox(height: 16),
+                                    const Text(
+                                      'Track sales, expenses, and profits with ease',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: GlassmorphismTheme
+                                            .textSecondaryColor,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        _buildFeatureDot(
+                                          Icons.analytics,
+                                          'Analytics',
+                                        ),
+                                        const SizedBox(width: 20),
+                                        _buildFeatureDot(
+                                          Icons.inventory,
+                                          'Inventory',
+                                        ),
+                                        const SizedBox(width: 20),
+                                        _buildFeatureDot(
+                                          Icons.trending_up,
+                                          'Reports',
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    const Text(
+                                      '© 2024 BizTracker. All rights reserved.',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: GlassmorphismTheme
+                                            .textSecondaryColor,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
-                    ),
-
-                    const Spacer(),
-
-                    // App Logo and Title
-                    FadeTransition(
-                      opacity: _fadeAnimation,
-                      child: Column(
-                        children: [
-                          AnimatedBuilder(
-                            animation: _pulseAnimation,
-                            builder: (context, child) {
-                              return Transform.scale(
-                                scale: _pulseAnimation.value,
-                                child: Container(
-                                  width: 140,
-                                  height: 140,
-                                  decoration: BoxDecoration(
-                                    gradient:
-                                        GlassmorphismTheme.primaryGradient,
-                                    borderRadius: BorderRadius.circular(35),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: GlassmorphismTheme.primaryColor
-                                            .withOpacity(0.4),
-                                        blurRadius: 30,
-                                        spreadRadius: 5,
-                                      ),
-                                    ],
-                                  ),
-                                  child: const Icon(
-                                    Icons.business,
-                                    size: 70,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                          const SizedBox(height: 24),
-                          const Text(
-                            'BizTracker',
-                            style: TextStyle(
-                              fontSize: 42,
-                              fontWeight: FontWeight.bold,
-                              color: GlassmorphismTheme.textColor,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          const Text(
-                            'Your Business, Simplified',
-                            style: TextStyle(
-                              fontSize: 18,
-                              color: GlassmorphismTheme.textSecondaryColor,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 40),
-
-                    // Feature Highlight
-                    FadeTransition(
-                      opacity: _fadeAnimation,
-                      child: _buildFeatureHighlight(),
-                    ),
-
-                    const SizedBox(height: 50),
-
-                    // Action Buttons
-                    SlideTransition(
-                      position: _slideAnimation,
-                      child: Column(
-                        children: [
-                          _buildActionButton(
-                            title: 'Create Business Profile',
-                            subtitle: 'Set up your business information',
-                            icon: Icons.add_business,
-                            gradient: GlassmorphismTheme.primaryGradient,
-                            onTap: () {
-                              Navigator.of(context).push(
-                                PageRouteBuilder(
-                                  pageBuilder:
-                                      (
-                                        context,
-                                        animation,
-                                        secondaryAnimation,
-                                      ) => const BusinessProfileScreen(),
-                                  transitionsBuilder:
-                                      (
-                                        context,
-                                        animation,
-                                        secondaryAnimation,
-                                        child,
-                                      ) {
-                                        return SlideTransition(
-                                          position: Tween<Offset>(
-                                            begin: const Offset(1.0, 0.0),
-                                            end: Offset.zero,
-                                          ).animate(animation),
-                                          child: child,
-                                        );
-                                      },
-                                  transitionDuration: const Duration(
-                                    milliseconds: 300,
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          _buildActionButton(
-                            title: 'Continue with Existing',
-                            subtitle: 'Load your saved business profile',
-                            icon: Icons.business,
-                            gradient: GlassmorphismTheme.accentGradient,
-                            onTap: _isCheckingProfile
-                                ? null
-                                : _checkExistingProfile,
-                            isLoading: _isCheckingProfile,
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const Spacer(),
-
-                    // Footer
-                    FadeTransition(
-                      opacity: _fadeAnimation,
-                      child: Column(
-                        children: [
-                          const Text(
-                            'Track sales, expenses, and profits with ease',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: GlassmorphismTheme.textSecondaryColor,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              _buildFeatureDot(Icons.analytics, 'Analytics'),
-                              const SizedBox(width: 20),
-                              _buildFeatureDot(Icons.inventory, 'Inventory'),
-                              const SizedBox(width: 20),
-                              _buildFeatureDot(Icons.trending_up, 'Reports'),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          const Text(
-                            '© 2024 BizTracker. All rights reserved.',
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: GlassmorphismTheme.textSecondaryColor,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                    );
+                  },
                 ),
               ),
             ],
@@ -603,27 +625,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 ],
               ),
             ),
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: isLoading
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        color: GlassmorphismTheme.textSecondaryColor,
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : const Icon(
-                      Icons.arrow_forward_ios,
-                      color: GlassmorphismTheme.textSecondaryColor,
-                      size: 16,
-                    ),
-            ),
+            // Removed trailing arrow icon for compactness and to avoid overflow
           ],
         ),
       ),
