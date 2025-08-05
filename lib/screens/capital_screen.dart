@@ -14,6 +14,8 @@ class CapitalScreen extends StatefulWidget {
 class _CapitalScreenState extends State<CapitalScreen> {
   List<Capital> capitals = [];
   bool isLoading = true;
+  bool hasError = false;
+  String errorMessage = '';
   bool isAdding = false;
 
   @override
@@ -25,6 +27,8 @@ class _CapitalScreenState extends State<CapitalScreen> {
   Future<void> _loadCapitals() async {
     setState(() {
       isLoading = true;
+      hasError = false;
+      errorMessage = '';
     });
 
     try {
@@ -36,8 +40,14 @@ class _CapitalScreenState extends State<CapitalScreen> {
     } catch (e) {
       setState(() {
         isLoading = false;
+        hasError = true;
+        errorMessage = 'Failed to load capital data: $e';
       });
     }
+  }
+
+  Future<void> _refreshData() async {
+    await _loadCapitals();
   }
 
   @override
@@ -97,12 +107,21 @@ class _CapitalScreenState extends State<CapitalScreen> {
             ),
           ),
           const SizedBox(width: 16),
-          const Text(
-            'Capital Management',
-            style: TextStyle(
+          const Expanded(
+            child: Text(
+              'Capital Management',
+              style: TextStyle(
+                color: GlassmorphismTheme.textColor,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          IconButton(
+            onPressed: _refreshData,
+            icon: const Icon(
+              Icons.refresh,
               color: GlassmorphismTheme.textColor,
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
             ),
           ),
         ],
@@ -111,6 +130,10 @@ class _CapitalScreenState extends State<CapitalScreen> {
   }
 
   Widget _buildCapitalList() {
+    if (hasError) {
+      return _buildErrorState();
+    }
+
     if (capitals.isEmpty) {
       return Center(
         child: GlassmorphismTheme.glassmorphismContainer(
@@ -147,111 +170,161 @@ class _CapitalScreenState extends State<CapitalScreen> {
       );
     }
 
-    return ListView.builder(
-      itemCount: capitals.length,
-      itemBuilder: (context, index) {
-        final capital = capitals[index];
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 350),
-          curve: Curves.easeOut,
-          child: GlassmorphismTheme.glassmorphismContainer(
-            margin: const EdgeInsets.only(bottom: 14),
-            padding: const EdgeInsets.all(18),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: capital.type == 'initial'
-                        ? GlassmorphismTheme.primaryColor.withOpacity(0.18)
-                        : Colors.green.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12),
+    return RefreshIndicator(
+      onRefresh: _refreshData,
+      color: GlassmorphismTheme.primaryColor,
+      child: ListView.builder(
+        itemCount: capitals.length,
+        itemBuilder: (context, index) {
+          final capital = capitals[index];
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 350),
+            curve: Curves.easeOut,
+            child: GlassmorphismTheme.glassmorphismContainer(
+              margin: const EdgeInsets.only(bottom: 14),
+              padding: const EdgeInsets.all(18),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: capital.type == 'initial'
+                          ? GlassmorphismTheme.primaryColor.withOpacity(0.18)
+                          : Colors.green.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      capital.type == 'initial'
+                          ? Icons.account_balance_wallet
+                          : Icons.add_circle,
+                      color: capital.type == 'initial'
+                          ? GlassmorphismTheme.primaryColor
+                          : Colors.green,
+                      size: 24,
+                    ),
                   ),
-                  child: Icon(
-                    capital.type == 'initial'
-                        ? Icons.account_balance_wallet
-                        : Icons.add_circle,
-                    color: capital.type == 'initial'
-                        ? GlassmorphismTheme.primaryColor
-                        : Colors.green,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        capital.description,
-                        style: const TextStyle(
-                          color: GlassmorphismTheme.textColor,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          capital.description,
+                          style: const TextStyle(
+                            color: GlassmorphismTheme.textColor,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: capital.type == 'initial'
-                                  ? GlassmorphismTheme.primaryColor.withOpacity(
-                                      0.13,
-                                    )
-                                  : Colors.green.withOpacity(0.13),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              capital.type == 'initial'
-                                  ? 'Initial Capital'
-                                  : 'Additional Capital',
-                              style: TextStyle(
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
                                 color: capital.type == 'initial'
                                     ? GlassmorphismTheme.primaryColor
-                                    : Colors.green,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
+                                          .withOpacity(0.13)
+                                    : Colors.green.withOpacity(0.13),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                capital.type == 'initial'
+                                    ? 'Initial Capital'
+                                    : 'Additional Capital',
+                                style: TextStyle(
+                                  color: capital.type == 'initial'
+                                      ? GlassmorphismTheme.primaryColor
+                                      : Colors.green,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 10),
-                          Icon(
-                            Icons.calendar_today,
-                            size: 13,
-                            color: GlassmorphismTheme.textSecondaryColor,
-                          ),
-                          const SizedBox(width: 3),
-                          Text(
-                            DateFormat('MMM dd, yyyy').format(capital.date),
-                            style: const TextStyle(
+                            const SizedBox(width: 10),
+                            Icon(
+                              Icons.calendar_today,
+                              size: 13,
                               color: GlassmorphismTheme.textSecondaryColor,
-                              fontSize: 12,
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
+                            const SizedBox(width: 3),
+                            Text(
+                              DateFormat('MMM dd, yyyy').format(capital.date),
+                              style: const TextStyle(
+                                color: GlassmorphismTheme.textSecondaryColor,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  ' 24${NumberFormat('#,##0.00').format(capital.amount)}',
-                  style: const TextStyle(
-                    color: GlassmorphismTheme.textColor,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                  const SizedBox(width: 10),
+                  Text(
+                    '\$${NumberFormat('#,##0.00').format(capital.amount)}',
+                    style: const TextStyle(
+                      color: GlassmorphismTheme.textColor,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: GlassmorphismTheme.glassmorphismContainer(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              color: Colors.red.withOpacity(0.7),
+              size: 64,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Failed to load data',
+              style: TextStyle(
+                color: GlassmorphismTheme.textColor,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              errorMessage,
+              style: const TextStyle(
+                color: GlassmorphismTheme.textSecondaryColor,
+                fontSize: 14,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _refreshData,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: GlassmorphismTheme.primaryColor,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -321,7 +394,7 @@ class _CapitalScreenState extends State<CapitalScreen> {
                                   keyboardType: TextInputType.number,
                                   decoration: const InputDecoration(
                                     labelText: 'Amount',
-                                    prefixText: ' 24',
+                                    prefixText: '\$',
                                     prefixIcon: Icon(Icons.attach_money),
                                   ),
                                   validator: (value) {
@@ -488,8 +561,8 @@ class _CapitalScreenState extends State<CapitalScreen> {
                                 const SizedBox(width: 10),
                                 Text(
                                   amountController.text.isNotEmpty
-                                      ? ' 24${amountController.text}'
-                                      : ' 240.00',
+                                      ? '\$${amountController.text}'
+                                      : '\$0.00',
                                   style: const TextStyle(
                                     color: GlassmorphismTheme.textColor,
                                     fontWeight: FontWeight.bold,
@@ -512,15 +585,31 @@ class _CapitalScreenState extends State<CapitalScreen> {
                           : () async {
                               if (formKey.currentState!.validate()) {
                                 setModalState(() => localIsLoading = true);
-                                final capital = Capital()
-                                  ..amount = double.parse(amountController.text)
-                                  ..description = descriptionController.text
-                                  ..type = selectedType
-                                  ..date = selectedDate
-                                  ..createdAt = DateTime.now();
-                                await DatabaseService.addCapital(capital);
-                                Navigator.pop(context);
-                                _loadCapitals();
+                                try {
+                                  final capital = Capital()
+                                    ..amount = double.parse(
+                                      amountController.text,
+                                    )
+                                    ..description = descriptionController.text
+                                    ..type = selectedType
+                                    ..date = selectedDate
+                                    ..createdAt = DateTime.now();
+                                  await DatabaseService.addCapital(capital);
+                                  Navigator.pop(context);
+                                  _loadCapitals(); // Refresh the list
+                                } catch (e) {
+                                  // Show error message
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Failed to add capital: $e',
+                                      ),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                } finally {
+                                  setModalState(() => localIsLoading = false);
+                                }
                               }
                             },
                       style: ElevatedButton.styleFrom(
