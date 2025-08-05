@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import '../utils/glassmorphism_theme.dart';
 import '../services/database_service.dart';
-import '../models/business_data.dart';
 import '../models/business_profile.dart';
 import 'notifications_screen.dart';
 
@@ -1063,7 +1062,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           'Privacy Policy',
           style: TextStyle(color: GlassmorphismTheme.textColor),
         ),
-        content:  SingleChildScrollView(
+        content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,

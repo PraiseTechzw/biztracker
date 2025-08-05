@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../utils/glassmorphism_theme.dart';
 import 'business_profile_screen.dart';
-import 'main_navigation_screen.dart';
-import '../services/database_service.dart';
-import '../models/business_profile.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});

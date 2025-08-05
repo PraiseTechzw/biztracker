@@ -601,22 +601,14 @@ class _SalesScreenState extends State<SalesScreen> {
   void _showAddSaleDialog() {
     // Don't show dialog if data is still loading
     if (isLoading) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please wait while data is loading...'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      ToastUtils.showWarningToast('Please wait while data is loading...');
       return;
     }
 
     // Ensure stocks list is properly initialized
     if (stocks.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No products in stock. Please add products first.'),
-          backgroundColor: Colors.red,
-        ),
+      ToastUtils.showErrorToast(
+        'No products in stock. Please add products first.',
       );
       return;
     }
@@ -1678,13 +1670,13 @@ class _SalesScreenState extends State<SalesScreen> {
                                 }
 
                                 Navigator.pop(context);
+                                ToastUtils.showSuccessToast(
+                                  'Sale recorded successfully!',
+                                );
                                 _loadData(); // Refresh both sales and stocks
                               } catch (e) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Error recording sale: $e'),
-                                    backgroundColor: Colors.red,
-                                  ),
+                                ToastUtils.showErrorToast(
+                                  'Error recording sale: $e',
                                 );
                               } finally {
                                 setModalState(() => isSubmitting = false);

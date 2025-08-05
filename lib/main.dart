@@ -4,7 +4,6 @@ import 'services/database_service.dart';
 import 'utils/glassmorphism_theme.dart';
 import 'screens/welcome_screen.dart';
 import 'screens/main_navigation_screen.dart';
-import 'models/business_profile.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
