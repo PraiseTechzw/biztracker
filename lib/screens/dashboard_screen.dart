@@ -116,9 +116,9 @@ class _DashboardScreenState extends State<DashboardScreen>
     _loadDashboardData();
   }
 
-  void _refreshData() {
-    _loadDashboardData();
-    _loadBusinessName();
+  Future<void> _refreshData() async {
+    await _loadDashboardData();
+    await _loadBusinessName();
   }
 
   @override
@@ -133,106 +133,104 @@ class _DashboardScreenState extends State<DashboardScreen>
           ),
         ),
         child: SafeArea(
-          child: CustomScrollView(
-            slivers: [
-              SliverToBoxAdapter(
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  businessName.isNotEmpty
-                                      ? 'Hello, $businessName!'
-                                      : 'Welcome!',
-                                  style: const TextStyle(
-                                    color: GlassmorphismTheme.textColor,
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                const Text(
-                                  'Here\'s your business at a glance',
-                                  style: TextStyle(
-                                    color:
-                                        GlassmorphismTheme.textSecondaryColor,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          _buildNotificationsIcon(
-                            context,
-                            unreadCount: unreadNotifications,
-                          ),
-                          const SizedBox(width: 8),
-                          IconButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const SettingsScreen(),
-                                ),
-                              );
-                            },
-                            icon: const Icon(
-                              Icons.settings,
-                              color: GlassmorphismTheme.textColor,
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: _refreshData,
-                            icon: const Icon(
-                              Icons.refresh,
-                              color: GlassmorphismTheme.textColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      FadeTransition(
-                        opacity: _cardAnim,
-                        child: _buildOverviewCards(),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (isLoading)
-                        const Center(
-                          child: CircularProgressIndicator(
-                            color: GlassmorphismTheme.primaryColor,
-                          ),
-                        )
-                      else if (hasError)
-                        _buildErrorState()
-                      else
-                        Column(
+          child: RefreshIndicator(
+            onRefresh: _refreshData,
+            color: GlassmorphismTheme.primaryColor,
+            child: CustomScrollView(
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
                           children: [
-                            _buildQuickStats(),
-                            const SizedBox(height: 24),
-                            _buildRecentActivity(),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    businessName.isNotEmpty
+                                        ? 'Hello, $businessName!'
+                                        : 'Welcome!',
+                                    style: const TextStyle(
+                                      color: GlassmorphismTheme.textColor,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  const Text(
+                                    'Here\'s your business at a glance',
+                                    style: TextStyle(
+                                      color:
+                                          GlassmorphismTheme.textSecondaryColor,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            _buildNotificationsIcon(
+                              context,
+                              unreadCount: unreadNotifications,
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const SettingsScreen(),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(
+                                Icons.settings,
+                                color: GlassmorphismTheme.textColor,
+                              ),
+                            ),
                           ],
                         ),
-                    ],
+                        const SizedBox(height: 16),
+                        FadeTransition(
+                          opacity: _cardAnim,
+                          child: _buildOverviewCards(),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (isLoading)
+                          const Center(
+                            child: CircularProgressIndicator(
+                              color: GlassmorphismTheme.primaryColor,
+                            ),
+                          )
+                        else if (hasError)
+                          _buildErrorState()
+                        else
+                          Column(
+                            children: [
+                              _buildQuickStats(),
+                              const SizedBox(height: 24),
+                              _buildRecentActivity(),
+                            ],
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
