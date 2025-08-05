@@ -26,6 +26,8 @@ class _DashboardScreenState extends State<DashboardScreen>
   double totalExpenses = 0.0;
   double netProfit = 0.0;
   bool isLoading = true;
+  bool hasError = false;
+  String errorMessage = '';
   int unreadNotifications = 0;
   String businessName = '';
   late AnimationController _cardAnimController;
@@ -35,7 +37,6 @@ class _DashboardScreenState extends State<DashboardScreen>
   void initState() {
     super.initState();
     _loadDashboardData();
-    _loadUnreadNotifications();
     _loadBusinessName();
     _cardAnimController = AnimationController(
       vsync: this,
@@ -57,13 +58,23 @@ class _DashboardScreenState extends State<DashboardScreen>
   Future<void> _loadDashboardData() async {
     setState(() {
       isLoading = true;
+      hasError = false;
+      errorMessage = '';
     });
 
     try {
-      final capital = await DatabaseService.getTotalCapital();
-      final stockValue = await DatabaseService.getTotalStockValue();
-      final sales = await DatabaseService.getTotalSales();
-      final expenses = await DatabaseService.getTotalExpenses();
+      // Load all business data in parallel for better performance
+      final results = await Future.wait([
+        DatabaseService.getTotalCapital(),
+        DatabaseService.getTotalStockValue(),
+        DatabaseService.getTotalSales(),
+        DatabaseService.getTotalExpenses(),
+      ]);
+
+      final capital = results[0] as double;
+      final stockValue = results[1] as double;
+      final sales = results[2] as double;
+      final expenses = results[3] as double;
       final profit = sales - expenses;
 
       setState(() {
@@ -77,73 +88,37 @@ class _DashboardScreenState extends State<DashboardScreen>
     } catch (e) {
       setState(() {
         isLoading = false;
+        hasError = true;
+        errorMessage = 'Failed to load dashboard data: $e';
       });
     }
   }
 
-  Future<void> _loadUnreadNotifications() {
-    // Sample notifications (should be replaced with real data/service)
-    final notifications = [
-      NotificationItem(
-        id: '1',
-        title: 'Low Stock Alert',
-        message: '',
-        timestamp: DateTime.now(),
-        type: NotificationType.warning,
-        isRead: false,
-      ),
-      NotificationItem(
-        id: '2',
-        title: 'High Sales Day',
-        message: '',
-        timestamp: DateTime.now(),
-        type: NotificationType.success,
-        isRead: false,
-      ),
-      NotificationItem(
-        id: '3',
-        title: 'Expense Reminder',
-        message: '',
-        timestamp: DateTime.now(),
-        type: NotificationType.info,
-        isRead: true,
-      ),
-      NotificationItem(
-        id: '4',
-        title: 'Profit Milestone',
-        message: '',
-        timestamp: DateTime.now(),
-        type: NotificationType.success,
-        isRead: false,
-      ),
-      NotificationItem(
-        id: '5',
-        title: 'System Update',
-        message: '',
-        timestamp: DateTime.now(),
-        type: NotificationType.info,
-        isRead: true,
-      ),
-    ];
-    setState(() {
-      unreadNotifications = notifications.where((n) => !n.isRead).length;
-    });
-    return Future.value();
-  }
-
   Future<void> _loadBusinessName() async {
-    final profile = await DatabaseService.getBusinessProfile();
-    setState(() {
-      businessName = profile?.businessName ?? '';
-    });
-    return;
+    try {
+      final profile = await DatabaseService.getBusinessProfile();
+      setState(() {
+        businessName = profile?.businessName ?? '';
+      });
+    } catch (e) {
+      // Don't show error for business name, just use default
+      setState(() {
+        businessName = '';
+      });
+    }
   }
 
   void _openNotificationsScreen() async {
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (context) => const NotificationsScreen()),
     );
-    _loadUnreadNotifications();
+    // Refresh dashboard data when returning from notifications
+    _loadDashboardData();
+  }
+
+  void _refreshData() {
+    _loadDashboardData();
+    _loadBusinessName();
   }
 
   @override
@@ -184,7 +159,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                 ),
                                 const SizedBox(height: 2),
                                 const Text(
-                                  'Here’s your business at a glance',
+                                  'Here\'s your business at a glance',
                                   style: TextStyle(
                                     color:
                                         GlassmorphismTheme.textSecondaryColor,
@@ -213,6 +188,13 @@ class _DashboardScreenState extends State<DashboardScreen>
                               color: GlassmorphismTheme.textColor,
                             ),
                           ),
+                          IconButton(
+                            onPressed: _refreshData,
+                            icon: const Icon(
+                              Icons.refresh,
+                              color: GlassmorphismTheme.textColor,
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 16),
@@ -236,6 +218,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                             color: GlassmorphismTheme.primaryColor,
                           ),
                         )
+                      else if (hasError)
+                        _buildErrorState()
                       else
                         Column(
                           children: [
@@ -338,7 +322,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           ),
           const SizedBox(height: 4),
           Text(
-            ' 24${NumberFormat('#,##0.00').format(value)}',
+            '\$${NumberFormat('#,##0.00').format(value)}',
             style: TextStyle(
               color: color,
               fontSize: 18,
@@ -352,6 +336,10 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Widget _buildQuickStats() {
+    // Calculate real metrics
+    final profitMargin = totalSales > 0 ? (netProfit / totalSales) * 100 : 0.0;
+    final roi = totalCapital > 0 ? (netProfit / totalCapital) * 100 : 0.0;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -369,7 +357,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             Expanded(
               child: _buildStatCard(
                 'Profit Margin',
-                '${((netProfit / (totalSales > 0 ? totalSales : 1)) * 100).toStringAsFixed(1)}%',
+                '${profitMargin.toStringAsFixed(1)}%',
                 Icons.trending_up,
                 netProfit >= 0 ? Colors.green : Colors.red,
               ),
@@ -378,7 +366,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             Expanded(
               child: _buildStatCard(
                 'ROI',
-                '${((netProfit / (totalCapital > 0 ? totalCapital : 1)) * 100).toStringAsFixed(1)}%',
+                '${roi.toStringAsFixed(1)}%',
                 Icons.analytics,
                 GlassmorphismTheme.accentColor,
               ),
@@ -434,7 +422,6 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Widget _buildRecentActivity() {
-    // For now, always show empty state
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -478,6 +465,50 @@ class _DashboardScreenState extends State<DashboardScreen>
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildErrorState() {
+    return GlassmorphismTheme.glassmorphismContainer(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        children: [
+          Icon(
+            Icons.error_outline,
+            color: Colors.red.withOpacity(0.7),
+            size: 48,
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Failed to load data',
+            style: TextStyle(
+              color: GlassmorphismTheme.textColor,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            errorMessage,
+            style: const TextStyle(
+              color: GlassmorphismTheme.textSecondaryColor,
+              fontSize: 14,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: _refreshData,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: GlassmorphismTheme.primaryColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text('Retry'),
+          ),
+        ],
+      ),
     );
   }
 
