@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'services/database_service.dart';
 import 'utils/glassmorphism_theme.dart';
-import 'screens/main_navigation_screen.dart';
+import 'screens/welcome_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,7 +28,7 @@ class BizTrackerApp extends StatelessWidget {
       title: 'BizTracker',
       debugShowCheckedModeBanner: false,
       theme: GlassmorphismTheme.darkTheme,
-      home: const MainNavigationScreen(),
+      home: const WelcomeScreen(),
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/business_data.dart';
+import '../models/business_profile.dart';
 
 class DatabaseService {
   static late Isar isar;
@@ -13,6 +14,7 @@ class DatabaseService {
       SaleSchema,
       ExpenseSchema,
       ProfitSchema,
+      BusinessProfileSchema,
     ], directory: dir.path);
   }
 
@@ -140,5 +142,34 @@ class DatabaseService {
 
   static Future<List<Profit>> getAllProfits() async {
     return await isar.profits.where().sortByCreatedAtDesc().findAll();
+  }
+
+  // Business Profile operations
+  static Future<void> saveBusinessProfile(BusinessProfile profile) async {
+    await isar.writeTxn(() async {
+      await isar.businessProfiles.put(profile);
+    });
+  }
+
+  static Future<BusinessProfile?> getBusinessProfile() async {
+    final profiles = await isar.businessProfiles.where().findAll();
+    return profiles.isNotEmpty ? profiles.first : null;
+  }
+
+  static Future<void> updateBusinessProfile(BusinessProfile profile) async {
+    await isar.writeTxn(() async {
+      await isar.businessProfiles.put(profile);
+    });
+  }
+
+  static Future<void> deleteBusinessProfile(int id) async {
+    await isar.writeTxn(() async {
+      await isar.businessProfiles.delete(id);
+    });
+  }
+
+  static Future<bool> hasBusinessProfile() async {
+    final profiles = await isar.businessProfiles.where().findAll();
+    return profiles.isNotEmpty;
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../utils/glassmorphism_theme.dart';
 import '../utils/formatters.dart';
+import 'profile_update_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -218,6 +219,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildAccountActions() {
     return _buildSection('Account', [
+      _buildActionTile(
+        'Business Profile',
+        'View and edit your business profile',
+        Icons.business,
+        () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => const ProfileUpdateScreen(),
+            ),
+          );
+        },
+      ),
       _buildActionTile(
         'Export Data',
         'Download your business data',
