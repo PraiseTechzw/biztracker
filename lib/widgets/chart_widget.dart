@@ -1,17 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
 import '../utils/glassmorphism_theme.dart';
 
 class ChartWidget extends StatelessWidget {
   final String title;
-  final List<ChartData> data;
   final ChartType type;
+  final Map<String, double> data;
+  final List<Color> colors;
   final double height;
 
   const ChartWidget({
     super.key,
     required this.title,
+    required this.type,
     required this.data,
-    this.type = ChartType.bar,
+    this.colors = const [
+      GlassmorphismTheme.primaryColor,
+      Colors.green,
+      Colors.orange,
+      Colors.red,
+      Colors.purple,
+      Colors.blue,
+    ],
     this.height = 200,
   });
 
@@ -27,7 +37,7 @@ class ChartWidget extends StatelessWidget {
             style: const TextStyle(
               color: GlassmorphismTheme.textColor,
               fontSize: 16,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 16),
@@ -39,175 +49,252 @@ class ChartWidget extends StatelessWidget {
 
   Widget _buildChart() {
     switch (type) {
+      case ChartType.pie:
+        return _buildPieChart();
       case ChartType.bar:
         return _buildBarChart();
       case ChartType.line:
         return _buildLineChart();
-      case ChartType.pie:
-        return _buildPieChart();
+      case ChartType.doughnut:
+        return _buildDoughnutChart();
     }
   }
 
-  Widget _buildBarChart() {
-    if (data.isEmpty) return _buildEmptyState();
+  Widget _buildPieChart() {
+    final entries = data.entries.toList();
 
-    final maxValue = data.map((d) => d.value).reduce((a, b) => a > b ? a : b);
-    final colors = [
-      GlassmorphismTheme.primaryColor,
-      GlassmorphismTheme.secondaryColor,
-      GlassmorphismTheme.accentColor,
-      Colors.green,
-      Colors.orange,
-    ];
+    return PieChart(
+      PieChartData(
+        sections: entries.asMap().entries.map((entry) {
+          final index = entry.key;
+          final dataEntry = entry.value;
+          final total = data.values.reduce((a, b) => a + b);
+          final percentage = total > 0 ? (dataEntry.value / total) * 100 : 0.0;
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: data.asMap().entries.map((entry) {
-        final index = entry.key;
-        final item = entry.value;
-        final height = maxValue > 0
-            ? (item.value / maxValue) * (this.height - 60.0)
-            : 0.0;
-        final color = colors[index % colors.length];
-
-        return Expanded(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Container(
-                width: 30,
-                height: height,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                    colors: [color, color.withOpacity(0.7)],
-                  ),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                item.label,
-                style: const TextStyle(
-                  color: GlassmorphismTheme.textSecondaryColor,
-                  fontSize: 10,
-                ),
-                textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildLineChart() {
-    if (data.isEmpty) return _buildEmptyState();
-
-    final maxValue = data.map((d) => d.value).reduce((a, b) => a > b ? a : b);
-    final width = 300.0;
-    final height = this.height - 40;
-
-    return CustomPaint(
-      size: Size(width, height),
-      painter: LineChartPainter(
-        data: data,
-        maxValue: maxValue,
-        color: GlassmorphismTheme.primaryColor,
+          return PieChartSectionData(
+            color: colors[index % colors.length],
+            value: dataEntry.value,
+            title: '${percentage.toStringAsFixed(1)}%',
+            radius: 60,
+            titleStyle: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          );
+        }).toList(),
+        centerSpaceRadius: 40,
+        sectionsSpace: 2,
       ),
     );
   }
 
-  Widget _buildPieChart() {
-    if (data.isEmpty) return _buildEmptyState();
+  Widget _buildDoughnutChart() {
+    final entries = data.entries.toList();
 
-    final total = data.map((d) => d.value).reduce((a, b) => a + b);
-    final colors = [
-      GlassmorphismTheme.primaryColor,
-      GlassmorphismTheme.secondaryColor,
-      GlassmorphismTheme.accentColor,
-      Colors.green,
-      Colors.orange,
-    ];
+    return PieChart(
+      PieChartData(
+        sections: entries.asMap().entries.map((entry) {
+          final index = entry.key;
+          final dataEntry = entry.value;
+          final total = data.values.reduce((a, b) => a + b);
+          final percentage = total > 0 ? (dataEntry.value / total) * 100 : 0.0;
 
-    return Row(
-      children: [
-        Expanded(
-          flex: 2,
-          child: CustomPaint(
-            size: const Size(120, 120),
-            painter: PieChartPainter(data: data, total: total, colors: colors),
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          flex: 3,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: data.asMap().entries.map((entry) {
-              final index = entry.key;
-              final item = entry.value;
-              final percentage = total > 0 ? (item.value / total) * 100 : 0;
-              final color = colors[index % colors.length];
-
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 12,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        color: color,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        item.label,
-                        style: const TextStyle(
-                          color: GlassmorphismTheme.textColor,
-                          fontSize: 12,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    Text(
-                      '${percentage.toStringAsFixed(1)}%',
-                      style: const TextStyle(
-                        color: GlassmorphismTheme.textSecondaryColor,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-      ],
+          return PieChartSectionData(
+            color: colors[index % colors.length],
+            value: dataEntry.value,
+            title: '${percentage.toStringAsFixed(1)}%',
+            radius: 50,
+            titleStyle: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          );
+        }).toList(),
+        centerSpaceRadius: 60,
+        sectionsSpace: 2,
+      ),
     );
   }
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.bar_chart,
-            color: GlassmorphismTheme.textSecondaryColor.withOpacity(0.5),
-            size: 48,
+  Widget _buildBarChart() {
+    final entries = data.entries.toList();
+
+    return BarChart(
+      BarChartData(
+        alignment: BarChartAlignment.spaceAround,
+        maxY: data.values.isNotEmpty
+            ? data.values.reduce((a, b) => a > b ? a : b) * 1.2
+            : 100,
+        barTouchData: BarTouchData(enabled: false),
+        titlesData: FlTitlesData(
+          show: true,
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'No data available',
-            style: TextStyle(
-              color: GlassmorphismTheme.textSecondaryColor.withOpacity(0.7),
-              fontSize: 14,
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              getTitlesWidget: (value, meta) {
+                if (value.toInt() >= 0 && value.toInt() < entries.length) {
+                  final label = entries[value.toInt()].key;
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Text(
+                      label.length > 8 ? '${label.substring(0, 8)}...' : label,
+                      style: const TextStyle(
+                        color: GlassmorphismTheme.textSecondaryColor,
+                        fontSize: 10,
+                      ),
+                    ),
+                  );
+                }
+                return const Text('');
+              },
+            ),
+          ),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 40,
+              getTitlesWidget: (value, meta) {
+                return Text(
+                  '\$${value.toInt()}',
+                  style: const TextStyle(
+                    color: GlassmorphismTheme.textSecondaryColor,
+                    fontSize: 10,
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+        borderData: FlBorderData(show: false),
+        barGroups: entries.asMap().entries.map((entry) {
+          final index = entry.key;
+          final dataEntry = entry.value;
+
+          return BarChartGroupData(
+            x: index,
+            barRods: [
+              BarChartRodData(
+                toY: dataEntry.value,
+                color: colors[index % colors.length],
+                width: 20,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(4),
+                  topRight: Radius.circular(4),
+                ),
+              ),
+            ],
+          );
+        }).toList(),
+        gridData: const FlGridData(show: false),
+      ),
+    );
+  }
+
+  Widget _buildLineChart() {
+    final entries = data.entries.toList();
+
+    return LineChart(
+      LineChartData(
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: true,
+          horizontalInterval: 1,
+          verticalInterval: 1,
+          getDrawingHorizontalLine: (value) {
+            return FlLine(color: Colors.white.withOpacity(0.1), strokeWidth: 1);
+          },
+          getDrawingVerticalLine: (value) {
+            return FlLine(color: Colors.white.withOpacity(0.1), strokeWidth: 1);
+          },
+        ),
+        titlesData: FlTitlesData(
+          show: true,
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 30,
+              interval: 1,
+              getTitlesWidget: (value, meta) {
+                if (value.toInt() >= 0 && value.toInt() < entries.length) {
+                  final label = entries[value.toInt()].key;
+                  return Text(
+                    label.length > 6 ? '${label.substring(0, 6)}...' : label,
+                    style: const TextStyle(
+                      color: GlassmorphismTheme.textSecondaryColor,
+                      fontSize: 10,
+                    ),
+                  );
+                }
+                return const Text('');
+              },
+            ),
+          ),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              interval: 1,
+              getTitlesWidget: (value, meta) {
+                return Text(
+                  '\$${value.toInt()}',
+                  style: const TextStyle(
+                    color: GlassmorphismTheme.textSecondaryColor,
+                    fontSize: 10,
+                  ),
+                );
+              },
+              reservedSize: 42,
+            ),
+          ),
+        ),
+        borderData: FlBorderData(
+          show: true,
+          border: Border.all(color: Colors.white.withOpacity(0.2)),
+        ),
+        minX: 0,
+        maxX: (entries.length - 1).toDouble(),
+        minY: 0,
+        maxY: data.values.isNotEmpty
+            ? data.values.reduce((a, b) => a > b ? a : b) * 1.2
+            : 100,
+        lineBarsData: [
+          LineChartBarData(
+            spots: entries.asMap().entries.map((entry) {
+              final index = entry.key;
+              final dataEntry = entry.value.value;
+              return FlSpot(index.toDouble(), dataEntry);
+            }).toList(),
+            isCurved: true,
+            gradient: LinearGradient(
+              colors: [
+                GlassmorphismTheme.primaryColor.withOpacity(0.8),
+                GlassmorphismTheme.primaryColor.withOpacity(0.3),
+              ],
+            ),
+            barWidth: 3,
+            isStrokeCapRound: true,
+            dotData: const FlDotData(show: true),
+            belowBarData: BarAreaData(
+              show: true,
+              gradient: LinearGradient(
+                colors: [
+                  GlassmorphismTheme.primaryColor.withOpacity(0.3),
+                  GlassmorphismTheme.primaryColor.withOpacity(0.1),
+                ],
+              ),
             ),
           ),
         ],
@@ -216,106 +303,82 @@ class ChartWidget extends StatelessWidget {
   }
 }
 
-class ChartData {
-  final String label;
+enum ChartType { pie, bar, line, doughnut }
+
+class MiniChartWidget extends StatelessWidget {
+  final String title;
   final double value;
-
-  ChartData({required this.label, required this.value});
-}
-
-enum ChartType { bar, line, pie }
-
-class LineChartPainter extends CustomPainter {
-  final List<ChartData> data;
-  final double maxValue;
+  final double previousValue;
+  final IconData icon;
   final Color color;
 
-  LineChartPainter({
-    required this.data,
-    required this.maxValue,
+  const MiniChartWidget({
+    super.key,
+    required this.title,
+    required this.value,
+    required this.previousValue,
+    required this.icon,
     required this.color,
   });
 
   @override
-  void paint(Canvas canvas, Size size) {
-    if (data.isEmpty) return;
+  Widget build(BuildContext context) {
+    final change = value - previousValue;
+    final changePercent = previousValue > 0
+        ? (change / previousValue) * 100
+        : 0.0;
+    final isPositive = change >= 0;
 
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke;
-
-    final path = Path();
-    final points = <Offset>[];
-
-    for (int i = 0; i < data.length; i++) {
-      final x = (i / (data.length - 1)) * size.width;
-      final y = size.height - (data[i].value / maxValue) * size.height;
-      points.add(Offset(x, y));
-    }
-
-    if (points.isNotEmpty) {
-      path.moveTo(points.first.dx, points.first.dy);
-      for (int i = 1; i < points.length; i++) {
-        path.lineTo(points[i].dx, points[i].dy);
-      }
-    }
-
-    canvas.drawPath(path, paint);
-
-    // Draw points
-    final pointPaint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-
-    for (final point in points) {
-      canvas.drawCircle(point, 4, pointPaint);
-    }
+    return GlassmorphismTheme.glassmorphismContainer(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: color, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: GlassmorphismTheme.textSecondaryColor,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '\$${value.toStringAsFixed(2)}',
+            style: const TextStyle(
+              color: GlassmorphismTheme.textColor,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Icon(
+                isPositive ? Icons.trending_up : Icons.trending_down,
+                color: isPositive ? Colors.green : Colors.red,
+                size: 16,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                '${changePercent.abs().toStringAsFixed(1)}%',
+                style: TextStyle(
+                  color: isPositive ? Colors.green : Colors.red,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
-}
-
-class PieChartPainter extends CustomPainter {
-  final List<ChartData> data;
-  final double total;
-  final List<Color> colors;
-
-  PieChartPainter({
-    required this.data,
-    required this.total,
-    required this.colors,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (data.isEmpty || total == 0) return;
-
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2;
-    double startAngle = 0;
-
-    for (int i = 0; i < data.length; i++) {
-      final sweepAngle = (data[i].value / total) * 2 * 3.14159;
-      final color = colors[i % colors.length];
-
-      final paint = Paint()
-        ..color = color
-        ..style = PaintingStyle.fill;
-
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        startAngle,
-        sweepAngle,
-        true,
-        paint,
-      );
-
-      startAngle += sweepAngle;
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }

@@ -232,4 +232,111 @@ class DatabaseService {
     final profiles = await isar.businessProfiles.where().findAll();
     return profiles.isNotEmpty;
   }
+
+  // Enhanced reporting methods
+  static Future<List<Sale>> getSalesByDateRange(
+    DateTime startDate,
+    DateTime endDate,
+  ) async {
+    return await isar.sales
+        .filter()
+        .saleDateBetween(startDate, endDate)
+        .sortBySaleDateDesc()
+        .findAll();
+  }
+
+  static Future<List<Expense>> getExpensesByDateRange(
+    DateTime startDate,
+    DateTime endDate,
+  ) async {
+    return await isar.expenses
+        .filter()
+        .expenseDateBetween(startDate, endDate)
+        .sortByExpenseDateDesc()
+        .findAll();
+  }
+
+  static Future<Map<String, double>> getExpensesByCategory(
+    DateTime startDate,
+    DateTime endDate,
+  ) async {
+    final expenses = await getExpensesByDateRange(startDate, endDate);
+    final categoryMap = <String, double>{};
+
+    for (final expense in expenses) {
+      categoryMap[expense.category] =
+          (categoryMap[expense.category] ?? 0.0) + expense.amount;
+    }
+
+    return categoryMap;
+  }
+
+  static Future<Map<String, int>> getSalesByPaymentMethod(
+    DateTime startDate,
+    DateTime endDate,
+  ) async {
+    final sales = await getSalesByDateRange(startDate, endDate);
+    final methodMap = <String, int>{};
+
+    for (final sale in sales) {
+      methodMap[sale.paymentMethod] = (methodMap[sale.paymentMethod] ?? 0) + 1;
+    }
+
+    return methodMap;
+  }
+
+  static Future<Map<String, double>> getSalesByProduct(
+    DateTime startDate,
+    DateTime endDate,
+  ) async {
+    final sales = await getSalesByDateRange(startDate, endDate);
+    final productMap = <String, double>{};
+
+    for (final sale in sales) {
+      productMap[sale.productName] =
+          (productMap[sale.productName] ?? 0.0) + sale.totalAmount;
+    }
+
+    return productMap;
+  }
+
+  static Future<double> getTotalOutstandingCredit() async {
+    final sales = await getAllSales();
+    return sales
+        .where((sale) => sale.paymentStatus == 'credit')
+        .fold<double>(
+          0.0,
+          (sum, sale) => sum + (sale.totalAmount - sale.amountPaid),
+        );
+  }
+
+  static Future<int> getTotalCustomers() async {
+    final sales = await getAllSales();
+    final customers = sales.map((sale) => sale.customerName).toSet();
+    return customers.length;
+  }
+
+  static Future<Map<String, dynamic>> getBusinessMetrics() async {
+    final totalSales = await getTotalSales();
+    final totalExpenses = await getTotalExpenses();
+    final totalCapital = await getTotalCapital();
+    final totalStockValue = await getTotalStockValue();
+    final totalOutstandingCredit = await getTotalOutstandingCredit();
+    final totalCustomers = await getTotalCustomers();
+    final lowStockCount = await getLowStockCount();
+
+    return {
+      'totalSales': totalSales,
+      'totalExpenses': totalExpenses,
+      'totalCapital': totalCapital,
+      'totalStockValue': totalStockValue,
+      'totalOutstandingCredit': totalOutstandingCredit,
+      'totalCustomers': totalCustomers,
+      'lowStockCount': lowStockCount,
+      'netProfit': totalSales - totalExpenses,
+      'profitMargin': totalSales > 0
+          ? ((totalSales - totalExpenses) / totalSales) * 100
+          : 0.0,
+    };
+  }
 }
