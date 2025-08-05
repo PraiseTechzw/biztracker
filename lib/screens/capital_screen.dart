@@ -11,20 +11,36 @@ class CapitalScreen extends StatefulWidget {
   State<CapitalScreen> createState() => _CapitalScreenState();
 }
 
-class _CapitalScreenState extends State<CapitalScreen> {
+class _CapitalScreenState extends State<CapitalScreen>
+    with SingleTickerProviderStateMixin {
   List<Capital> capitals = [];
+  List<Expense> expenses = [];
   bool isLoading = true;
   bool hasError = false;
   String errorMessage = '';
   bool isAdding = false;
+  late TabController _tabController;
+  int _selectedTabIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    _loadCapitals();
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() {
+      setState(() {
+        _selectedTabIndex = _tabController.index;
+      });
+    });
+    _loadData();
   }
 
-  Future<void> _loadCapitals() async {
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadData() async {
     setState(() {
       isLoading = true;
       hasError = false;
@@ -32,22 +48,24 @@ class _CapitalScreenState extends State<CapitalScreen> {
     });
 
     try {
-      final data = await DatabaseService.getAllCapitals();
+      final capitalData = await DatabaseService.getAllCapitals();
+      final expenseData = await DatabaseService.getAllExpenses();
       setState(() {
-        capitals = data;
+        capitals = capitalData;
+        expenses = expenseData;
         isLoading = false;
       });
     } catch (e) {
       setState(() {
         isLoading = false;
         hasError = true;
-        errorMessage = 'Failed to load capital data: $e';
+        errorMessage = 'Failed to load data: $e';
       });
     }
   }
 
   Future<void> _refreshData() async {
-    await _loadCapitals();
+    await _loadData();
   }
 
   @override
@@ -66,15 +84,32 @@ class _CapitalScreenState extends State<CapitalScreen> {
             children: [
               _buildAppBar(),
               Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: isLoading
-                      ? const Center(
-                          child: CircularProgressIndicator(
-                            color: GlassmorphismTheme.primaryColor,
-                          ),
-                        )
-                      : _buildCapitalList(),
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    // Capital Tab
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: isLoading
+                          ? const Center(
+                              child: CircularProgressIndicator(
+                                color: GlassmorphismTheme.primaryColor,
+                              ),
+                            )
+                          : _buildCapitalList(),
+                    ),
+                    // Expenses Tab
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: isLoading
+                          ? const Center(
+                              child: CircularProgressIndicator(
+                                color: GlassmorphismTheme.primaryColor,
+                              ),
+                            )
+                          : _buildExpensesList(),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -82,9 +117,14 @@ class _CapitalScreenState extends State<CapitalScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _showAddCapitalDialog,
+        onPressed: _selectedTabIndex == 0
+            ? _showAddCapitalDialog
+            : _showAddExpenseDialog,
         backgroundColor: GlassmorphismTheme.primaryColor,
-        child: const Icon(Icons.add, color: Colors.white),
+        child: Icon(
+          _selectedTabIndex == 0 ? Icons.add : Icons.receipt_long,
+          color: Colors.white,
+        ),
       ),
     );
   }
@@ -92,29 +132,65 @@ class _CapitalScreenState extends State<CapitalScreen> {
   Widget _buildAppBar() {
     return Container(
       padding: const EdgeInsets.all(16),
-      child: Row(
+      child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: GlassmorphismTheme.primaryColor.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: const Icon(
-              Icons.account_balance_wallet,
-              color: GlassmorphismTheme.primaryColor,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 16),
-          const Expanded(
-            child: Text(
-              'Capital Management',
-              style: TextStyle(
-                color: GlassmorphismTheme.textColor,
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: GlassmorphismTheme.primaryColor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Icon(
+                  _selectedTabIndex == 0
+                      ? Icons.account_balance_wallet
+                      : Icons.receipt_long,
+                  color: GlassmorphismTheme.primaryColor,
+                  size: 24,
+                ),
               ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  _selectedTabIndex == 0
+                      ? 'Capital Management'
+                      : 'Expense Management',
+                  style: const TextStyle(
+                    color: GlassmorphismTheme.textColor,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Container(
+            decoration: BoxDecoration(
+              color: GlassmorphismTheme.surfaceColor.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(25),
+            ),
+            child: TabBar(
+              controller: _tabController,
+              indicator: BoxDecoration(
+                color: GlassmorphismTheme.primaryColor,
+                borderRadius: BorderRadius.circular(25),
+              ),
+              labelColor: Colors.white,
+              unselectedLabelColor: GlassmorphismTheme.textSecondaryColor,
+              labelStyle: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+              unselectedLabelStyle: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+              tabs: const [
+                Tab(text: 'Capital'),
+                Tab(text: 'Expenses'),
+              ],
             ),
           ),
         ],
@@ -601,7 +677,7 @@ class _CapitalScreenState extends State<CapitalScreen> {
                                     ..createdAt = DateTime.now();
                                   await DatabaseService.addCapital(capital);
                                   Navigator.pop(context);
-                                  _loadCapitals(); // Refresh the list
+                                  _loadData(); // Refresh the list
                                 } catch (e) {
                                   // Show error message
                                   ScaffoldMessenger.of(context).showSnackBar(
