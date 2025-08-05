@@ -1,16 +1,21 @@
 import '../models/business_data.dart';
 
 class SearchFilterUtils {
-  // Search stocks by name or description
+  // Search stocks by name, description, category, or supplier
   static List<Stock> searchStocks(List<Stock> stocks, String query) {
     if (query.isEmpty) return stocks;
 
     return stocks.where((stock) {
       final name = stock.name.toLowerCase();
       final description = stock.description.toLowerCase();
+      final category = stock.category.toLowerCase();
+      final supplierName = stock.supplierName?.toLowerCase() ?? '';
       final searchQuery = query.toLowerCase();
 
-      return name.contains(searchQuery) || description.contains(searchQuery);
+      return name.contains(searchQuery) ||
+          description.contains(searchQuery) ||
+          category.contains(searchQuery) ||
+          supplierName.contains(searchQuery);
     }).toList();
   }
 
@@ -42,15 +47,44 @@ class SearchFilterUtils {
     }).toList();
   }
 
-  // Filter stocks by price range
-  static List<Stock> filterStocksByPrice(
+  // Filter stocks by cost price range
+  static List<Stock> filterStocksByCostPrice(
     List<Stock> stocks,
     double minPrice,
     double maxPrice,
   ) {
     return stocks.where((stock) {
-      return stock.unitPrice >= minPrice && stock.unitPrice <= maxPrice;
+      return stock.unitCostPrice >= minPrice && stock.unitCostPrice <= maxPrice;
     }).toList();
+  }
+
+  // Filter stocks by selling price range
+  static List<Stock> filterStocksBySellingPrice(
+    List<Stock> stocks,
+    double minPrice,
+    double maxPrice,
+  ) {
+    return stocks.where((stock) {
+      return stock.unitSellingPrice >= minPrice &&
+          stock.unitSellingPrice <= maxPrice;
+    }).toList();
+  }
+
+  // Filter stocks by category
+  static List<Stock> filterStocksByCategory(
+    List<Stock> stocks,
+    String category,
+  ) {
+    if (category.isEmpty || category == 'All') return stocks;
+
+    return stocks.where((stock) => stock.category == category).toList();
+  }
+
+  // Filter stocks by low stock (quantity <= reorder level)
+  static List<Stock> filterLowStockItems(List<Stock> stocks) {
+    return stocks
+        .where((stock) => stock.quantity <= stock.reorderLevel)
+        .toList();
   }
 
   // Filter sales by date range
@@ -98,6 +132,13 @@ class SearchFilterUtils {
     return ['All', ...categories];
   }
 
+  // Get unique stock categories
+  static List<String> getStockCategories(List<Stock> stocks) {
+    final categories = stocks.map((s) => s.category).toSet().toList();
+    categories.sort();
+    return ['All', ...categories];
+  }
+
   // Sort stocks by various criteria
   static List<Stock> sortStocks(List<Stock> stocks, String sortBy) {
     final sortedStocks = List<Stock>.from(stocks);
@@ -109,11 +150,27 @@ class SearchFilterUtils {
       case 'name_desc':
         sortedStocks.sort((a, b) => b.name.compareTo(a.name));
         break;
-      case 'price':
-        sortedStocks.sort((a, b) => a.unitPrice.compareTo(b.unitPrice));
+      case 'cost_price':
+        sortedStocks.sort((a, b) => a.unitCostPrice.compareTo(b.unitCostPrice));
         break;
-      case 'price_desc':
-        sortedStocks.sort((a, b) => b.unitPrice.compareTo(a.unitPrice));
+      case 'cost_price_desc':
+        sortedStocks.sort((a, b) => b.unitCostPrice.compareTo(a.unitCostPrice));
+        break;
+      case 'selling_price':
+        sortedStocks.sort(
+          (a, b) => a.unitSellingPrice.compareTo(b.unitSellingPrice),
+        );
+        break;
+      case 'selling_price_desc':
+        sortedStocks.sort(
+          (a, b) => b.unitSellingPrice.compareTo(a.unitSellingPrice),
+        );
+        break;
+      case 'category':
+        sortedStocks.sort((a, b) => a.category.compareTo(b.category));
+        break;
+      case 'category_desc':
+        sortedStocks.sort((a, b) => b.category.compareTo(a.category));
         break;
       case 'quantity':
         sortedStocks.sort((a, b) => a.quantity.compareTo(b.quantity));
