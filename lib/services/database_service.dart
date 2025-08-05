@@ -66,6 +66,66 @@ class DatabaseService {
     return stocks.fold<double>(0.0, (sum, stock) => sum + stock.totalValue);
   }
 
+  // Enhanced Stock operations
+  static Future<List<Stock>> getStocksByCategory(String category) async {
+    return await isar.stocks.filter().categoryEqualTo(category).findAll();
+  }
+
+  static Future<List<Stock>> getLowStockItems() async {
+    final stocks = await getAllStocks();
+    return stocks
+        .where((stock) => stock.quantity <= stock.reorderLevel)
+        .toList();
+  }
+
+  static Future<int> getLowStockCount() async {
+    final lowStockItems = await getLowStockItems();
+    return lowStockItems.length;
+  }
+
+  static Future<double> getTotalStockCost() async {
+    final stocks = await getAllStocks();
+    return stocks.fold<double>(
+      0.0,
+      (sum, stock) => sum + (stock.quantity * stock.unitCostPrice),
+    );
+  }
+
+  static Future<double> getTotalStockSellingValue() async {
+    final stocks = await getAllStocks();
+    return stocks.fold<double>(
+      0.0,
+      (sum, stock) => sum + (stock.quantity * stock.unitSellingPrice),
+    );
+  }
+
+  static Future<List<String>> getStockCategories() async {
+    final stocks = await getAllStocks();
+    final categories = stocks.map((stock) => stock.category).toSet().toList();
+    categories.sort();
+    return categories;
+  }
+
+  static Future<Map<String, dynamic>> getStockStatistics() async {
+    final stocks = await getAllStocks();
+    final totalItems = stocks.length;
+    final totalValue = stocks.fold<double>(
+      0.0,
+      (sum, stock) => sum + stock.totalValue,
+    );
+    final lowStockCount = stocks
+        .where((stock) => stock.quantity <= stock.reorderLevel)
+        .length;
+    final categories = stocks.map((stock) => stock.category).toSet().length;
+
+    return {
+      'totalItems': totalItems,
+      'totalValue': totalValue,
+      'lowStockCount': lowStockCount,
+      'categories': categories,
+    };
+  }
+
   // Sale operations
   static Future<void> addSale(Sale sale) async {
     await isar.writeTxn(() async {
