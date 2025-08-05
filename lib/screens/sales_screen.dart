@@ -47,7 +47,10 @@ class _SalesScreenState extends State<SalesScreen> {
       for (var sale in salesData) {
         salesTotal += sale.totalAmount;
         paidTotal += sale.amountPaid;
-        creditTotal += (sale.totalAmount - sale.amountPaid);
+        final remainingAmount = sale.totalAmount - sale.amountPaid;
+        if (remainingAmount > 0) {
+          creditTotal += remainingAmount;
+        }
 
         // Find corresponding stock to calculate profit
         final stock = stocksData.firstWhere(
@@ -60,6 +63,12 @@ class _SalesScreenState extends State<SalesScreen> {
         final profitPerUnit = sale.unitPrice - costPrice;
         profitTotal += profitPerUnit * sale.quantity;
       }
+
+      // Ensure no NaN values
+      if (salesTotal.isNaN) salesTotal = 0.0;
+      if (profitTotal.isNaN) profitTotal = 0.0;
+      if (paidTotal.isNaN) paidTotal = 0.0;
+      if (creditTotal.isNaN) creditTotal = 0.0;
 
       setState(() {
         sales = salesData;
@@ -189,7 +198,7 @@ class _SalesScreenState extends State<SalesScreen> {
             Expanded(
               child: _buildSummaryCard(
                 'Total Sales',
-                '\$${NumberFormat('#,##0.00').format(totalSales)}',
+                '\$${NumberFormat('#,##0.00').format(totalSales.isNaN ? 0.0 : totalSales)}',
                 Icons.trending_up,
                 Colors.green,
               ),
@@ -198,9 +207,11 @@ class _SalesScreenState extends State<SalesScreen> {
             Expanded(
               child: _buildSummaryCard(
                 'Total Profit',
-                '\$${NumberFormat('#,##0.00').format(totalProfit)}',
+                '\$${NumberFormat('#,##0.00').format(totalProfit.isNaN ? 0.0 : totalProfit)}',
                 Icons.attach_money,
-                totalProfit >= 0 ? Colors.green : Colors.red,
+                (totalProfit.isNaN ? 0.0 : totalProfit) >= 0
+                    ? Colors.green
+                    : Colors.red,
               ),
             ),
             const SizedBox(width: 12),
@@ -220,7 +231,7 @@ class _SalesScreenState extends State<SalesScreen> {
             Expanded(
               child: _buildSummaryCard(
                 'Amount Paid',
-                '\$${NumberFormat('#,##0.00').format(totalPaid)}',
+                '\$${NumberFormat('#,##0.00').format(totalPaid.isNaN ? 0.0 : totalPaid)}',
                 Icons.check_circle,
                 Colors.green,
               ),
@@ -229,7 +240,7 @@ class _SalesScreenState extends State<SalesScreen> {
             Expanded(
               child: _buildSummaryCard(
                 'Credit Amount',
-                '\$${NumberFormat('#,##0.00').format(totalCredit)}',
+                '\$${NumberFormat('#,##0.00').format(totalCredit.isNaN ? 0.0 : totalCredit)}',
                 Icons.credit_card,
                 Colors.orange,
               ),
@@ -398,7 +409,7 @@ class _SalesScreenState extends State<SalesScreen> {
     final costPrice = stock.unitCostPrice;
     final profitPerUnit = sale.unitPrice - costPrice;
     final totalProfit = profitPerUnit * sale.quantity;
-    final profitMargin = sale.unitPrice > 0
+    final profitMargin = sale.unitPrice > 0 && !sale.unitPrice.isNaN
         ? (profitPerUnit / sale.unitPrice) * 100
         : 0;
     final remainingAmount = sale.totalAmount - sale.amountPaid;
@@ -489,7 +500,7 @@ class _SalesScreenState extends State<SalesScreen> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    '\$${NumberFormat('#,##0.00').format(sale.totalAmount)}',
+                    '\$${NumberFormat('#,##0.00').format(sale.totalAmount.isNaN ? 0.0 : sale.totalAmount)}',
                     style: const TextStyle(
                       color: GlassmorphismTheme.textColor,
                       fontSize: 18,
@@ -497,16 +508,18 @@ class _SalesScreenState extends State<SalesScreen> {
                     ),
                   ),
                   Text(
-                    'Profit: \$${NumberFormat('#,##0.00').format(totalProfit)}',
+                    'Profit: \$${NumberFormat('#,##0.00').format(totalProfit.isNaN ? 0.0 : totalProfit)}',
                     style: TextStyle(
-                      color: totalProfit >= 0 ? Colors.green : Colors.red,
+                      color: (totalProfit.isNaN ? 0.0 : totalProfit) >= 0
+                          ? Colors.green
+                          : Colors.red,
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                   if (remainingAmount > 0)
                     Text(
-                      'Remaining: \$${NumberFormat('#,##0.00').format(remainingAmount)}',
+                      'Remaining: \$${NumberFormat('#,##0.00').format(remainingAmount.isNaN ? 0.0 : remainingAmount)}',
                       style: TextStyle(
                         color: isOverdue ? Colors.red : Colors.orange,
                         fontSize: 11,
@@ -524,13 +537,13 @@ class _SalesScreenState extends State<SalesScreen> {
               Expanded(
                 child: _buildSaleInfo(
                   'Unit Price',
-                  '\$${NumberFormat('#,##0.00').format(sale.unitPrice)}',
+                  '\$${NumberFormat('#,##0.00').format(sale.unitPrice.isNaN ? 0.0 : sale.unitPrice)}',
                 ),
               ),
               Expanded(
                 child: _buildSaleInfo(
                   'Profit Margin',
-                  '${profitMargin.toStringAsFixed(1)}%',
+                  '${profitMargin.isNaN ? 0.0 : profitMargin.toStringAsFixed(1)}%',
                 ),
               ),
             ],
@@ -547,7 +560,7 @@ class _SalesScreenState extends State<SalesScreen> {
               Expanded(
                 child: _buildSaleInfo(
                   'Amount Paid',
-                  '\$${NumberFormat('#,##0.00').format(sale.amountPaid)}',
+                  '\$${NumberFormat('#,##0.00').format(sale.amountPaid.isNaN ? 0.0 : sale.amountPaid)}',
                 ),
               ),
               if (sale.dueDate != null)
@@ -567,6 +580,28 @@ class _SalesScreenState extends State<SalesScreen> {
                 color: GlassmorphismTheme.textSecondaryColor,
                 fontSize: 12,
               ),
+            ),
+          ],
+          if (remainingAmount > 0) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => _showPaymentDialog(sale),
+                    icon: const Icon(Icons.payment, size: 16),
+                    label: const Text('Record Payment'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: GlassmorphismTheme.primaryColor,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ],
@@ -1720,7 +1755,11 @@ class _SalesScreenState extends State<SalesScreen> {
     try {
       final qty = double.parse(quantity);
       final price = double.parse(unitPrice);
-      return NumberFormat('#,##0.00').format(qty * price);
+      final result = qty * price;
+      if (result.isNaN || result.isInfinite) {
+        return '0.00';
+      }
+      return NumberFormat('#,##0.00').format(result);
     } catch (e) {
       return '0.00';
     }
@@ -1731,6 +1770,9 @@ class _SalesScreenState extends State<SalesScreen> {
       final cost = double.parse(costPrice);
       final selling = double.parse(sellingPrice);
       final profit = selling - cost;
+      if (profit.isNaN || profit.isInfinite) {
+        return '0.00';
+      }
       return NumberFormat('#,##0.00').format(profit);
     } catch (e) {
       return '0.00';
@@ -1748,6 +1790,9 @@ class _SalesScreenState extends State<SalesScreen> {
       final qty = double.parse(quantity);
       final profitPerUnit = selling - cost;
       final totalProfit = profitPerUnit * qty;
+      if (totalProfit.isNaN || totalProfit.isInfinite) {
+        return '0.00';
+      }
       return NumberFormat('#,##0.00').format(totalProfit);
     } catch (e) {
       return '0.00';
@@ -1819,9 +1864,223 @@ class _SalesScreenState extends State<SalesScreen> {
       );
       final paid = double.parse(amountPaid.isEmpty ? '0' : amountPaid);
       final remaining = total - paid;
+      if (remaining.isNaN || remaining.isInfinite) {
+        return '0.00';
+      }
       return NumberFormat('#,##0.00').format(remaining > 0 ? remaining : 0);
     } catch (e) {
       return '0.00';
     }
+  }
+
+  void _showPaymentDialog(Sale sale) {
+    final paymentController = TextEditingController();
+    final remainingAmount = sale.totalAmount - sale.amountPaid;
+    bool isSubmitting = false;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: GlassmorphismTheme.surfaceColor,
+          title: const Text(
+            'Record Payment',
+            style: TextStyle(color: GlassmorphismTheme.textColor),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Sale: ${sale.productName}',
+                style: const TextStyle(
+                  color: GlassmorphismTheme.textColor,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Customer: ${sale.customerName.isNotEmpty ? sale.customerName : 'Walk-in Customer'}',
+                style: const TextStyle(
+                  color: GlassmorphismTheme.textSecondaryColor,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Total Amount:',
+                      style: const TextStyle(
+                        color: GlassmorphismTheme.textColor,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    '\$${NumberFormat('#,##0.00').format(sale.totalAmount)}',
+                    style: const TextStyle(
+                      color: GlassmorphismTheme.textColor,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Amount Paid:',
+                      style: const TextStyle(
+                        color: GlassmorphismTheme.textColor,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    '\$${NumberFormat('#,##0.00').format(sale.amountPaid)}',
+                    style: const TextStyle(
+                      color: Colors.green,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Remaining:',
+                      style: const TextStyle(
+                        color: GlassmorphismTheme.textColor,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    '\$${NumberFormat('#,##0.00').format(remainingAmount)}',
+                    style: const TextStyle(
+                      color: Colors.orange,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: paymentController,
+                keyboardType: TextInputType.number,
+                style: const TextStyle(color: GlassmorphismTheme.textColor),
+                decoration: InputDecoration(
+                  labelText: 'Payment Amount',
+                  labelStyle: const TextStyle(
+                    color: GlassmorphismTheme.textColor,
+                  ),
+                  prefixText: '\$',
+                  prefixStyle: const TextStyle(
+                    color: GlassmorphismTheme.textColor,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: Colors.white.withOpacity(0.3),
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: Colors.white.withOpacity(0.3),
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: GlassmorphismTheme.primaryColor,
+                      width: 2,
+                    ),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white.withOpacity(0.1),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter payment amount';
+                  }
+                  if (double.tryParse(value) == null) {
+                    return 'Please enter a valid number';
+                  }
+                  final payment = double.parse(value);
+                  if (payment <= 0) {
+                    return 'Payment amount must be greater than 0';
+                  }
+                  if (payment > remainingAmount) {
+                    return 'Payment cannot exceed remaining amount';
+                  }
+                  return null;
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: isSubmitting
+                  ? null
+                  : () async {
+                      if (paymentController.text.isNotEmpty) {
+                        setDialogState(() => isSubmitting = true);
+                        try {
+                          final paymentAmount = double.parse(
+                            paymentController.text,
+                          );
+                          final newAmountPaid = sale.amountPaid + paymentAmount;
+
+                          // Update the sale with new payment
+                          sale.amountPaid = newAmountPaid;
+                          sale.lastPaymentDate = DateTime.now();
+
+                          // Update payment status based on remaining amount
+                          final newRemaining = sale.totalAmount - newAmountPaid;
+                          if (newRemaining <= 0) {
+                            sale.paymentStatus = 'paid';
+                          } else if (newAmountPaid > 0) {
+                            sale.paymentStatus = 'partial';
+                          }
+
+                          await DatabaseService.updateSale(sale);
+
+                          Navigator.pop(context);
+                          ToastUtils.showSuccessToast(
+                            'Payment recorded successfully!',
+                          );
+                          _loadData(); // Refresh data
+                        } catch (e) {
+                          ToastUtils.showErrorToast(
+                            'Error recording payment: $e',
+                          );
+                        } finally {
+                          setDialogState(() => isSubmitting = false);
+                        }
+                      }
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: GlassmorphismTheme.primaryColor,
+              ),
+              child: isSubmitting
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : const Text('Record Payment'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

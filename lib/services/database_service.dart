@@ -133,8 +133,29 @@ class DatabaseService {
     });
   }
 
+  static Future<void> updateSale(Sale sale) async {
+    await isar.writeTxn(() async {
+      await isar.sales.put(sale);
+    });
+  }
+
   static Future<List<Sale>> getAllSales() async {
     return await isar.sales.where().sortBySaleDateDesc().findAll();
+  }
+
+  static Future<List<Sale>> getSalesByCustomer(String customerName) async {
+    return await isar.sales
+        .filter()
+        .customerNameEqualTo(customerName)
+        .sortBySaleDateDesc()
+        .findAll();
+  }
+
+  static Future<List<Sale>> getCreditSales() async {
+    final allSales = await getAllSales();
+    return allSales
+        .where((sale) => sale.totalAmount > sale.amountPaid)
+        .toList();
   }
 
   static Future<double> getTotalSales() async {
