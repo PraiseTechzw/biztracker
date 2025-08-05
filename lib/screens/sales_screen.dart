@@ -39,6 +39,10 @@ class _SalesScreenState extends State<SalesScreen> {
     }
   }
 
+  Future<void> _refreshSales() async {
+    await _loadSales();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -115,7 +119,7 @@ class _SalesScreenState extends State<SalesScreen> {
               ),
               SizedBox(height: 8),
               Text(
-                'Record your first sale to get started',
+                'Add your first sale to get started',
                 style: TextStyle(
                   color: GlassmorphismTheme.textSecondaryColor,
                   fontSize: 14,
@@ -128,44 +132,46 @@ class _SalesScreenState extends State<SalesScreen> {
       );
     }
 
-    return ListView.builder(
-      itemCount: sales.length,
-      itemBuilder: (context, index) {
-        final sale = sales[index];
-        return GlassmorphismTheme.glassmorphismContainer(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: GlassmorphismTheme.accentColor.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
+    return RefreshIndicator(
+      onRefresh: _refreshSales,
+      color: GlassmorphismTheme.primaryColor,
+      child: ListView.builder(
+        itemCount: sales.length,
+        itemBuilder: (context, index) {
+          final sale = sales[index];
+          return GlassmorphismTheme.glassmorphismContainer(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: GlassmorphismTheme.primaryColor.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.point_of_sale,
+                        color: GlassmorphismTheme.primaryColor,
+                        size: 24,
+                      ),
                     ),
-                    child: const Icon(
-                      Icons.point_of_sale,
-                      color: GlassmorphismTheme.accentColor,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          sale.productName,
-                          style: const TextStyle(
-                            color: GlassmorphismTheme.textColor,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            sale.productName,
+                            style: const TextStyle(
+                              color: GlassmorphismTheme.textColor,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                        ),
-                        if (sale.customerName.isNotEmpty) ...[
                           const SizedBox(height: 4),
                           Text(
                             'Customer: ${sale.customerName}',
@@ -174,54 +180,42 @@ class _SalesScreenState extends State<SalesScreen> {
                               fontSize: 12,
                             ),
                           ),
-                        ],
-                        const SizedBox(height: 4),
-                        Text(
-                          DateFormat('MMM dd, yyyy').format(sale.saleDate),
-                          style: const TextStyle(
-                            color: GlassmorphismTheme.textSecondaryColor,
-                            fontSize: 12,
+                          const SizedBox(height: 4),
+                          Text(
+                            DateFormat('MMM dd, yyyy').format(sale.saleDate),
+                            style: const TextStyle(
+                              color: GlassmorphismTheme.textSecondaryColor,
+                              fontSize: 12,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Text(
-                    '\$${NumberFormat('#,##0.00').format(sale.totalAmount)}',
-                    style: const TextStyle(
-                      color: GlassmorphismTheme.textColor,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildSaleInfo('Quantity', '${sale.quantity}'),
-                  _buildSaleInfo(
-                    'Unit Price',
-                    '\$${NumberFormat('#,##0.00').format(sale.unitPrice)}',
-                  ),
-                  if (sale.notes.isNotEmpty)
-                    Expanded(
-                      child: Text(
-                        'Notes: ${sale.notes}',
-                        style: const TextStyle(
-                          color: GlassmorphismTheme.textSecondaryColor,
-                          fontSize: 12,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+                        ],
                       ),
                     ),
+                    Text(
+                      '\$${NumberFormat('#,##0.00').format(sale.totalAmount)}',
+                      style: const TextStyle(
+                        color: GlassmorphismTheme.textColor,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                if (sale.notes.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    'Notes: ${sale.notes}',
+                    style: const TextStyle(
+                      color: GlassmorphismTheme.textSecondaryColor,
+                      fontSize: 12,
+                    ),
+                  ),
                 ],
-              ),
-            ],
-          ),
-        );
-      },
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 

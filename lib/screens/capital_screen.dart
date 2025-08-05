@@ -117,13 +117,6 @@ class _CapitalScreenState extends State<CapitalScreen> {
               ),
             ),
           ),
-          IconButton(
-            onPressed: _refreshData,
-            icon: const Icon(
-              Icons.refresh,
-              color: GlassmorphismTheme.textColor,
-            ),
-          ),
         ],
       ),
     );

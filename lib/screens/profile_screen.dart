@@ -33,6 +33,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
+  Future<void> _refreshProfile() async {
+    await _loadProfileData();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -49,16 +53,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ? const Center(child: CircularProgressIndicator())
               : _profile == null
               ? _buildNoProfileView()
-              : Column(
-                  children: [
-                    _buildAppBar(),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: _buildProfileContent(),
+              : RefreshIndicator(
+                  onRefresh: _refreshProfile,
+                  color: GlassmorphismTheme.primaryColor,
+                  child: Column(
+                    children: [
+                      _buildAppBar(),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: _buildProfileContent(),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
         ),
       ),

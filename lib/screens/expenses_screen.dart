@@ -39,6 +39,10 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
     }
   }
 
+  Future<void> _refreshExpenses() async {
+    await _loadExpenses();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -128,89 +132,75 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
       );
     }
 
-    return ListView.builder(
-      itemCount: expenses.length,
-      itemBuilder: (context, index) {
-        final expense = expenses[index];
-        return GlassmorphismTheme.glassmorphismContainer(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.receipt_long,
-                      color: Colors.red,
-                      size: 24,
-                    ),
+    return RefreshIndicator(
+      onRefresh: _refreshExpenses,
+      color: GlassmorphismTheme.primaryColor,
+      child: ListView.builder(
+        itemCount: expenses.length,
+        itemBuilder: (context, index) {
+          final expense = expenses[index];
+          return GlassmorphismTheme.glassmorphismContainer(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: GlassmorphismTheme.primaryColor.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          expense.description,
-                          style: const TextStyle(
-                            color: GlassmorphismTheme.textColor,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
+                  child: const Icon(
+                    Icons.receipt_long,
+                    color: GlassmorphismTheme.primaryColor,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        expense.description,
+                        style: const TextStyle(
+                          color: GlassmorphismTheme.textColor,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Category: ${expense.category}',
-                          style: const TextStyle(
-                            color: GlassmorphismTheme.textSecondaryColor,
-                            fontSize: 12,
-                          ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        expense.category,
+                        style: const TextStyle(
+                          color: GlassmorphismTheme.textSecondaryColor,
+                          fontSize: 12,
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          DateFormat(
-                            'MMM dd, yyyy',
-                          ).format(expense.expenseDate),
-                          style: const TextStyle(
-                            color: GlassmorphismTheme.textSecondaryColor,
-                            fontSize: 12,
-                          ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        DateFormat('MMM dd, yyyy').format(expense.expenseDate),
+                        style: const TextStyle(
+                          color: GlassmorphismTheme.textSecondaryColor,
+                          fontSize: 12,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                  Text(
-                    '\$${NumberFormat('#,##0.00').format(expense.amount)}',
-                    style: const TextStyle(
-                      color: Colors.red,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                ),
+                Text(
+                  '\$${NumberFormat('#,##0.00').format(expense.amount)}',
+                  style: const TextStyle(
+                    color: GlassmorphismTheme.textColor,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
                   ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildExpenseInfo('Payment Method', expense.paymentMethod),
-                  _buildExpenseInfo(
-                    'Date',
-                    DateFormat('MMM dd, yyyy').format(expense.expenseDate),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 

@@ -44,6 +44,10 @@ class _StockScreenState extends State<StockScreen> {
     }
   }
 
+  Future<void> _refreshStocks() async {
+    await _loadStocks();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -136,7 +140,7 @@ class _StockScreenState extends State<StockScreen> {
   }
 
   Widget _buildStockList() {
-    if (stocks.isEmpty) {
+    if (filteredStocks.isEmpty) {
       return Center(
         child: GlassmorphismTheme.glassmorphismContainer(
           padding: const EdgeInsets.all(32),
@@ -158,7 +162,7 @@ class _StockScreenState extends State<StockScreen> {
               ),
               SizedBox(height: 8),
               Text(
-                'Add your inventory items to track stock',
+                'Add your first stock item to get started',
                 style: TextStyle(
                   color: GlassmorphismTheme.textSecondaryColor,
                   fontSize: 14,
@@ -171,97 +175,75 @@ class _StockScreenState extends State<StockScreen> {
       );
     }
 
-    return ListView.builder(
-      itemCount: filteredStocks.length,
-      itemBuilder: (context, index) {
-        final stock = filteredStocks[index];
-        return GlassmorphismTheme.glassmorphismContainer(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: GlassmorphismTheme.secondaryColor.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.inventory,
-                      color: GlassmorphismTheme.secondaryColor,
-                      size: 24,
-                    ),
+    return RefreshIndicator(
+      onRefresh: _refreshStocks,
+      color: GlassmorphismTheme.primaryColor,
+      child: ListView.builder(
+        itemCount: filteredStocks.length,
+        itemBuilder: (context, index) {
+          final stock = filteredStocks[index];
+          return GlassmorphismTheme.glassmorphismContainer(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: GlassmorphismTheme.primaryColor.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          stock.name,
-                          style: const TextStyle(
-                            color: GlassmorphismTheme.textColor,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
+                  child: const Icon(
+                    Icons.inventory,
+                    color: GlassmorphismTheme.primaryColor,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        stock.name,
+                        style: const TextStyle(
+                          color: GlassmorphismTheme.textColor,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
                         ),
-                        if (stock.description.isNotEmpty) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            stock.description,
-                            style: const TextStyle(
-                              color: GlassmorphismTheme.textSecondaryColor,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  PopupMenuButton<String>(
-                    icon: const Icon(
-                      Icons.more_vert,
-                      color: GlassmorphismTheme.textColor,
-                    ),
-                    onSelected: (value) {
-                      if (value == 'edit') {
-                        _showEditStockDialog(stock);
-                      } else if (value == 'delete') {
-                        _showDeleteConfirmation(stock);
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      const PopupMenuItem(value: 'edit', child: Text('Edit')),
-                      const PopupMenuItem(
-                        value: 'delete',
-                        child: Text('Delete'),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        stock.description,
+                        style: const TextStyle(
+                          color: GlassmorphismTheme.textSecondaryColor,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Qty: ${stock.quantity} | Price: \$${NumberFormat('#,##0.00').format(stock.unitPrice)}',
+                        style: const TextStyle(
+                          color: GlassmorphismTheme.textSecondaryColor,
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                   ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildStockInfo('Quantity', '${stock.quantity}'),
-                  _buildStockInfo(
-                    'Unit Price',
-                    '\$${NumberFormat('#,##0.00').format(stock.unitPrice)}',
+                ),
+                Text(
+                  '\$${NumberFormat('#,##0.00').format(stock.totalValue)}',
+                  style: const TextStyle(
+                    color: GlassmorphismTheme.textColor,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
                   ),
-                  _buildStockInfo(
-                    'Total Value',
-                    '\$${NumberFormat('#,##0.00').format(stock.totalValue)}',
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 

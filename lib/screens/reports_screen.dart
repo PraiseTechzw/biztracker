@@ -41,6 +41,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
     }
   }
 
+  Future<void> _refreshReports() async {
+    await _loadReports();
+  }
+
   Future<void> _generateProfitReport() async {
     setState(() {
       isLoading = true;
@@ -106,16 +110,20 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   Widget _buildReportsContent() {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildDateRangeSelector(),
-          const SizedBox(height: 24),
-          _buildQuickStats(),
-          const SizedBox(height: 24),
-          _buildProfitReports(),
-        ],
+    return RefreshIndicator(
+      onRefresh: _refreshReports,
+      color: GlassmorphismTheme.primaryColor,
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildDateRangeSelector(),
+            const SizedBox(height: 24),
+            _buildQuickStats(),
+            const SizedBox(height: 24),
+            _buildProfitReports(),
+          ],
+        ),
       ),
     );
   }
