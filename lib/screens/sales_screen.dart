@@ -20,7 +20,7 @@ class _SalesScreenState extends State<SalesScreen> {
   double totalProfit = 0.0;
   double totalPaid = 0.0;
   double totalCredit = 0.0;
-  String selectedPaymentFilter = 'All'; // All, Paid, Credit, Partial
+  String selectedPaymentFilter = 'All';
 
   @override
   void initState() {
@@ -181,13 +181,6 @@ class _SalesScreenState extends State<SalesScreen> {
   }
 
   Widget _buildSalesSummary() {
-    // Calculate stock statistics
-    final totalStockItems = stocks.length;
-    final lowStockItems = stocks
-        .where((stock) => stock.quantity <= stock.reorderLevel)
-        .length;
-    final outOfStockItems = stocks.where((stock) => stock.quantity <= 0).length;
-
     return Column(
       children: [
         Row(
@@ -238,37 +231,6 @@ class _SalesScreenState extends State<SalesScreen> {
                 '\$${NumberFormat('#,##0.00').format(totalCredit)}',
                 Icons.credit_card,
                 Colors.orange,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _buildSummaryCard(
-                'Stock Items',
-                totalStockItems.toString(),
-                Icons.inventory,
-                Colors.blue,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildSummaryCard(
-                'Low Stock',
-                lowStockItems.toString(),
-                Icons.warning,
-                Colors.orange,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildSummaryCard(
-                'Out of Stock',
-                outOfStockItems.toString(),
-                Icons.cancel,
-                Colors.red,
               ),
             ),
           ],
@@ -486,37 +448,14 @@ class _SalesScreenState extends State<SalesScreen> {
                     Row(
                       children: [
                         Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                sale.productName,
-                                style: const TextStyle(
-                                  color: GlassmorphismTheme.textColor,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              if (stock.quantity <= 0)
-                                const Text(
-                                  '❌ Out of Stock',
-                                  style: TextStyle(
-                                    color: Colors.red,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                )
-                              else if (stock.quantity <= stock.reorderLevel)
-                                const Text(
-                                  '⚠️ Low Stock',
-                                  style: TextStyle(
-                                    color: Colors.orange,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                            ],
+                          child: Text(
+                            sale.productName,
+                            style: const TextStyle(
+                              color: GlassmorphismTheme.textColor,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         _buildPaymentStatusChip(
@@ -724,106 +663,113 @@ class _SalesScreenState extends State<SalesScreen> {
                         // Product Selection
                         DropdownButtonFormField<Stock>(
                           decoration: const InputDecoration(
-                            labelText: 'Select Product',
+                            labelText: 'Select Product from Stock',
                             prefixIcon: Icon(Icons.inventory),
                             border: OutlineInputBorder(),
+                            hintText: 'Choose a product to sell...',
                           ),
                           value: selectedStock,
-                          items: stocks.map((stock) {
-                            final isAvailable = _isProductAvailableForSale(
-                              stock,
-                            );
-                            return DropdownMenuItem(
-                              value: isAvailable ? stock : null,
-                              enabled: isAvailable,
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      color: GlassmorphismTheme.primaryColor
-                                          .withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(8),
+                          items:
+                              stocks
+                                  .where((stock) => stock.quantity > 0)
+                                  .isEmpty
+                              ? [
+                                  const DropdownMenuItem<Stock>(
+                                    enabled: false,
+                                    child: Text(
+                                      'No products available in stock',
+                                      style: TextStyle(
+                                        color: Colors.grey,
+                                        fontStyle: FontStyle.italic,
+                                      ),
                                     ),
-                                    child:
-                                        stock.imagePath != null &&
-                                            stock.imagePath!.isNotEmpty
-                                        ? ClipRRect(
+                                  ),
+                                ]
+                              : stocks.where((stock) => stock.quantity > 0).map((
+                                  stock,
+                                ) {
+                                  return DropdownMenuItem(
+                                    value: stock,
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          width: 40,
+                                          height: 40,
+                                          decoration: BoxDecoration(
+                                            color: GlassmorphismTheme
+                                                .primaryColor
+                                                .withOpacity(0.1),
                                             borderRadius: BorderRadius.circular(
                                               8,
                                             ),
-                                            child: Image.file(
-                                              File(stock.imagePath!),
-                                              fit: BoxFit.cover,
-                                              errorBuilder:
-                                                  (
-                                                    context,
-                                                    error,
-                                                    stackTrace,
-                                                  ) => Icon(
-                                                    Icons.inventory,
-                                                    color: GlassmorphismTheme
-                                                        .primaryColor,
-                                                    size: 20,
+                                          ),
+                                          child:
+                                              stock.imagePath != null &&
+                                                  stock.imagePath!.isNotEmpty
+                                              ? ClipRRect(
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                  child: Image.file(
+                                                    File(stock.imagePath!),
+                                                    fit: BoxFit.cover,
+                                                    errorBuilder:
+                                                        (
+                                                          context,
+                                                          error,
+                                                          stackTrace,
+                                                        ) => Icon(
+                                                          Icons.inventory,
+                                                          color:
+                                                              GlassmorphismTheme
+                                                                  .primaryColor,
+                                                          size: 20,
+                                                        ),
                                                   ),
-                                            ),
-                                          )
-                                        : Icon(
-                                            Icons.inventory,
-                                            color:
-                                                GlassmorphismTheme.primaryColor,
-                                            size: 20,
-                                          ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          stock.name,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w600,
+                                                )
+                                              : Icon(
+                                                  Icons.inventory,
+                                                  color: GlassmorphismTheme
+                                                      .primaryColor,
+                                                  size: 20,
+                                                ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(
+                                                stock.name,
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                              Text(
+                                                'Available: ${stock.quantity} | Price: \$${NumberFormat('#,##0.00').format(stock.unitSellingPrice)}',
+                                                style: const TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.grey,
+                                                ),
+                                              ),
+                                              if (stock.quantity <=
+                                                  stock.reorderLevel)
+                                                const Text(
+                                                  '⚠️ Low Stock',
+                                                  style: TextStyle(
+                                                    fontSize: 11,
+                                                    color: Colors.orange,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                            ],
                                           ),
                                         ),
-                                        Text(
-                                          'Stock: ${stock.quantity} | Price: \$${NumberFormat('#,##0.00').format(stock.unitSellingPrice)}',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: isAvailable
-                                                ? Colors.grey
-                                                : Colors.red,
-                                          ),
-                                        ),
-                                        if (!isAvailable)
-                                          const Text(
-                                            '❌ Out of Stock',
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              color: Colors.red,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          )
-                                        else if (stock.quantity <=
-                                            stock.reorderLevel)
-                                          const Text(
-                                            '⚠️ Low Stock',
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              color: Colors.orange,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
                                       ],
                                     ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }).toList(),
+                                  );
+                                }).toList(),
                           onChanged: (Stock? stock) {
                             setModalState(() {
                               selectedStock = stock;
@@ -842,6 +788,18 @@ class _SalesScreenState extends State<SalesScreen> {
                             return null;
                           },
                         ),
+                        if (stocks.where((stock) => stock.quantity > 0).isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Text(
+                              '💡 Add products to stock first to record sales',
+                              style: const TextStyle(
+                                color: Colors.orange,
+                                fontSize: 12,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ),
                         const SizedBox(height: 16),
 
                         TextFormField(
@@ -882,6 +840,9 @@ class _SalesScreenState extends State<SalesScreen> {
                                     return 'Please enter a valid number';
                                   }
                                   final qty = double.parse(value);
+                                  if (qty <= 0) {
+                                    return 'Quantity must be greater than 0';
+                                  }
                                   if (selectedStock != null &&
                                       qty > selectedStock!.quantity) {
                                     return 'Insufficient stock (${selectedStock!.quantity} available)';
@@ -1347,11 +1308,16 @@ class _SalesScreenState extends State<SalesScreen> {
                                         ),
                                       ),
                                       Text(
-                                        _getStockStatusText(selectedStock!),
+                                        selectedStock!.quantity <=
+                                                selectedStock!.reorderLevel
+                                            ? 'Low Stock'
+                                            : 'In Stock',
                                         style: TextStyle(
-                                          color: _getStockStatusColor(
-                                            selectedStock!,
-                                          ),
+                                          color:
+                                              selectedStock!.quantity <=
+                                                  selectedStock!.reorderLevel
+                                              ? Colors.orange
+                                              : Colors.green,
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
@@ -1573,30 +1539,6 @@ class _SalesScreenState extends State<SalesScreen> {
       return NumberFormat('#,##0.00').format(remaining > 0 ? remaining : 0);
     } catch (e) {
       return '0.00';
-    }
-  }
-
-  bool _isProductAvailableForSale(Stock stock) {
-    return stock.quantity > 0;
-  }
-
-  String _getStockStatusText(Stock stock) {
-    if (stock.quantity <= 0) {
-      return 'Out of Stock';
-    } else if (stock.quantity <= stock.reorderLevel) {
-      return 'Low Stock';
-    } else {
-      return 'In Stock';
-    }
-  }
-
-  Color _getStockStatusColor(Stock stock) {
-    if (stock.quantity <= 0) {
-      return Colors.red;
-    } else if (stock.quantity <= stock.reorderLevel) {
-      return Colors.orange;
-    } else {
-      return Colors.green;
     }
   }
 }
