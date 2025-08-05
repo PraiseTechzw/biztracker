@@ -23,9 +23,16 @@ class Stock {
 
   late String name;
   late String description;
+  late String category;
+  late String? supplierName;
+  late String? supplierContact;
+  late String? imagePath; // Path to stored image
+
   late double quantity;
-  late double unitPrice;
-  late double totalValue;
+  late double unitCostPrice; // Cost price per unit
+  late double unitSellingPrice; // Selling price per unit
+  late double totalValue; // Total value based on cost price
+  late double reorderLevel; // Minimum stock level before reordering
 
   @Index()
   late DateTime createdAt;

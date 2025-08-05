@@ -208,6 +208,8 @@ class _CapitalScreenState extends State<CapitalScreen> {
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 2,
                         ),
                         const SizedBox(height: 4),
                         Row(
@@ -263,12 +265,16 @@ class _CapitalScreenState extends State<CapitalScreen> {
                     ),
                   ),
                   const SizedBox(width: 10),
-                  Text(
-                    '\$${NumberFormat('#,##0.00').format(capital.amount)}',
-                    style: const TextStyle(
-                      color: GlassmorphismTheme.textColor,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                  Flexible(
+                    child: Text(
+                      '\$${NumberFormat('#,##0.00').format(capital.amount)}',
+                      style: const TextStyle(
+                        color: GlassmorphismTheme.textColor,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.end,
                     ),
                   ),
                 ],
