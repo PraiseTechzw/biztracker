@@ -1,7 +1,7 @@
 import 'package:biztracker/screens/capital_screen.dart';
-import 'package:biztracker/screens/expenses_screen.dart';
 import 'package:biztracker/screens/sales_screen.dart';
 import 'package:biztracker/screens/stock_screen.dart';
+import 'package:biztracker/screens/reports_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../utils/glassmorphism_theme.dart';
@@ -218,7 +218,6 @@ class _DashboardScreenState extends State<DashboardScreen>
                         else
                           Column(
                             children: [
-                              _buildQuickActions(),
                               const SizedBox(height: 24),
                               _buildQuickStats(),
                               const SizedBox(height: 24),
@@ -232,118 +231,6 @@ class _DashboardScreenState extends State<DashboardScreen>
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildQuickActions() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Quick Actions',
-          style: TextStyle(
-            color: GlassmorphismTheme.textColor,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _buildActionCard(
-                'Add Capital',
-                Icons.account_balance_wallet,
-                Colors.blue,
-                () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const CapitalScreen(),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildActionCard(
-                'Record Expense',
-                Icons.receipt_long,
-                Colors.orange,
-                () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const ExpensesScreen(),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _buildActionCard(
-                'Add Stock',
-                Icons.inventory,
-                Colors.green,
-                () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const StockScreen()),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildActionCard(
-                'Record Sale',
-                Icons.point_of_sale,
-                Colors.purple,
-                () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const SalesScreen()),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActionCard(
-    String title,
-    IconData icon,
-    Color color,
-    VoidCallback onTap,
-  ) {
-    return GestureDetector(
-      onTap: onTap,
-      child: GlassmorphismTheme.glassmorphismContainer(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: color, size: 24),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: const TextStyle(
-                color: GlassmorphismTheme.textColor,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
         ),
       ),
     );
@@ -407,7 +294,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               Colors.orange,
               onTap: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const ExpensesScreen()),
+                MaterialPageRoute(builder: (context) => const CapitalScreen()),
               ),
             ),
           ],
