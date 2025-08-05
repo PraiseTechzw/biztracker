@@ -580,79 +580,114 @@ class _DashboardScreenState extends State<DashboardScreen>
           ),
         ),
         const SizedBox(height: 16),
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: recentActivities.length,
-          itemBuilder: (context, index) {
-            final activity = recentActivities[index];
-            return GlassmorphismTheme.glassmorphismContainer(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: activity.color.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Icon(
-                          activity.icon,
-                          color: activity.color,
-                          size: 24,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              activity.title,
-                              style: const TextStyle(
-                                color: GlassmorphismTheme.textColor,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              activity.subtitle,
-                              style: TextStyle(
-                                color: GlassmorphismTheme.textSecondaryColor,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Text(
-                        DateFormat('MM/dd HH:mm').format(activity.date),
-                        style: TextStyle(
-                          color: GlassmorphismTheme.textSecondaryColor,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '\$${NumberFormat('#,##0.00').format(activity.amount)}',
-                    style: TextStyle(
-                      color: activity.color,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+        recentActivities.isEmpty
+            ? GlassmorphismTheme.glassmorphismContainer(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      color: GlassmorphismTheme.textSecondaryColor,
+                      size: 32,
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 12),
+                    const Text(
+                      'No recent activity yet',
+                      style: TextStyle(
+                        color: GlassmorphismTheme.textSecondaryColor,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Your recent business activity will appear here.',
+                      style: TextStyle(
+                        color: GlassmorphismTheme.textSecondaryColor,
+                        fontSize: 13,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              )
+            : ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: recentActivities.length,
+                itemBuilder: (context, index) {
+                  final activity = recentActivities[index];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: GlassmorphismTheme.glassmorphismContainer(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: activity.color.withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Icon(
+                                  activity.icon,
+                                  color: activity.color,
+                                  size: 24,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      activity.title,
+                                      style: const TextStyle(
+                                        color: GlassmorphismTheme.textColor,
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      activity.subtitle,
+                                      style: TextStyle(
+                                        color: GlassmorphismTheme
+                                            .textSecondaryColor,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Text(
+                                DateFormat('MM/dd HH:mm').format(activity.date),
+                                style: TextStyle(
+                                  color: GlassmorphismTheme.textSecondaryColor,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '\$${NumberFormat('#,##0.00').format(activity.amount)}',
+                            style: TextStyle(
+                              color: activity.color,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
               ),
-            );
-          },
-        ),
       ],
     );
   }
