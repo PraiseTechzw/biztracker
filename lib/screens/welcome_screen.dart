@@ -19,16 +19,13 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   late AnimationController _slideController;
   late AnimationController _pulseController;
   late AnimationController _floatController;
-  late AnimationController _checkController;
 
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
   late Animation<double> _pulseAnimation;
   late Animation<double> _floatAnimation;
-  late Animation<double> _checkAnimation;
 
   int _currentFeatureIndex = 0;
-  bool _isCheckingProfile = false;
   final List<Map<String, dynamic>> _features = [
     {
       'icon': Icons.analytics,
@@ -77,11 +74,6 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       vsync: this,
     );
 
-    _checkController = AnimationController(
-      duration: const Duration(milliseconds: 1000),
-      vsync: this,
-    );
-
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
     );
@@ -97,10 +89,6 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
     _floatAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _floatController, curve: Curves.easeInOut),
-    );
-
-    _checkAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _checkController, curve: Curves.easeInOut),
     );
 
     _startAnimations();
@@ -134,70 +122,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     _slideController.dispose();
     _pulseController.dispose();
     _floatController.dispose();
-    _checkController.dispose();
+
     super.dispose();
-  }
-
-  Future<void> _checkExistingProfile() async {
-    setState(() {
-      _isCheckingProfile = true;
-    });
-
-    _checkController.forward();
-
-    try {
-      final existingProfile = await DatabaseService.getBusinessProfile();
-      if (existingProfile != null) {
-        if (mounted) {
-          Navigator.of(context).pushReplacement(
-            PageRouteBuilder(
-              pageBuilder: (context, animation, secondaryAnimation) =>
-                  const MainNavigationScreen(),
-              transitionsBuilder:
-                  (context, animation, secondaryAnimation, child) {
-                    return FadeTransition(opacity: animation, child: child);
-                  },
-              transitionDuration: const Duration(milliseconds: 500),
-            ),
-          );
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text(
-                'No existing profile found. Please create a new one.',
-              ),
-              backgroundColor: GlassmorphismTheme.primaryColor,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error checking profile: $e'),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isCheckingProfile = false;
-        });
-        _checkController.reverse();
-      }
-    }
   }
 
   @override
@@ -377,18 +303,6 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                                       },
                                     ),
                                     const SizedBox(height: 16),
-                                    _buildActionButton(
-                                      title: 'Continue with Existing',
-                                      subtitle:
-                                          'Load your saved business profile',
-                                      icon: Icons.business,
-                                      gradient:
-                                          GlassmorphismTheme.accentGradient,
-                                      onTap: _isCheckingProfile
-                                          ? null
-                                          : _checkExistingProfile,
-                                      isLoading: _isCheckingProfile,
-                                    ),
                                   ],
                                 ),
                               ),
