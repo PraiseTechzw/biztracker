@@ -220,6 +220,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                         else
                           Column(
                             children: [
+                              _buildQuickActions(),
+                              const SizedBox(height: 24),
                               _buildQuickStats(),
                               const SizedBox(height: 24),
                               _buildRecentActivity(),
@@ -232,6 +234,118 @@ class _DashboardScreenState extends State<DashboardScreen>
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickActions() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Quick Actions',
+          style: TextStyle(
+            color: GlassmorphismTheme.textColor,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: _buildActionCard(
+                'Add Capital',
+                Icons.account_balance_wallet,
+                Colors.blue,
+                () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const CapitalScreen(),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildActionCard(
+                'Record Expense',
+                Icons.receipt_long,
+                Colors.orange,
+                () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ExpensesScreen(),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildActionCard(
+                'Add Stock',
+                Icons.inventory,
+                Colors.green,
+                () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const StockScreen()),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildActionCard(
+                'Record Sale',
+                Icons.point_of_sale,
+                Colors.purple,
+                () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SalesScreen()),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionCard(
+    String title,
+    IconData icon,
+    Color color,
+    VoidCallback onTap,
+  ) {
+    return GestureDetector(
+      onTap: onTap,
+      child: GlassmorphismTheme.glassmorphismContainer(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              style: const TextStyle(
+                color: GlassmorphismTheme.textColor,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       ),
     );
@@ -263,24 +377,40 @@ class _DashboardScreenState extends State<DashboardScreen>
               totalCapital,
               Icons.account_balance_wallet,
               GlassmorphismTheme.primaryColor,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const CapitalScreen()),
+              ),
             ),
             _buildOverviewCard(
               'Stock Value',
               totalStockValue,
               Icons.inventory,
               GlassmorphismTheme.secondaryColor,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const StockScreen()),
+              ),
             ),
             _buildOverviewCard(
               'Total Sales',
               totalSales,
               Icons.trending_up,
               GlassmorphismTheme.accentColor,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SalesScreen()),
+              ),
             ),
             _buildOverviewCard(
-              'Net Profit',
-              netProfit,
-              Icons.attach_money,
-              netProfit >= 0 ? Colors.green : Colors.red,
+              'Total Expenses',
+              totalExpenses,
+              Icons.receipt_long,
+              Colors.orange,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ExpensesScreen()),
+              ),
             ),
           ],
         ),
@@ -292,9 +422,10 @@ class _DashboardScreenState extends State<DashboardScreen>
     String title,
     double value,
     IconData icon,
-    Color color,
-  ) {
-    return GlassmorphismTheme.glassmorphismContainer(
+    Color color, {
+    VoidCallback? onTap,
+  }) {
+    Widget card = GlassmorphismTheme.glassmorphismContainer(
       padding: const EdgeInsets.all(18),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -331,6 +462,12 @@ class _DashboardScreenState extends State<DashboardScreen>
         ],
       ),
     );
+
+    if (onTap != null) {
+      return GestureDetector(onTap: onTap, child: card);
+    }
+
+    return card;
   }
 
   Widget _buildQuickStats() {
@@ -354,19 +491,43 @@ class _DashboardScreenState extends State<DashboardScreen>
           children: [
             Expanded(
               child: _buildStatCard(
-                'Profit Margin',
-                '${profitMargin.toStringAsFixed(1)}%',
-                Icons.trending_up,
+                'Net Profit',
+                '\$${NumberFormat('#,##0.00').format(netProfit)}',
+                Icons.attach_money,
                 netProfit >= 0 ? Colors.green : Colors.red,
               ),
             ),
             const SizedBox(width: 16),
             Expanded(
               child: _buildStatCard(
+                'Profit Margin',
+                '${profitMargin.toStringAsFixed(1)}%',
+                Icons.trending_up,
+                netProfit >= 0 ? Colors.green : Colors.red,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
                 'ROI',
                 '${roi.toStringAsFixed(1)}%',
                 Icons.analytics,
                 GlassmorphismTheme.accentColor,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildStatCard(
+                'Capital Utilization',
+                totalCapital > 0
+                    ? '${((totalStockValue / totalCapital) * 100).toStringAsFixed(1)}%'
+                    : '0%',
+                Icons.account_balance,
+                Colors.blue,
               ),
             ),
           ],

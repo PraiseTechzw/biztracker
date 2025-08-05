@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:ui';
 import '../utils/glassmorphism_theme.dart';
 import 'dashboard_screen.dart';
-import 'capital_screen.dart';
 import 'stock_screen.dart';
 import 'sales_screen.dart';
-import 'expenses_screen.dart';
 import 'reports_screen.dart';
 import 'notifications_screen.dart';
 import 'profile_screen.dart';
@@ -22,10 +20,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   final List<Widget> _screens = [
     const DashboardScreen(),
-    const CapitalScreen(),
     const StockScreen(),
     const SalesScreen(),
-    const ExpensesScreen(),
     const ReportsScreen(),
     const ProfileScreen(),
   ];
@@ -87,20 +83,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 label: 'Dashboard',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.account_balance_wallet),
-                label: 'Capital',
-              ),
-              BottomNavigationBarItem(
                 icon: Icon(Icons.inventory),
                 label: 'Stock',
               ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.point_of_sale),
                 label: 'Sales',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.receipt_long),
-                label: 'Expenses',
               ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.analytics),
