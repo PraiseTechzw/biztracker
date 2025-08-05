@@ -437,8 +437,25 @@ class _StockScreenState extends State<StockScreen> {
               ),
               Expanded(
                 child: _buildStockInfo(
+                  'Profit/Unit',
+                  '\$${NumberFormat('#,##0.00').format(stock.unitSellingPrice - stock.unitCostPrice)}',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _buildStockInfo(
                   'Profit Margin',
                   '${profitMargin.toStringAsFixed(1)}%',
+                ),
+              ),
+              Expanded(
+                child: _buildStockInfo(
+                  'Total Profit',
+                  '\$${NumberFormat('#,##0.00').format((stock.unitSellingPrice - stock.unitCostPrice) * stock.quantity)}',
                 ),
               ),
             ],
@@ -585,17 +602,79 @@ class _StockScreenState extends State<StockScreen> {
                           child: GestureDetector(
                             onTap: () async {
                               try {
-                                final ImagePicker picker = ImagePicker();
-                                final XFile? image = await picker.pickImage(
-                                  source: ImageSource.gallery,
-                                  maxWidth: 800,
-                                  maxHeight: 800,
-                                  imageQuality: 80,
-                                );
-                                if (image != null) {
-                                  setModalState(() {
-                                    selectedImagePath = image.path;
-                                  });
+                                // Show option to choose camera or gallery
+                                final ImageSource? source =
+                                    await showDialog<ImageSource>(
+                                      context: context,
+                                      builder: (BuildContext context) {
+                                        return AlertDialog(
+                                          backgroundColor:
+                                              GlassmorphismTheme.surfaceColor,
+                                          title: const Text(
+                                            'Select Image Source',
+                                            style: TextStyle(
+                                              color:
+                                                  GlassmorphismTheme.textColor,
+                                            ),
+                                          ),
+                                          content: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              ListTile(
+                                                leading: const Icon(
+                                                  Icons.camera_alt,
+                                                  color: GlassmorphismTheme
+                                                      .primaryColor,
+                                                ),
+                                                title: const Text(
+                                                  'Camera',
+                                                  style: TextStyle(
+                                                    color: GlassmorphismTheme
+                                                        .textColor,
+                                                  ),
+                                                ),
+                                                onTap: () => Navigator.pop(
+                                                  context,
+                                                  ImageSource.camera,
+                                                ),
+                                              ),
+                                              ListTile(
+                                                leading: const Icon(
+                                                  Icons.photo_library,
+                                                  color: GlassmorphismTheme
+                                                      .primaryColor,
+                                                ),
+                                                title: const Text(
+                                                  'Gallery',
+                                                  style: TextStyle(
+                                                    color: GlassmorphismTheme
+                                                        .textColor,
+                                                  ),
+                                                ),
+                                                onTap: () => Navigator.pop(
+                                                  context,
+                                                  ImageSource.gallery,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      },
+                                    );
+
+                                if (source != null) {
+                                  final ImagePicker picker = ImagePicker();
+                                  final XFile? image = await picker.pickImage(
+                                    source: source,
+                                    maxWidth: 800,
+                                    maxHeight: 800,
+                                    imageQuality: 80,
+                                  );
+                                  if (image != null) {
+                                    setModalState(() {
+                                      selectedImagePath = image.path;
+                                    });
+                                  }
                                 }
                               } catch (e) {
                                 ScaffoldMessenger.of(context).showSnackBar(
@@ -826,7 +905,7 @@ class _StockScreenState extends State<StockScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const Text(
-                                  'Summary',
+                                  'Financial Summary',
                                   style: TextStyle(
                                     color: GlassmorphismTheme.textColor,
                                     fontSize: 16,
@@ -855,6 +934,69 @@ class _StockScreenState extends State<StockScreen> {
                                   ],
                                 ),
                                 if (sellingPriceController.text.isNotEmpty) ...[
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Total Selling Value:',
+                                        style: const TextStyle(
+                                          color: GlassmorphismTheme
+                                              .textSecondaryColor,
+                                        ),
+                                      ),
+                                      Text(
+                                        '\$${_calculateTotalSellingValue(sellingPriceController.text, quantityController.text)}',
+                                        style: const TextStyle(
+                                          color: Colors.blue,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Profit Per Unit:',
+                                        style: const TextStyle(
+                                          color: GlassmorphismTheme
+                                              .textSecondaryColor,
+                                        ),
+                                      ),
+                                      Text(
+                                        '\$${_calculateProfitPerUnit(costPriceController.text, sellingPriceController.text)}',
+                                        style: const TextStyle(
+                                          color: Colors.green,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Total Profit:',
+                                        style: const TextStyle(
+                                          color: GlassmorphismTheme
+                                              .textSecondaryColor,
+                                        ),
+                                      ),
+                                      Text(
+                                        '\$${_calculateTotalProfit(costPriceController.text, sellingPriceController.text, quantityController.text)}',
+                                        style: const TextStyle(
+                                          color: Colors.green,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                   const SizedBox(height: 8),
                                   Row(
                                     mainAxisAlignment:
@@ -1017,16 +1159,55 @@ class _StockScreenState extends State<StockScreen> {
     }
   }
 
+  String _calculateTotalSellingValue(String sellingPrice, String quantity) {
+    try {
+      final selling = double.parse(sellingPrice);
+      final qty = double.parse(quantity);
+      return NumberFormat('#,##0.00').format(selling * qty);
+    } catch (e) {
+      return '0.00';
+    }
+  }
+
   String _calculateProfitMargin(String costPrice, String sellingPrice) {
     try {
       final cost = double.parse(costPrice);
       final selling = double.parse(sellingPrice);
       if (cost > 0) {
-        return (((selling - cost) / cost) * 100).toStringAsFixed(1);
+        final margin = ((selling - cost) / cost) * 100;
+        return margin.toStringAsFixed(1);
       }
       return '0.0';
     } catch (e) {
       return '0.0';
+    }
+  }
+
+  String _calculateProfitPerUnit(String costPrice, String sellingPrice) {
+    try {
+      final cost = double.parse(costPrice);
+      final selling = double.parse(sellingPrice);
+      final profit = selling - cost;
+      return NumberFormat('#,##0.00').format(profit);
+    } catch (e) {
+      return '0.00';
+    }
+  }
+
+  String _calculateTotalProfit(
+    String costPrice,
+    String sellingPrice,
+    String quantity,
+  ) {
+    try {
+      final cost = double.parse(costPrice);
+      final selling = double.parse(sellingPrice);
+      final qty = double.parse(quantity);
+      final profitPerUnit = selling - cost;
+      final totalProfit = profitPerUnit * qty;
+      return NumberFormat('#,##0.00').format(totalProfit);
+    } catch (e) {
+      return '0.00';
     }
   }
 
