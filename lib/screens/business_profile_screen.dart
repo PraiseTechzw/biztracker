@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:confetti/confetti.dart';
 import '../utils/glassmorphism_theme.dart';
+import '../utils/toast_utils.dart';
 import '../models/business_profile.dart';
 import '../services/database_service.dart';
 import 'main_navigation_screen.dart';
@@ -14,9 +16,11 @@ class BusinessProfileScreen extends StatefulWidget {
   State<BusinessProfileScreen> createState() => _BusinessProfileScreenState();
 }
 
-class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
+class _BusinessProfileScreenState extends State<BusinessProfileScreen>
+    with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _scrollController = ScrollController();
+  late ConfettiController _confettiController;
 
   // Form controllers
   final _businessNameController = TextEditingController();
@@ -77,6 +81,9 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
   @override
   void initState() {
     super.initState();
+    _confettiController = ConfettiController(
+      duration: const Duration(seconds: 3),
+    );
     _loadExistingProfile();
   }
 

@@ -41,6 +41,8 @@ dependencies:
   flutter_blur: ^0.0.2
   image_picker: ^1.0.7
   fl_chart: ^0.66.2
+  fluttertoast: ^8.2.4
+  confetti: ^0.7.0
 
 dev_dependencies:
   flutter_test:
