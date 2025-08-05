@@ -181,6 +181,13 @@ class _SalesScreenState extends State<SalesScreen> {
   }
 
   Widget _buildSalesSummary() {
+    // Calculate stock statistics
+    final totalStockItems = stocks.length;
+    final lowStockItems = stocks
+        .where((stock) => stock.quantity <= stock.reorderLevel)
+        .length;
+    final outOfStockItems = stocks.where((stock) => stock.quantity <= 0).length;
+
     return Column(
       children: [
         Row(
@@ -231,6 +238,37 @@ class _SalesScreenState extends State<SalesScreen> {
                 '\$${NumberFormat('#,##0.00').format(totalCredit)}',
                 Icons.credit_card,
                 Colors.orange,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildSummaryCard(
+                'Stock Items',
+                totalStockItems.toString(),
+                Icons.inventory,
+                Colors.blue,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildSummaryCard(
+                'Low Stock',
+                lowStockItems.toString(),
+                Icons.warning,
+                Colors.orange,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildSummaryCard(
+                'Out of Stock',
+                outOfStockItems.toString(),
+                Icons.cancel,
+                Colors.red,
               ),
             ),
           ],
@@ -445,13 +483,48 @@ class _SalesScreenState extends State<SalesScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      sale.productName,
-                      style: const TextStyle(
-                        color: GlassmorphismTheme.textColor,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                sale.productName,
+                                style: const TextStyle(
+                                  color: GlassmorphismTheme.textColor,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              if (stock.quantity <= 0)
+                                const Text(
+                                  '❌ Out of Stock',
+                                  style: TextStyle(
+                                    color: Colors.red,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                )
+                              else if (stock.quantity <= stock.reorderLevel)
+                                const Text(
+                                  '⚠️ Low Stock',
+                                  style: TextStyle(
+                                    color: Colors.orange,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        _buildPaymentStatusChip(
+                          sale,
+                          remainingAmount,
+                          isOverdue,
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -522,6 +595,30 @@ class _SalesScreenState extends State<SalesScreen> {
               ),
             ],
           ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _buildSaleInfo(
+                  'Payment Status',
+                  _getPaymentStatusText(sale.paymentStatus),
+                ),
+              ),
+              Expanded(
+                child: _buildSaleInfo(
+                  'Amount Paid',
+                  '\$${NumberFormat('#,##0.00').format(sale.amountPaid)}',
+                ),
+              ),
+              if (sale.dueDate != null)
+                Expanded(
+                  child: _buildSaleInfo(
+                    'Due Date',
+                    DateFormat('MMM dd').format(sale.dueDate!),
+                  ),
+                ),
+            ],
+          ),
           if (sale.notes.isNotEmpty) ...[
             const SizedBox(height: 12),
             Text(
@@ -567,10 +664,15 @@ class _SalesScreenState extends State<SalesScreen> {
     final quantityController = TextEditingController();
     final unitPriceController = TextEditingController();
     final customerNameController = TextEditingController();
+    final customerPhoneController = TextEditingController();
     final notesController = TextEditingController();
+    final amountPaidController = TextEditingController();
     DateTime selectedDate = DateTime.now();
+    DateTime? selectedDueDate;
     Stock? selectedStock;
     bool isLoading = false;
+    String selectedPaymentStatus = 'paid';
+    String selectedPaymentMethod = 'cash';
 
     showModalBottomSheet(
       context: context,
@@ -628,8 +730,12 @@ class _SalesScreenState extends State<SalesScreen> {
                           ),
                           value: selectedStock,
                           items: stocks.map((stock) {
+                            final isAvailable = _isProductAvailableForSale(
+                              stock,
+                            );
                             return DropdownMenuItem(
-                              value: stock,
+                              value: isAvailable ? stock : null,
+                              enabled: isAvailable,
                               child: Row(
                                 children: [
                                   Container(
@@ -685,11 +791,32 @@ class _SalesScreenState extends State<SalesScreen> {
                                         ),
                                         Text(
                                           'Stock: ${stock.quantity} | Price: \$${NumberFormat('#,##0.00').format(stock.unitSellingPrice)}',
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 12,
-                                            color: Colors.grey,
+                                            color: isAvailable
+                                                ? Colors.grey
+                                                : Colors.red,
                                           ),
                                         ),
+                                        if (!isAvailable)
+                                          const Text(
+                                            '❌ Out of Stock',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color: Colors.red,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          )
+                                        else if (stock.quantity <=
+                                            stock.reorderLevel)
+                                          const Text(
+                                            '⚠️ Low Stock',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color: Colors.orange,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
                                       ],
                                     ),
                                   ),
@@ -792,15 +919,196 @@ class _SalesScreenState extends State<SalesScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        TextFormField(
-                          controller: customerNameController,
-                          decoration: const InputDecoration(
-                            labelText: 'Customer Name (Optional)',
-                            prefixIcon: Icon(Icons.person),
-                            border: OutlineInputBorder(),
-                          ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                controller: customerNameController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Customer Name (Optional)',
+                                  prefixIcon: Icon(Icons.person),
+                                  border: OutlineInputBorder(),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: TextFormField(
+                                controller: customerPhoneController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Phone (Optional)',
+                                  prefixIcon: Icon(Icons.phone),
+                                  border: OutlineInputBorder(),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 16),
+
+                        // Payment Status Selection
+                        DropdownButtonFormField<String>(
+                          decoration: const InputDecoration(
+                            labelText: 'Payment Status',
+                            prefixIcon: Icon(Icons.payment),
+                            border: OutlineInputBorder(),
+                          ),
+                          value: selectedPaymentStatus,
+                          items: [
+                            DropdownMenuItem(
+                              value: 'paid',
+                              child: Text('Paid'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'partial',
+                              child: Text('Partial Payment'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'credit',
+                              child: Text('Credit'),
+                            ),
+                          ],
+                          onChanged: (value) {
+                            setModalState(() {
+                              selectedPaymentStatus = value!;
+                              if (value == 'paid') {
+                                amountPaidController.text =
+                                    unitPriceController.text.isNotEmpty &&
+                                        quantityController.text.isNotEmpty
+                                    ? _calculateTotalAmount(
+                                        quantityController.text,
+                                        unitPriceController.text,
+                                      )
+                                    : '';
+                              }
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Payment Method Selection
+                        DropdownButtonFormField<String>(
+                          decoration: const InputDecoration(
+                            labelText: 'Payment Method',
+                            prefixIcon: Icon(Icons.credit_card),
+                            border: OutlineInputBorder(),
+                          ),
+                          value: selectedPaymentMethod,
+                          items: [
+                            DropdownMenuItem(
+                              value: 'cash',
+                              child: Text('Cash'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'card',
+                              child: Text('Card'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'bank_transfer',
+                              child: Text('Bank Transfer'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'credit',
+                              child: Text('Credit'),
+                            ),
+                          ],
+                          onChanged: (value) {
+                            setModalState(() {
+                              selectedPaymentMethod = value!;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Amount Paid Field
+                        if (selectedPaymentStatus != 'paid')
+                          TextFormField(
+                            controller: amountPaidController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'Amount Paid',
+                              prefixText: '\$',
+                              prefixIcon: Icon(Icons.attach_money),
+                              border: OutlineInputBorder(),
+                            ),
+                            onChanged: (value) {
+                              setModalState(() {});
+                            },
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter amount paid';
+                              }
+                              if (double.tryParse(value) == null) {
+                                return 'Please enter a valid number';
+                              }
+                              final paid = double.parse(value);
+                              final total =
+                                  unitPriceController.text.isNotEmpty &&
+                                      quantityController.text.isNotEmpty
+                                  ? double.parse(
+                                      _calculateTotalAmount(
+                                        quantityController.text,
+                                        unitPriceController.text,
+                                      ).replaceAll(',', ''),
+                                    )
+                                  : 0;
+                              if (paid > total) {
+                                return 'Amount paid cannot exceed total amount';
+                              }
+                              return null;
+                            },
+                          ),
+                        if (selectedPaymentStatus != 'paid')
+                          const SizedBox(height: 16),
+
+                        // Due Date for Credit Sales
+                        if (selectedPaymentStatus == 'credit' ||
+                            selectedPaymentStatus == 'partial')
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: const Text(
+                              'Due Date',
+                              style: TextStyle(
+                                color: GlassmorphismTheme.textColor,
+                              ),
+                            ),
+                            subtitle: Text(
+                              selectedDueDate != null
+                                  ? DateFormat(
+                                      'MMM dd, yyyy',
+                                    ).format(selectedDueDate!)
+                                  : 'Not set',
+                              style: const TextStyle(
+                                color: GlassmorphismTheme.textSecondaryColor,
+                              ),
+                            ),
+                            trailing: const Icon(
+                              Icons.calendar_today,
+                              color: GlassmorphismTheme.primaryColor,
+                            ),
+                            onTap: () async {
+                              final date = await showDatePicker(
+                                context: context,
+                                initialDate:
+                                    selectedDueDate ??
+                                    DateTime.now().add(
+                                      const Duration(days: 30),
+                                    ),
+                                firstDate: DateTime.now(),
+                                lastDate: DateTime.now().add(
+                                  const Duration(days: 365),
+                                ),
+                              );
+                              if (date != null) {
+                                setModalState(() {
+                                  selectedDueDate = date;
+                                });
+                              }
+                            },
+                          ),
+                        if (selectedPaymentStatus == 'credit' ||
+                            selectedPaymentStatus == 'partial')
+                          const SizedBox(height: 16),
 
                         TextFormField(
                           controller: notesController,
@@ -912,6 +1220,75 @@ class _SalesScreenState extends State<SalesScreen> {
                                         MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
+                                        'Payment Status:',
+                                        style: const TextStyle(
+                                          color: GlassmorphismTheme
+                                              .textSecondaryColor,
+                                        ),
+                                      ),
+                                      Text(
+                                        _getPaymentStatusText(
+                                          selectedPaymentStatus,
+                                        ),
+                                        style: TextStyle(
+                                          color: _getPaymentStatusColor(
+                                            selectedPaymentStatus,
+                                          ),
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  if (selectedPaymentStatus != 'paid') ...[
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          'Amount Paid:',
+                                          style: const TextStyle(
+                                            color: GlassmorphismTheme
+                                                .textSecondaryColor,
+                                          ),
+                                        ),
+                                        Text(
+                                          '\$${amountPaidController.text.isEmpty ? '0.00' : amountPaidController.text}',
+                                          style: const TextStyle(
+                                            color: Colors.blue,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          'Remaining:',
+                                          style: const TextStyle(
+                                            color: GlassmorphismTheme
+                                                .textSecondaryColor,
+                                          ),
+                                        ),
+                                        Text(
+                                          '\$${_calculateRemainingAmount(quantityController.text, unitPriceController.text, amountPaidController.text)}',
+                                          style: const TextStyle(
+                                            color: Colors.orange,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
                                         'Total Profit:',
                                         style: const TextStyle(
                                           color: GlassmorphismTheme
@@ -941,8 +1318,40 @@ class _SalesScreenState extends State<SalesScreen> {
                                       ),
                                       Text(
                                         '${selectedStock!.quantity - (double.tryParse(quantityController.text) ?? 0)}',
+                                        style: TextStyle(
+                                          color:
+                                              (selectedStock!.quantity -
+                                                      (double.tryParse(
+                                                            quantityController
+                                                                .text,
+                                                          ) ??
+                                                          0)) <=
+                                                  selectedStock!.reorderLevel
+                                              ? Colors.orange
+                                              : Colors.blue,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Stock Status:',
                                         style: const TextStyle(
-                                          color: Colors.blue,
+                                          color: GlassmorphismTheme
+                                              .textSecondaryColor,
+                                        ),
+                                      ),
+                                      Text(
+                                        _getStockStatusText(selectedStock!),
+                                        style: TextStyle(
+                                          color: _getStockStatusColor(
+                                            selectedStock!,
+                                          ),
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
@@ -980,8 +1389,23 @@ class _SalesScreenState extends State<SalesScreen> {
                                   ..quantity = quantity
                                   ..unitPrice = unitPrice
                                   ..totalAmount = totalAmount
+                                  ..amountPaid = selectedPaymentStatus == 'paid'
+                                      ? totalAmount
+                                      : double.parse(
+                                          amountPaidController.text.isEmpty
+                                              ? '0'
+                                              : amountPaidController.text,
+                                        )
                                   ..customerName = customerNameController.text
+                                  ..customerPhone = customerPhoneController.text
                                   ..notes = notesController.text
+                                  ..paymentStatus = selectedPaymentStatus
+                                  ..paymentMethod = selectedPaymentMethod
+                                  ..dueDate = selectedDueDate
+                                  ..lastPaymentDate =
+                                      selectedPaymentStatus == 'paid'
+                                      ? DateTime.now()
+                                      : null
                                   ..saleDate = selectedDate
                                   ..createdAt = DateTime.now();
 
@@ -1078,6 +1502,101 @@ class _SalesScreenState extends State<SalesScreen> {
       return NumberFormat('#,##0.00').format(totalProfit);
     } catch (e) {
       return '0.00';
+    }
+  }
+
+  String _getPaymentStatusText(String status) {
+    switch (status.toLowerCase()) {
+      case 'paid':
+        return 'Paid';
+      case 'partial':
+        return 'Partial';
+      case 'credit':
+        return 'Credit';
+      default:
+        return 'Unknown';
+    }
+  }
+
+  Color _getPaymentStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'paid':
+        return Colors.green;
+      case 'partial':
+        return Colors.orange;
+      case 'credit':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  Widget _buildPaymentStatusChip(
+    Sale sale,
+    double remainingAmount,
+    bool isOverdue,
+  ) {
+    Color chipColor = _getPaymentStatusColor(sale.paymentStatus);
+    if (isOverdue) chipColor = Colors.red;
+
+    String chipText = _getPaymentStatusText(sale.paymentStatus);
+    if (isOverdue) chipText = 'Overdue';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: chipColor.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        chipText,
+        style: TextStyle(
+          color: chipColor,
+          fontSize: 10,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+
+  String _calculateRemainingAmount(
+    String quantity,
+    String unitPrice,
+    String amountPaid,
+  ) {
+    try {
+      final total = double.parse(
+        _calculateTotalAmount(quantity, unitPrice).replaceAll(',', ''),
+      );
+      final paid = double.parse(amountPaid.isEmpty ? '0' : amountPaid);
+      final remaining = total - paid;
+      return NumberFormat('#,##0.00').format(remaining > 0 ? remaining : 0);
+    } catch (e) {
+      return '0.00';
+    }
+  }
+
+  bool _isProductAvailableForSale(Stock stock) {
+    return stock.quantity > 0;
+  }
+
+  String _getStockStatusText(Stock stock) {
+    if (stock.quantity <= 0) {
+      return 'Out of Stock';
+    } else if (stock.quantity <= stock.reorderLevel) {
+      return 'Low Stock';
+    } else {
+      return 'In Stock';
+    }
+  }
+
+  Color _getStockStatusColor(Stock stock) {
+    if (stock.quantity <= 0) {
+      return Colors.red;
+    } else if (stock.quantity <= stock.reorderLevel) {
+      return Colors.orange;
+    } else {
+      return Colors.green;
     }
   }
 }
