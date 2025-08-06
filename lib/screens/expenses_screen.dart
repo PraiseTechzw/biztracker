@@ -140,93 +140,98 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
         itemCount: expenses.length,
         itemBuilder: (context, index) {
           final expense = expenses[index];
-          return GlassmorphismTheme.glassmorphismContainer(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: GlassmorphismTheme.primaryColor.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.receipt_long,
-                    color: GlassmorphismTheme.primaryColor,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        expense.description,
-                        style: const TextStyle(
-                          color: GlassmorphismTheme.textColor,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        expense.category,
-                        style: const TextStyle(
-                          color: GlassmorphismTheme.textSecondaryColor,
-                          fontSize: 12,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        DateFormat('MMM dd, yyyy').format(expense.expenseDate),
-                        style: const TextStyle(
-                          color: GlassmorphismTheme.textSecondaryColor,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      '\$${NumberFormat('#,##0.00').format(expense.amount)}',
-                      style: const TextStyle(
-                        color: GlassmorphismTheme.textColor,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+          return GestureDetector(
+            onTap: () => _showExpenseDetailsBottomSheet(expense),
+            child: GlassmorphismTheme.glassmorphismContainer(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: GlassmorphismTheme.primaryColor.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
+                    child: const Icon(
+                      Icons.receipt_long,
+                      color: GlassmorphismTheme.primaryColor,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        IconButton(
-                          onPressed: () => _showEditExpenseDialog(expense),
-                          icon: const Icon(
-                            Icons.edit,
-                            color: Colors.blue,
-                            size: 20,
+                        Text(
+                          expense.description,
+                          style: const TextStyle(
+                            color: GlassmorphismTheme.textColor,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
                           ),
-                          tooltip: 'Edit',
                         ),
-                        IconButton(
-                          onPressed: () => _showDeleteConfirmation(expense),
-                          icon: const Icon(
-                            Icons.delete,
-                            color: Colors.red,
-                            size: 20,
+                        const SizedBox(height: 4),
+                        Text(
+                          expense.category,
+                          style: const TextStyle(
+                            color: GlassmorphismTheme.textSecondaryColor,
+                            fontSize: 12,
                           ),
-                          tooltip: 'Delete',
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          DateFormat(
+                            'MMM dd, yyyy',
+                          ).format(expense.expenseDate),
+                          style: const TextStyle(
+                            color: GlassmorphismTheme.textSecondaryColor,
+                            fontSize: 12,
+                          ),
                         ),
                       ],
                     ),
-                  ],
-                ),
-              ],
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        '\$${NumberFormat('#,##0.00').format(expense.amount)}',
+                        style: const TextStyle(
+                          color: GlassmorphismTheme.textColor,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            onPressed: () => _showEditExpenseDialog(expense),
+                            icon: const Icon(
+                              Icons.edit,
+                              color: Colors.blue,
+                              size: 20,
+                            ),
+                            tooltip: 'Edit',
+                          ),
+                          IconButton(
+                            onPressed: () => _showDeleteConfirmation(expense),
+                            icon: const Icon(
+                              Icons.delete,
+                              color: Colors.red,
+                              size: 20,
+                            ),
+                            tooltip: 'Delete',
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           );
         },
