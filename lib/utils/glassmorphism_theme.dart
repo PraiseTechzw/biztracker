@@ -79,11 +79,9 @@ class GlassmorphismTheme {
         primary: primaryColor,
         secondary: secondaryColor,
         surface: surfaceColor,
-        background: backgroundColor,
         onPrimary: textColor,
         onSecondary: textColor,
         onSurface: textColor,
-        onBackground: textColor,
       ),
       textTheme: const TextTheme(
         displayLarge: TextStyle(

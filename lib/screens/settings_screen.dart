@@ -469,11 +469,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'exportDate': DateTime.now().toIso8601String(),
         'businessProfile': profile != null
             ? {
-                'businessName': profile!.businessName,
-                'businessType': profile!.businessType,
-                'address': profile!.address,
-                'phoneNumber': profile!.phoneNumber,
-                'email': profile!.email,
+                'businessName': profile.businessName,
+                'businessType': profile.businessType,
+                'address': profile.address,
+                'phoneNumber': profile.phoneNumber,
+                'email': profile.email,
               }
             : null,
         'sales': sales

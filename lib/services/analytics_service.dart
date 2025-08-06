@@ -95,9 +95,9 @@ class AnalyticsService {
 
     // Profit margin (40% weight)
     final profitMargin = summary['profitMargin']!;
-    if (profitMargin > 20)
+    if (profitMargin > 20) {
       score += 40;
-    else if (profitMargin > 10)
+    } else if (profitMargin > 10)
       score += 30;
     else if (profitMargin > 0)
       score += 20;
@@ -106,9 +106,9 @@ class AnalyticsService {
 
     // Sales growth (30% weight)
     final sales = summary['totalSales']!;
-    if (sales > 10000)
+    if (sales > 10000) {
       score += 30;
-    else if (sales > 5000)
+    } else if (sales > 5000)
       score += 20;
     else if (sales > 1000)
       score += 15;
@@ -120,9 +120,9 @@ class AnalyticsService {
     final stockValue = summary['totalStockValue']!;
     if (capital > 0) {
       final utilization = (stockValue / capital) * 100;
-      if (utilization > 80)
+      if (utilization > 80) {
         score += 20;
-      else if (utilization > 60)
+      } else if (utilization > 60)
         score += 15;
       else if (utilization > 40)
         score += 10;
@@ -134,9 +134,9 @@ class AnalyticsService {
     final expenses = summary['totalExpenses']!;
     if (sales > 0) {
       final expenseRatio = (expenses / sales) * 100;
-      if (expenseRatio < 50)
+      if (expenseRatio < 50) {
         score += 10;
-      else if (expenseRatio < 70)
+      } else if (expenseRatio < 70)
         score += 7;
       else if (expenseRatio < 90)
         score += 5;

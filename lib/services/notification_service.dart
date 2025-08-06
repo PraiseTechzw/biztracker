@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/timezone.dart' as tz;
+import 'package:timezone/data/latest.dart' as tz;
+import 'dart:typed_data';
 import '../models/business_data.dart';
 import 'database_service.dart';
 
@@ -53,6 +56,9 @@ class NotificationService {
   static const String _reminderChannelId = 'reminder_notifications';
 
   Future<void> initialize() async {
+    // Initialize timezone data
+    tz.initializeTimeZones();
+
     // Android initialization settings
     const AndroidInitializationSettings androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -82,6 +88,12 @@ class NotificationService {
 
     // Load initial notifications from business data
     await _loadInitialNotifications();
+
+    // Request notification permissions
+    await _requestPermissions();
+
+    // Set up periodic notifications
+    await _setupPeriodicNotifications();
   }
 
   Future<void> _loadInitialNotifications() async {
@@ -297,6 +309,174 @@ class NotificationService {
   void _onNotificationTapped(NotificationResponse response) {
     // Handle notification tap - you can navigate to specific screens here
     print('Notification tapped: ${response.payload}');
+
+    // Handle different notification types
+    if (response.payload != null) {
+      if (response.payload!.startsWith('sale_')) {
+        // Navigate to sales screen
+        print('Navigate to sales screen');
+      } else if (response.payload!.startsWith('stock_')) {
+        // Navigate to stock screen
+        print('Navigate to stock screen');
+      } else if (response.payload!.startsWith('expense_')) {
+        // Navigate to expenses screen
+        print('Navigate to expenses screen');
+      } else if (response.payload!.startsWith('achievement')) {
+        // Navigate to dashboard
+        print('Navigate to dashboard');
+      } else if (response.payload!.startsWith('daily_summary')) {
+        // Navigate to reports screen
+        print('Navigate to reports screen');
+      } else if (response.payload!.startsWith('test_notification')) {
+        // Test notification
+        print('Test notification tapped');
+      }
+    }
+  }
+
+  Future<void> _requestPermissions() async {
+    // Request notification permissions for Android 13+
+    final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
+        _notifications
+            .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin
+            >();
+
+    if (androidImplementation != null) {
+      final bool? granted = await androidImplementation
+          .requestNotificationsPermission();
+      print('Notification permission granted: $granted');
+
+      // Check if exact alarms are permitted
+      final bool? exactAlarmsPermitted = await androidImplementation
+          .areNotificationsEnabled();
+      print('Exact alarms permitted: $exactAlarmsPermitted');
+    }
+  }
+
+  Future<void> _setupPeriodicNotifications() async {
+    try {
+      // Set up daily business summary notification
+      await _scheduleDailySummary();
+
+      // Set up weekly low stock check
+      await _scheduleWeeklyStockCheck();
+    } catch (e) {
+      print('Error setting up periodic notifications: $e');
+      // Fallback: Use simple notifications instead of scheduled ones
+      print('Using fallback notification system');
+    }
+  }
+
+  Future<void> _scheduleDailySummary() async {
+    try {
+      // Schedule daily summary at 9 PM
+      final now = DateTime.now();
+      final scheduledDate = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        21,
+        0,
+      ); // 9 PM
+
+      // If it's already past 9 PM today, schedule for tomorrow
+      final targetDate = scheduledDate.isBefore(now)
+          ? scheduledDate.add(const Duration(days: 1))
+          : scheduledDate;
+
+      // Convert to TZDateTime
+      final tz.TZDateTime scheduledTZ = tz.TZDateTime.from(
+        targetDate,
+        tz.local,
+      );
+
+      await _notifications.zonedSchedule(
+        1001, // Unique ID for daily summary
+        '📊 Daily Business Summary',
+        'Check your daily sales, expenses, and stock updates',
+        scheduledTZ,
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            _reminderChannelId,
+            'Reminder Notifications',
+            channelDescription: 'Notifications for business reminders',
+            importance: Importance.defaultImportance,
+            priority: Priority.defaultPriority,
+            icon: '@mipmap/ic_launcher',
+          ),
+          iOS: DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+          ),
+        ),
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        payload: 'daily_summary',
+      );
+    } catch (e) {
+      print('Error scheduling daily summary: $e');
+      // Fallback: Show immediate notification for testing
+      await showReminderNotification(
+        '📊 Daily Business Summary',
+        'Check your daily sales, expenses, and stock updates',
+        payload: 'daily_summary',
+      );
+    }
+  }
+
+  Future<void> _scheduleWeeklyStockCheck() async {
+    try {
+      // Schedule weekly stock check every Monday at 10 AM
+      final now = DateTime.now();
+      final daysUntilMonday = (DateTime.monday - now.weekday) % 7;
+      final nextMonday = now.add(Duration(days: daysUntilMonday));
+      final scheduledDate = DateTime(
+        nextMonday.year,
+        nextMonday.month,
+        nextMonday.day,
+        10,
+        0,
+      ); // 10 AM
+
+      // Convert to TZDateTime
+      final tz.TZDateTime scheduledTZ = tz.TZDateTime.from(
+        scheduledDate,
+        tz.local,
+      );
+
+      await _notifications.zonedSchedule(
+        1002, // Unique ID for weekly stock check
+        '📦 Weekly Stock Review',
+        'Review your inventory levels and reorder items if needed',
+        scheduledTZ,
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            _stockChannelId,
+            'Stock Notifications',
+            channelDescription: 'Notifications for stock updates and alerts',
+            importance: Importance.high,
+            priority: Priority.high,
+            icon: '@mipmap/ic_launcher',
+          ),
+          iOS: DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+          ),
+        ),
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        payload: 'weekly_stock_check',
+      );
+    } catch (e) {
+      print('Error scheduling weekly stock check: $e');
+      // Fallback: Show immediate notification for testing
+      await showReminderNotification(
+        '📦 Weekly Stock Review',
+        'Review your inventory levels and reorder items if needed',
+        payload: 'weekly_stock_check',
+      );
+    }
   }
 
   // Sales notifications
@@ -403,6 +583,13 @@ class NotificationService {
           priority: Priority.high,
           icon: '@mipmap/ic_launcher',
           color: const Color(0xFFF44336),
+          enableVibration: true,
+          vibrationPattern: Int64List.fromList([0, 500, 200, 500]),
+          playSound: true,
+
+          largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+          showWhen: true,
+          when: DateTime.now().millisecondsSinceEpoch,
         ),
         iOS: const DarwinNotificationDetails(
           presentAlert: true,
@@ -411,6 +598,188 @@ class NotificationService {
         ),
       ),
       payload: notification.payload,
+    );
+  }
+
+  // Achievement notifications
+  Future<void> showAchievementNotification(String title, String message) async {
+    final notification = NotificationItem(
+      id: 'achievement_${DateTime.now().millisecondsSinceEpoch}',
+      title: title,
+      message: message,
+      timestamp: DateTime.now(),
+      type: NotificationType.achievement,
+      payload: 'achievement',
+    );
+
+    _addNotification(notification);
+
+    await _notifications.show(
+      DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      notification.title,
+      notification.message,
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          _achievementChannelId,
+          'Achievement Notifications',
+          channelDescription: 'Notifications for business achievements',
+          importance: Importance.high,
+          priority: Priority.high,
+          icon: '@mipmap/ic_launcher',
+          color: const Color(0xFF4CAF50),
+          enableVibration: true,
+          vibrationPattern: Int64List.fromList([0, 300, 100, 300, 100, 300]),
+          playSound: true,
+
+          largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+          showWhen: true,
+          when: DateTime.now().millisecondsSinceEpoch,
+          autoCancel: false,
+          ongoing: false,
+        ),
+        iOS: const DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
+      ),
+      payload: notification.payload,
+    );
+  }
+
+  // Reminder notifications
+  Future<void> showReminderNotification(
+    String title,
+    String message, {
+    String? payload,
+  }) async {
+    final notification = NotificationItem(
+      id: 'reminder_${DateTime.now().millisecondsSinceEpoch}',
+      title: title,
+      message: message,
+      timestamp: DateTime.now(),
+      type: NotificationType.info,
+      payload: payload ?? 'reminder',
+    );
+
+    _addNotification(notification);
+
+    await _notifications.show(
+      DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      notification.title,
+      notification.message,
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          _reminderChannelId,
+          'Reminder Notifications',
+          channelDescription: 'Notifications for business reminders',
+          importance: Importance.defaultImportance,
+          priority: Priority.defaultPriority,
+          icon: '@mipmap/ic_launcher',
+          color: const Color(0xFF2196F3),
+          enableVibration: true,
+          vibrationPattern: Int64List.fromList([0, 200, 100, 200]),
+          playSound: true,
+
+          largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+          showWhen: true,
+          when: DateTime.now().millisecondsSinceEpoch,
+          autoCancel: true,
+          ongoing: false,
+        ),
+        iOS: const DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
+      ),
+      payload: notification.payload,
+    );
+  }
+
+  // Check and show low stock notifications
+  Future<void> checkLowStockNotifications() async {
+    try {
+      final stocks = await DatabaseService.getAllStocks();
+      final lowStockItems = stocks
+          .where((stock) => stock.quantity <= stock.reorderLevel)
+          .toList();
+
+      for (final stock in lowStockItems) {
+        if (stock.quantity <= 0) {
+          await showOutOfStockNotification(stock);
+        } else {
+          await showLowStockNotification(stock);
+        }
+      }
+    } catch (e) {
+      print('Error checking low stock notifications: $e');
+    }
+  }
+
+  // Show daily summary notification
+  Future<void> showDailySummaryNotification() async {
+    try {
+      final today = DateTime.now();
+      final sales = await DatabaseService.getAllSales();
+      final expenses = await DatabaseService.getAllExpenses();
+
+      final todaySales = sales
+          .where(
+            (sale) =>
+                sale.saleDate.year == today.year &&
+                sale.saleDate.month == today.month &&
+                sale.saleDate.day == today.day,
+          )
+          .toList();
+
+      final todayExpenses = expenses
+          .where(
+            (expense) =>
+                expense.expenseDate.year == today.year &&
+                expense.expenseDate.month == today.month &&
+                expense.expenseDate.day == today.day,
+          )
+          .toList();
+
+      final totalSales = todaySales.fold<double>(
+        0,
+        (sum, sale) => sum + sale.totalAmount,
+      );
+      final totalExpenses = todayExpenses.fold<double>(
+        0,
+        (sum, expense) => sum + expense.amount,
+      );
+      final netProfit = totalSales - totalExpenses;
+
+      final message =
+          'Sales: \$${totalSales.toStringAsFixed(2)} | Expenses: \$${totalExpenses.toStringAsFixed(2)} | Net: \$${netProfit.toStringAsFixed(2)}';
+
+      await showReminderNotification(
+        '📊 Daily Business Summary',
+        message,
+        payload: 'daily_summary',
+      );
+    } catch (e) {
+      print('Error showing daily summary notification: $e');
+    }
+  }
+
+  // Show immediate test notification (for development)
+  Future<void> showTestNotification() async {
+    await showReminderNotification(
+      '🧪 Test Notification',
+      'This is a test notification to verify phone notifications are working!',
+      payload: 'test_notification',
+    );
+  }
+
+  // Show welcome notification
+  Future<void> showWelcomeNotification() async {
+    await showReminderNotification(
+      '🎉 Welcome to BizTracker!',
+      'Your business management app is ready. Start by adding your first product or recording a sale!',
+      payload: 'welcome',
     );
   }
 
@@ -450,127 +819,6 @@ class NotificationService {
       ),
       payload: notification.payload,
     );
-  }
-
-  // Achievement notifications
-  Future<void> showAchievementNotification(String title, String message) async {
-    final notification = NotificationItem(
-      id: 'achievement_${DateTime.now().millisecondsSinceEpoch}',
-      title: '🎉 $title',
-      message: message,
-      timestamp: DateTime.now(),
-      type: NotificationType.achievement,
-      payload: 'achievement',
-    );
-
-    _addNotification(notification);
-
-    await _notifications.show(
-      DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      notification.title,
-      notification.message,
-      NotificationDetails(
-        android: AndroidNotificationDetails(
-          _achievementChannelId,
-          'Achievement Notifications',
-          channelDescription: 'Notifications for business achievements',
-          importance: Importance.high,
-          priority: Priority.high,
-          icon: '@mipmap/ic_launcher',
-          color: const Color(0xFF9C27B0),
-        ),
-        iOS: const DarwinNotificationDetails(
-          presentAlert: true,
-          presentBadge: true,
-          presentSound: true,
-        ),
-      ),
-      payload: notification.payload,
-    );
-  }
-
-  // Daily summary notification
-  Future<void> showDailySummaryNotification() async {
-    final today = DateTime.now();
-    final sales = await DatabaseService.getAllSales();
-    final expenses = await DatabaseService.getAllExpenses();
-
-    // Filter for today's data
-    final todaySales = sales
-        .where(
-          (sale) =>
-              sale.saleDate.year == today.year &&
-              sale.saleDate.month == today.month &&
-              sale.saleDate.day == today.day,
-        )
-        .toList();
-
-    final todayExpenses = expenses
-        .where(
-          (expense) =>
-              expense.expenseDate.year == today.year &&
-              expense.expenseDate.month == today.month &&
-              expense.expenseDate.day == today.day,
-        )
-        .toList();
-
-    final totalSales = todaySales.fold<double>(
-      0,
-      (sum, sale) => sum + sale.totalAmount,
-    );
-    final totalExpenses = todayExpenses.fold<double>(
-      0,
-      (sum, expense) => sum + expense.amount,
-    );
-    final netProfit = totalSales - totalExpenses;
-
-    final notification = NotificationItem(
-      id: 'daily_summary_${today.millisecondsSinceEpoch}',
-      title: '📊 Daily Summary',
-      message:
-          'Sales: \$${totalSales.toStringAsFixed(2)} | Expenses: \$${totalExpenses.toStringAsFixed(2)} | Net: \$${netProfit.toStringAsFixed(2)}',
-      timestamp: DateTime.now(),
-      type: NotificationType.info,
-      payload: 'daily_summary',
-    );
-
-    _addNotification(notification);
-
-    await _notifications.show(
-      DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      notification.title,
-      notification.message,
-      NotificationDetails(
-        android: AndroidNotificationDetails(
-          _reminderChannelId,
-          'Reminder Notifications',
-          channelDescription: 'Notifications for business reminders',
-          importance: Importance.defaultImportance,
-          priority: Priority.defaultPriority,
-          icon: '@mipmap/ic_launcher',
-          color: const Color(0xFF2196F3),
-        ),
-        iOS: const DarwinNotificationDetails(
-          presentAlert: true,
-          presentBadge: true,
-          presentSound: true,
-        ),
-      ),
-      payload: notification.payload,
-    );
-  }
-
-  // Check for low stock and send notifications
-  Future<void> checkLowStockNotifications() async {
-    final stocks = await DatabaseService.getAllStocks();
-
-    for (final stock in stocks) {
-      if (stock.quantity <= 0) {
-        await showOutOfStockNotification(stock);
-      } else if (stock.quantity <= stock.reorderLevel) {
-        await showLowStockNotification(stock);
-      }
-    }
   }
 
   // Get all notifications

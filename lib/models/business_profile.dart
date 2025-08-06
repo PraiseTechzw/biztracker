@@ -61,8 +61,9 @@ class BusinessProfile {
     if (address != null && address!.isNotEmpty) addressParts.add(address!);
     if (city != null && city!.isNotEmpty) addressParts.add(city!);
     if (state != null && state!.isNotEmpty) addressParts.add(state!);
-    if (postalCode != null && postalCode!.isNotEmpty)
+    if (postalCode != null && postalCode!.isNotEmpty) {
       addressParts.add(postalCode!);
+    }
     if (country != null && country!.isNotEmpty) addressParts.add(country!);
 
     return addressParts.join(', ');

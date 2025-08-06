@@ -196,10 +196,10 @@ class _DashboardScreenState extends State<DashboardScreen>
         DatabaseService.getTotalExpenses(),
       ]);
 
-      final capital = results[0] as double;
-      final stockValue = results[1] as double;
-      final sales = results[2] as double;
-      final expenses = results[3] as double;
+      final capital = results[0];
+      final stockValue = results[1];
+      final sales = results[2];
+      final expenses = results[3];
       final profit = sales - expenses;
 
       setState(() {
@@ -248,6 +248,11 @@ class _DashboardScreenState extends State<DashboardScreen>
       _hasShownFirstSaleConfetti = true;
       ConfettiUtils.showAchievementConfetti(_confettiController);
       ToastUtils.showInfoToast('🎉 First sale recorded! Keep it up!');
+      // Show phone notification
+      NotificationService().showAchievementNotification(
+        'First Sale!',
+        'Congratulations! You\'ve recorded your first sale. Keep it up!',
+      );
     }
 
     // Check for profit milestones
@@ -257,15 +262,30 @@ class _DashboardScreenState extends State<DashboardScreen>
       ToastUtils.showInfoToast(
         '🎊 Congratulations! You\'ve reached \$1,000 in profit!',
       );
+      // Show phone notification
+      NotificationService().showAchievementNotification(
+        'Profit Milestone!',
+        'Congratulations! You\'ve reached \$1,000 in total profit!',
+      );
     } else if (profit >= 5000 && _hasShownProfitMilestoneConfetti) {
       ConfettiUtils.showMilestoneConfetti(_confettiController);
       ToastUtils.showInfoToast(
         '🎊 Amazing! You\'ve reached \$5,000 in profit!',
       );
+      // Show phone notification
+      NotificationService().showAchievementNotification(
+        'Amazing Achievement!',
+        'Amazing! You\'ve reached \$5,000 in total profit!',
+      );
     } else if (profit >= 10000 && _hasShownProfitMilestoneConfetti) {
       ConfettiUtils.showMilestoneConfetti(_confettiController);
       ToastUtils.showInfoToast(
         '🎊 Outstanding! You\'ve reached \$10,000 in profit!',
+      );
+      // Show phone notification
+      NotificationService().showAchievementNotification(
+        'Outstanding Achievement!',
+        'Outstanding! You\'ve reached \$10,000 in total profit!',
       );
     }
   }
@@ -483,6 +503,17 @@ class _DashboardScreenState extends State<DashboardScreen>
                         icon: const Icon(
                           Icons.settings,
                           color: GlassmorphismTheme.textColor,
+                          size: 28,
+                        ),
+                      ),
+                      // Test notification button (for development)
+                      IconButton(
+                        onPressed: () {
+                          NotificationService().showTestNotification();
+                        },
+                        icon: const Icon(
+                          Icons.notifications_active,
+                          color: Colors.orange,
                           size: 28,
                         ),
                       ),
