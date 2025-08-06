@@ -78,6 +78,78 @@ class DatabaseService {
         .toList();
   }
 
+  // Inventory management with barcode support
+  static Future<void> updateStockQuantityByBarcode(
+    String barcode,
+    double newQuantity,
+  ) async {
+    final stock = await getStockByBarcode(barcode);
+    if (stock != null) {
+      stock.quantity = newQuantity;
+      stock.totalValue = newQuantity * stock.unitCostPrice;
+      stock.updatedAt = DateTime.now();
+      await updateStock(stock);
+    }
+  }
+
+  static Future<void> addStockQuantityByBarcode(
+    String barcode,
+    double quantityToAdd,
+  ) async {
+    final stock = await getStockByBarcode(barcode);
+    if (stock != null) {
+      stock.quantity += quantityToAdd;
+      stock.totalValue = stock.quantity * stock.unitCostPrice;
+      stock.updatedAt = DateTime.now();
+      await updateStock(stock);
+    }
+  }
+
+  static Future<void> removeStockQuantityByBarcode(
+    String barcode,
+    double quantityToRemove,
+  ) async {
+    final stock = await getStockByBarcode(barcode);
+    if (stock != null && stock.quantity >= quantityToRemove) {
+      stock.quantity -= quantityToRemove;
+      stock.totalValue = stock.quantity * stock.unitCostPrice;
+      stock.updatedAt = DateTime.now();
+      await updateStock(stock);
+    }
+  }
+
+  static Future<List<Stock>> getStocksNeedingReorder() async {
+    final stocks = await getAllStocks();
+    return stocks
+        .where((stock) => stock.quantity <= stock.reorderLevel)
+        .toList();
+  }
+
+  static Future<Map<String, dynamic>> getInventoryReportByBarcode() async {
+    final stocks = await getAllStocks();
+    final barcodeStocks = stocks
+        .where((stock) => stock.barcode != null && stock.barcode!.isNotEmpty)
+        .toList();
+
+    final totalBarcodeItems = barcodeStocks.length;
+    final totalValue = barcodeStocks.fold<double>(
+      0.0,
+      (sum, stock) => sum + stock.totalValue,
+    );
+    final lowStockBarcodeItems = barcodeStocks
+        .where((stock) => stock.quantity <= stock.reorderLevel)
+        .length;
+
+    return {
+      'totalBarcodeItems': totalBarcodeItems,
+      'totalValue': totalValue,
+      'lowStockBarcodeItems': lowStockBarcodeItems,
+      'barcodeCoverage': stocks.isNotEmpty
+          ? (totalBarcodeItems / stocks.length) * 100
+          : 0.0,
+    };
+  }
+
   static Future<int> getLowStockCount() async {
     final lowStockItems = await getLowStockItems();
     return lowStockItems.length;
@@ -198,6 +270,92 @@ class DatabaseService {
         .customerNameEqualTo(customerName)
         .sortBySaleDateDesc()
         .findAll();
+  }
+
+  // Barcode operations for Sales
+  static Future<List<Sale>> getSalesByProductBarcode(String barcode) async {
+    final stock = await getStockByBarcode(barcode);
+    if (stock != null) {
+      return await isar.sales
+          .filter()
+          .productNameEqualTo(stock.name)
+          .sortBySaleDateDesc()
+          .findAll();
+    }
+    return [];
+  }
+
+  static Future<Map<String, dynamic>> getSalesAnalyticsByBarcode(
+    String barcode,
+  ) async {
+    final stock = await getStockByBarcode(barcode);
+    if (stock == null) {
+      return {
+        'totalSales': 0.0,
+        'totalQuantity': 0.0,
+        'totalRevenue': 0.0,
+        'averagePrice': 0.0,
+        'salesCount': 0,
+      };
+    }
+
+    final sales = await isar.sales
+        .filter()
+        .productNameEqualTo(stock.name)
+        .findAll();
+
+    final totalQuantity = sales.fold<double>(
+      0.0,
+      (sum, sale) => sum + sale.quantity,
+    );
+    final totalRevenue = sales.fold<double>(
+      0.0,
+      (sum, sale) => sum + sale.totalAmount,
+    );
+    final averagePrice = totalQuantity > 0 ? totalRevenue / totalQuantity : 0.0;
+
+    return {
+      'totalSales': totalQuantity,
+      'totalQuantity': totalQuantity,
+      'totalRevenue': totalRevenue,
+      'averagePrice': averagePrice,
+      'salesCount': sales.length,
+      'stockInfo': {
+        'name': stock.name,
+        'currentQuantity': stock.quantity,
+        'unitPrice': stock.unitSellingPrice,
+        'category': stock.category,
+      },
+    };
+  }
+
+  static Future<List<Map<String, dynamic>>>
+  getTopSellingProductsByBarcode() async {
+    final stocks = await getAllStocks();
+    final topProducts = <Map<String, dynamic>>[];
+
+    for (final stock in stocks) {
+      if (stock.barcode != null && stock.barcode!.isNotEmpty) {
+        final analytics = await getSalesAnalyticsByBarcode(stock.barcode!);
+        if (analytics['totalQuantity'] > 0) {
+          topProducts.add({
+            'barcode': stock.barcode,
+            'name': stock.name,
+            'totalQuantity': analytics['totalQuantity'],
+            'totalRevenue': analytics['totalRevenue'],
+            'currentStock': stock.quantity,
+          });
+        }
+      }
+    }
+
+    // Sort by total quantity sold
+    topProducts.sort(
+      (a, b) => (b['totalQuantity'] as double).compareTo(
+        a['totalQuantity'] as double,
+      ),
+    );
+    return topProducts.take(10).toList();
   }
 
   static Future<List<Sale>> getCreditSales() async {
@@ -394,6 +552,7 @@ class DatabaseService {
     final totalOutstandingCredit = await getTotalOutstandingCredit();
     final totalCustomers = await getTotalCustomers();
     final lowStockCount = await getLowStockCount();
+    final inventoryReport = await getInventoryReportByBarcode();
 
     return {
       'totalSales': totalSales,
@@ -407,6 +566,88 @@ class DatabaseService {
       'profitMargin': totalSales > 0
           ? ((totalSales - totalExpenses) / totalSales) * 100
           : 0.0,
+      'barcodeMetrics': inventoryReport,
     };
+  }
+
+  // Barcode utility functions
+  static bool isValidBarcode(String barcode) {
+    // Basic validation for common barcode formats
+    if (barcode.isEmpty) return false;
+
+    // Check for common barcode patterns
+    final patterns = [
+      RegExp(r'^\d{8,14}$'), // EAN-8, EAN-13, UPC
+      RegExp(r'^\d{12}$'), // UPC-A
+      RegExp(r'^\d{13}$'), // EAN-13
+      RegExp(r'^[A-Z0-9]{8,}$'), // Code 128, Code 39
+    ];
+
+    return patterns.any((pattern) => pattern.hasMatch(barcode));
+  }
+
+  static Future<Map<String, dynamic>> getBarcodeStatistics() async {
+    final stocks = await getAllStocks();
+    final barcodeStocks = stocks
+        .where((stock) => stock.barcode != null && stock.barcode!.isNotEmpty)
+        .toList();
+
+    final barcodeCategories = <String, int>{};
+    for (final stock in barcodeStocks) {
+      barcodeCategories[stock.category] =
+          (barcodeCategories[stock.category] ?? 0) + 1;
+    }
+
+    final barcodeLengths = <int, int>{};
+    for (final stock in barcodeStocks) {
+      final length = stock.barcode!.length;
+      barcodeLengths[length] = (barcodeLengths[length] ?? 0) + 1;
+    }
+
+    return {
+      'totalItems': stocks.length,
+      'itemsWithBarcode': barcodeStocks.length,
+      'barcodeCoverage': stocks.isNotEmpty
+          ? (barcodeStocks.length / stocks.length) * 100
+          : 0.0,
+      'barcodeCategories': barcodeCategories,
+      'barcodeLengths': barcodeLengths,
+      'uniqueBarcodes': barcodeStocks.map((s) => s.barcode!).toSet().length,
+    };
+  }
+
+  static Future<List<Stock>> getDuplicateBarcodes() async {
+    final stocks = await getAllStocks();
+    final barcodeMap = <String, List<Stock>>{};
+
+    for (final stock in stocks) {
+      if (stock.barcode != null && stock.barcode!.isNotEmpty) {
+        barcodeMap.putIfAbsent(stock.barcode!, () => []).add(stock);
+      }
+    }
+
+    return barcodeMap.values
+        .where((stocks) => stocks.length > 1)
+        .expand((stocks) => stocks)
+        .toList();
+  }
+
+  static Future<void> validateAndCleanBarcodes() async {
+    final stocks = await getAllStocks();
+    final invalidStocks = <Stock>[];
+
+    for (final stock in stocks) {
+      if (stock.barcode != null && stock.barcode!.isNotEmpty) {
+        if (!isValidBarcode(stock.barcode!)) {
+          invalidStocks.add(stock);
+        }
+      }
+    }
+
+    // You can implement cleaning logic here
+    // For now, just log invalid barcodes
+    if (invalidStocks.isNotEmpty) {
+      print('Found ${invalidStocks.length} stocks with invalid barcodes');
+    }
   }
 }

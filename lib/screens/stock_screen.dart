@@ -263,13 +263,11 @@ class _StockScreenState extends State<StockScreen> {
                 ),
               );
               if (result != null) {
-                // Search for stock with this barcode
-                final stockWithBarcode = stocks.firstWhere(
-                  (stock) => stock.barcode == result,
-                  orElse: () => Stock(),
-                );
+                // Use database service to find stock by barcode
+                final stockWithBarcode =
+                    await DatabaseService.getStockByBarcode(result);
 
-                if (stockWithBarcode.id != 0) {
+                if (stockWithBarcode != null) {
                   setState(() {
                     searchQuery = stockWithBarcode.name;
                     _onSearchChanged(stockWithBarcode.name);

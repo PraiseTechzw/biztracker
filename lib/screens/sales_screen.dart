@@ -892,13 +892,13 @@ class _SalesScreenState extends State<SalesScreen>
                                   ),
                                 );
                                 if (result != null) {
-                                  // Find stock by barcode
-                                  final stockWithBarcode = stocks.firstWhere(
-                                    (stock) => stock.barcode == result,
-                                    orElse: () => Stock(),
-                                  );
+                                  // Use database service to find stock by barcode
+                                  final stockWithBarcode =
+                                      await DatabaseService.getStockByBarcode(
+                                        result,
+                                      );
 
-                                  if (stockWithBarcode.id != 0) {
+                                  if (stockWithBarcode != null) {
                                     setModalState(() {
                                       productNameController.text =
                                           stockWithBarcode.name;

@@ -1140,68 +1140,73 @@ const StockSchema = CollectionSchema(
   name: r'Stock',
   id: 6740185341894042082,
   properties: {
-    r'category': PropertySchema(
+    r'barcode': PropertySchema(
       id: 0,
+      name: r'barcode',
+      type: IsarType.string,
+    ),
+    r'category': PropertySchema(
+      id: 1,
       name: r'category',
       type: IsarType.string,
     ),
     r'createdAt': PropertySchema(
-      id: 1,
+      id: 2,
       name: r'createdAt',
       type: IsarType.dateTime,
     ),
     r'description': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'description',
       type: IsarType.string,
     ),
     r'imagePath': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'imagePath',
       type: IsarType.string,
     ),
     r'name': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'name',
       type: IsarType.string,
     ),
     r'quantity': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'quantity',
       type: IsarType.double,
     ),
     r'reorderLevel': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'reorderLevel',
       type: IsarType.double,
     ),
     r'supplierContact': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'supplierContact',
       type: IsarType.string,
     ),
     r'supplierName': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'supplierName',
       type: IsarType.string,
     ),
     r'totalValue': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'totalValue',
       type: IsarType.double,
     ),
     r'unitCostPrice': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'unitCostPrice',
       type: IsarType.double,
     ),
     r'unitSellingPrice': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'unitSellingPrice',
       type: IsarType.double,
     ),
     r'updatedAt': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'updatedAt',
       type: IsarType.dateTime,
     )
@@ -1253,6 +1258,12 @@ int _stockEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
+  {
+    final value = object.barcode;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.category.length * 3;
   bytesCount += 3 + object.description.length * 3;
   {
@@ -1283,19 +1294,20 @@ void _stockSerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeString(offsets[0], object.category);
-  writer.writeDateTime(offsets[1], object.createdAt);
-  writer.writeString(offsets[2], object.description);
-  writer.writeString(offsets[3], object.imagePath);
-  writer.writeString(offsets[4], object.name);
-  writer.writeDouble(offsets[5], object.quantity);
-  writer.writeDouble(offsets[6], object.reorderLevel);
-  writer.writeString(offsets[7], object.supplierContact);
-  writer.writeString(offsets[8], object.supplierName);
-  writer.writeDouble(offsets[9], object.totalValue);
-  writer.writeDouble(offsets[10], object.unitCostPrice);
-  writer.writeDouble(offsets[11], object.unitSellingPrice);
-  writer.writeDateTime(offsets[12], object.updatedAt);
+  writer.writeString(offsets[0], object.barcode);
+  writer.writeString(offsets[1], object.category);
+  writer.writeDateTime(offsets[2], object.createdAt);
+  writer.writeString(offsets[3], object.description);
+  writer.writeString(offsets[4], object.imagePath);
+  writer.writeString(offsets[5], object.name);
+  writer.writeDouble(offsets[6], object.quantity);
+  writer.writeDouble(offsets[7], object.reorderLevel);
+  writer.writeString(offsets[8], object.supplierContact);
+  writer.writeString(offsets[9], object.supplierName);
+  writer.writeDouble(offsets[10], object.totalValue);
+  writer.writeDouble(offsets[11], object.unitCostPrice);
+  writer.writeDouble(offsets[12], object.unitSellingPrice);
+  writer.writeDateTime(offsets[13], object.updatedAt);
 }
 
 Stock _stockDeserialize(
@@ -1305,20 +1317,21 @@ Stock _stockDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = Stock();
-  object.category = reader.readString(offsets[0]);
-  object.createdAt = reader.readDateTime(offsets[1]);
-  object.description = reader.readString(offsets[2]);
+  object.barcode = reader.readStringOrNull(offsets[0]);
+  object.category = reader.readString(offsets[1]);
+  object.createdAt = reader.readDateTime(offsets[2]);
+  object.description = reader.readString(offsets[3]);
   object.id = id;
-  object.imagePath = reader.readStringOrNull(offsets[3]);
-  object.name = reader.readString(offsets[4]);
-  object.quantity = reader.readDouble(offsets[5]);
-  object.reorderLevel = reader.readDouble(offsets[6]);
-  object.supplierContact = reader.readStringOrNull(offsets[7]);
-  object.supplierName = reader.readStringOrNull(offsets[8]);
-  object.totalValue = reader.readDouble(offsets[9]);
-  object.unitCostPrice = reader.readDouble(offsets[10]);
-  object.unitSellingPrice = reader.readDouble(offsets[11]);
-  object.updatedAt = reader.readDateTime(offsets[12]);
+  object.imagePath = reader.readStringOrNull(offsets[4]);
+  object.name = reader.readString(offsets[5]);
+  object.quantity = reader.readDouble(offsets[6]);
+  object.reorderLevel = reader.readDouble(offsets[7]);
+  object.supplierContact = reader.readStringOrNull(offsets[8]);
+  object.supplierName = reader.readStringOrNull(offsets[9]);
+  object.totalValue = reader.readDouble(offsets[10]);
+  object.unitCostPrice = reader.readDouble(offsets[11]);
+  object.unitSellingPrice = reader.readDouble(offsets[12]);
+  object.updatedAt = reader.readDateTime(offsets[13]);
   return object;
 }
 
@@ -1330,30 +1343,32 @@ P _stockDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readString(offset)) as P;
-    case 1:
-      return (reader.readDateTime(offset)) as P;
-    case 2:
-      return (reader.readString(offset)) as P;
-    case 3:
       return (reader.readStringOrNull(offset)) as P;
-    case 4:
+    case 1:
       return (reader.readString(offset)) as P;
+    case 2:
+      return (reader.readDateTime(offset)) as P;
+    case 3:
+      return (reader.readString(offset)) as P;
+    case 4:
+      return (reader.readStringOrNull(offset)) as P;
     case 5:
-      return (reader.readDouble(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 6:
       return (reader.readDouble(offset)) as P;
     case 7:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDouble(offset)) as P;
     case 8:
       return (reader.readStringOrNull(offset)) as P;
     case 9:
-      return (reader.readDouble(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 10:
       return (reader.readDouble(offset)) as P;
     case 11:
       return (reader.readDouble(offset)) as P;
     case 12:
+      return (reader.readDouble(offset)) as P;
+    case 13:
       return (reader.readDateTime(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1644,6 +1659,152 @@ extension StockQueryWhere on QueryBuilder<Stock, Stock, QWhereClause> {
 }
 
 extension StockQueryFilter on QueryBuilder<Stock, Stock, QFilterCondition> {
+  QueryBuilder<Stock, Stock, QAfterFilterCondition> barcodeIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'barcode',
+      ));
+    });
+  }
+
+  QueryBuilder<Stock, Stock, QAfterFilterCondition> barcodeIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'barcode',
+      ));
+    });
+  }
+
+  QueryBuilder<Stock, Stock, QAfterFilterCondition> barcodeEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'barcode',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Stock, Stock, QAfterFilterCondition> barcodeGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'barcode',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Stock, Stock, QAfterFilterCondition> barcodeLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'barcode',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Stock, Stock, QAfterFilterCondition> barcodeBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'barcode',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Stock, Stock, QAfterFilterCondition> barcodeStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'barcode',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Stock, Stock, QAfterFilterCondition> barcodeEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'barcode',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Stock, Stock, QAfterFilterCondition> barcodeContains(
+      String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'barcode',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Stock, Stock, QAfterFilterCondition> barcodeMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'barcode',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Stock, Stock, QAfterFilterCondition> barcodeIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'barcode',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<Stock, Stock, QAfterFilterCondition> barcodeIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'barcode',
+        value: '',
+      ));
+    });
+  }
+
   QueryBuilder<Stock, Stock, QAfterFilterCondition> categoryEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -2945,6 +3106,18 @@ extension StockQueryObject on QueryBuilder<Stock, Stock, QFilterCondition> {}
 extension StockQueryLinks on QueryBuilder<Stock, Stock, QFilterCondition> {}
 
 extension StockQuerySortBy on QueryBuilder<Stock, Stock, QSortBy> {
+  QueryBuilder<Stock, Stock, QAfterSortBy> sortByBarcode() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'barcode', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Stock, Stock, QAfterSortBy> sortByBarcodeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'barcode', Sort.desc);
+    });
+  }
+
   QueryBuilder<Stock, Stock, QAfterSortBy> sortByCategory() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'category', Sort.asc);
@@ -3103,6 +3276,18 @@ extension StockQuerySortBy on QueryBuilder<Stock, Stock, QSortBy> {
 }
 
 extension StockQuerySortThenBy on QueryBuilder<Stock, Stock, QSortThenBy> {
+  QueryBuilder<Stock, Stock, QAfterSortBy> thenByBarcode() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'barcode', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Stock, Stock, QAfterSortBy> thenByBarcodeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'barcode', Sort.desc);
+    });
+  }
+
   QueryBuilder<Stock, Stock, QAfterSortBy> thenByCategory() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'category', Sort.asc);
@@ -3273,6 +3458,13 @@ extension StockQuerySortThenBy on QueryBuilder<Stock, Stock, QSortThenBy> {
 }
 
 extension StockQueryWhereDistinct on QueryBuilder<Stock, Stock, QDistinct> {
+  QueryBuilder<Stock, Stock, QDistinct> distinctByBarcode(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'barcode', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<Stock, Stock, QDistinct> distinctByCategory(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -3363,6 +3555,12 @@ extension StockQueryProperty on QueryBuilder<Stock, Stock, QQueryProperty> {
   QueryBuilder<Stock, int, QQueryOperations> idProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'id');
+    });
+  }
+
+  QueryBuilder<Stock, String?, QQueryOperations> barcodeProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'barcode');
     });
   }
 
