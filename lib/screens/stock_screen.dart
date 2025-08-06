@@ -1118,6 +1118,9 @@ class _StockScreenState extends State<StockScreen> {
                                     ..name = nameController.text
                                     ..description = descriptionController.text
                                     ..category = categoryController.text
+                                    ..barcode = barcodeController.text.isEmpty
+                                        ? null
+                                        : barcodeController.text
                                     ..supplierName =
                                         supplierNameController.text.isEmpty
                                         ? null
@@ -1142,6 +1145,9 @@ class _StockScreenState extends State<StockScreen> {
                                   stock.description =
                                       descriptionController.text;
                                   stock.category = categoryController.text;
+                                  stock.barcode = barcodeController.text.isEmpty
+                                      ? null
+                                      : barcodeController.text;
                                   stock.supplierName =
                                       supplierNameController.text.isEmpty
                                       ? null
