@@ -599,10 +599,10 @@ class _SalesScreenState extends State<SalesScreen>
               ),
             ),
           ],
-          if (remainingAmount > 0) ...[
-            const SizedBox(height: 12),
-            Row(
-              children: [
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              if (remainingAmount > 0)
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () => _showPaymentDialog(sale),
@@ -618,9 +618,40 @@ class _SalesScreenState extends State<SalesScreen>
                     ),
                   ),
                 ),
-              ],
-            ),
-          ],
+              if (remainingAmount > 0) const SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _showEditSaleDialog(sale),
+                  icon: const Icon(Icons.edit, size: 16),
+                  label: const Text('Edit'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _showDeleteConfirmation(sale),
+                  icon: const Icon(Icons.delete, size: 16),
+                  label: const Text('Delete'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -2156,6 +2187,363 @@ class _SalesScreenState extends State<SalesScreen>
           ],
         ),
       ),
+    );
+  }
+
+  void _showEditSaleDialog(Sale sale) {
+    final productNameController = TextEditingController(text: sale.productName);
+    final customerNameController = TextEditingController(
+      text: sale.customerName,
+    );
+    final quantityController = TextEditingController(
+      text: sale.quantity.toString(),
+    );
+    final unitPriceController = TextEditingController(
+      text: sale.unitPrice.toString(),
+    );
+    final amountPaidController = TextEditingController(
+      text: sale.amountPaid.toString(),
+    );
+    final notesController = TextEditingController(text: sale.notes);
+    final paymentStatusController = TextEditingController(
+      text: sale.paymentStatus,
+    );
+    DateTime selectedDate = sale.saleDate;
+    DateTime? selectedDueDate = sale.dueDate;
+    bool isSubmitting = false;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: GlassmorphismTheme.surfaceColor,
+              title: const Text(
+                'Edit Sale',
+                style: TextStyle(color: GlassmorphismTheme.textColor),
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      controller: productNameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Product Name',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter product name';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: customerNameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Customer Name',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: quantityController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'Quantity',
+                              border: OutlineInputBorder(),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter quantity';
+                              }
+                              if (double.tryParse(value) == null) {
+                                return 'Please enter a valid number';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: TextFormField(
+                            controller: unitPriceController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'Unit Price',
+                              prefixText: '\$',
+                              border: OutlineInputBorder(),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter unit price';
+                              }
+                              if (double.tryParse(value) == null) {
+                                return 'Please enter a valid number';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: amountPaidController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Amount Paid',
+                        prefixText: '\$',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter amount paid';
+                        }
+                        if (double.tryParse(value) == null) {
+                          return 'Please enter a valid number';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      value: paymentStatusController.text,
+                      decoration: const InputDecoration(
+                        labelText: 'Payment Status',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 'paid', child: Text('Paid')),
+                        DropdownMenuItem(
+                          value: 'partial',
+                          child: Text('Partial'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'pending',
+                          child: Text('Pending'),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        paymentStatusController.text = value ?? 'pending';
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    ListTile(
+                      title: const Text(
+                        'Sale Date',
+                        style: TextStyle(color: GlassmorphismTheme.textColor),
+                      ),
+                      subtitle: Text(
+                        DateFormat('MMM dd, yyyy').format(selectedDate),
+                        style: const TextStyle(
+                          color: GlassmorphismTheme.textSecondaryColor,
+                        ),
+                      ),
+                      trailing: const Icon(
+                        Icons.calendar_today,
+                        color: GlassmorphismTheme.primaryColor,
+                      ),
+                      onTap: () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDate,
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime.now(),
+                        );
+                        if (date != null) {
+                          setDialogState(() {
+                            selectedDate = date;
+                          });
+                        }
+                      },
+                    ),
+                    ListTile(
+                      title: const Text(
+                        'Due Date (Optional)',
+                        style: TextStyle(color: GlassmorphismTheme.textColor),
+                      ),
+                      subtitle: Text(
+                        selectedDueDate != null
+                            ? DateFormat('MMM dd, yyyy').format(selectedDueDate)
+                            : 'No due date',
+                        style: const TextStyle(
+                          color: GlassmorphismTheme.textSecondaryColor,
+                        ),
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (selectedDueDate != null)
+                            IconButton(
+                              onPressed: () {
+                                setDialogState(() {
+                                  selectedDueDate = null;
+                                });
+                              },
+                              icon: const Icon(Icons.clear, size: 16),
+                            ),
+                          const Icon(
+                            Icons.calendar_today,
+                            color: GlassmorphismTheme.primaryColor,
+                          ),
+                        ],
+                      ),
+                      onTap: () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDueDate ?? DateTime.now(),
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime.now().add(
+                            const Duration(days: 365),
+                          ),
+                        );
+                        if (date != null) {
+                          setDialogState(() {
+                            selectedDueDate = date;
+                          });
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: notesController,
+                      maxLines: 3,
+                      decoration: const InputDecoration(
+                        labelText: 'Notes (Optional)',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: isSubmitting
+                      ? null
+                      : () async {
+                          if (productNameController.text.isNotEmpty &&
+                              quantityController.text.isNotEmpty &&
+                              unitPriceController.text.isNotEmpty &&
+                              amountPaidController.text.isNotEmpty) {
+                            setDialogState(() => isSubmitting = true);
+                            try {
+                              final quantity = double.parse(
+                                quantityController.text,
+                              );
+                              final unitPrice = double.parse(
+                                unitPriceController.text,
+                              );
+                              final amountPaid = double.parse(
+                                amountPaidController.text,
+                              );
+                              final totalAmount = quantity * unitPrice;
+
+                              if (amountPaid > totalAmount) {
+                                ToastUtils.showErrorToast(
+                                  'Amount paid cannot exceed total amount',
+                                );
+                                return;
+                              }
+
+                              // Update sale data
+                              sale.productName = productNameController.text;
+                              sale.customerName = customerNameController.text;
+                              sale.quantity = quantity;
+                              sale.unitPrice = unitPrice;
+                              sale.totalAmount = totalAmount;
+                              sale.amountPaid = amountPaid;
+                              sale.paymentStatus = paymentStatusController.text;
+                              sale.saleDate = selectedDate;
+                              sale.dueDate = selectedDueDate;
+                              sale.notes = notesController.text;
+
+                              await DatabaseService.updateSale(sale);
+
+                              Navigator.pop(context);
+                              ToastUtils.showSuccessToast(
+                                'Sale updated successfully!',
+                              );
+                              _loadData(); // Refresh data
+                            } catch (e) {
+                              ToastUtils.showErrorToast(
+                                'Error updating sale: $e',
+                              );
+                            } finally {
+                              setDialogState(() => isSubmitting = false);
+                            }
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: GlassmorphismTheme.primaryColor,
+                  ),
+                  child: isSubmitting
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text('Update Sale'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showDeleteConfirmation(Sale sale) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: GlassmorphismTheme.surfaceColor,
+          title: const Text(
+            'Delete Sale',
+            style: TextStyle(color: GlassmorphismTheme.textColor),
+          ),
+          content: Text(
+            'Are you sure you want to delete the sale of "${sale.productName}" to "${sale.customerName}"? This action cannot be undone.',
+            style: const TextStyle(
+              color: GlassmorphismTheme.textSecondaryColor,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                try {
+                  await DatabaseService.deleteSale(sale.id);
+                  Navigator.pop(context);
+                  ToastUtils.showSuccessToast('Sale deleted successfully!');
+                  _loadData(); // Refresh data
+                } catch (e) {
+                  ToastUtils.showErrorToast('Error deleting sale: $e');
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

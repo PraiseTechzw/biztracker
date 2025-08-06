@@ -29,6 +29,18 @@ class DatabaseService {
     });
   }
 
+  static Future<void> updateCapital(Capital capital) async {
+    await isar.writeTxn(() async {
+      await isar.capitals.put(capital);
+    });
+  }
+
+  static Future<void> deleteCapital(Id capitalId) async {
+    await isar.writeTxn(() async {
+      await isar.capitals.delete(capitalId);
+    });
+  }
+
   static Future<List<Capital>> getAllCapitals() async {
     return await isar.capitals.where().sortByDateDesc().findAll();
   }
@@ -260,6 +272,12 @@ class DatabaseService {
     });
   }
 
+  static Future<void> deleteSale(Id saleId) async {
+    await isar.writeTxn(() async {
+      await isar.sales.delete(saleId);
+    });
+  }
+
   static Future<List<Sale>> getAllSales() async {
     return await isar.sales.where().sortBySaleDateDesc().findAll();
   }
@@ -374,6 +392,18 @@ class DatabaseService {
   static Future<void> addExpense(Expense expense) async {
     await isar.writeTxn(() async {
       await isar.expenses.put(expense);
+    });
+  }
+
+  static Future<void> updateExpense(Expense expense) async {
+    await isar.writeTxn(() async {
+      await isar.expenses.put(expense);
+    });
+  }
+
+  static Future<void> deleteExpense(Id expenseId) async {
+    await isar.writeTxn(() async {
+      await isar.expenses.delete(expenseId);
     });
   }
 

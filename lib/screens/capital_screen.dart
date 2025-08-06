@@ -341,17 +341,44 @@ class _CapitalScreenState extends State<CapitalScreen>
                     ),
                   ),
                   const SizedBox(width: 10),
-                  Flexible(
-                    child: Text(
-                      '\$${NumberFormat('#,##0.00').format(capital.amount)}',
-                      style: const TextStyle(
-                        color: GlassmorphismTheme.textColor,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        '\$${NumberFormat('#,##0.00').format(capital.amount)}',
+                        style: const TextStyle(
+                          color: GlassmorphismTheme.textColor,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.end,
                       ),
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.end,
-                    ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            onPressed: () => _showEditCapitalDialog(capital),
+                            icon: const Icon(
+                              Icons.edit,
+                              color: Colors.blue,
+                              size: 20,
+                            ),
+                            tooltip: 'Edit',
+                          ),
+                          IconButton(
+                            onPressed: () => _showDeleteConfirmation(capital),
+                            icon: const Icon(
+                              Icons.delete,
+                              color: Colors.red,
+                              size: 20,
+                            ),
+                            tooltip: 'Delete',
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -1104,6 +1131,238 @@ class _CapitalScreenState extends State<CapitalScreen>
           ),
         ),
       ),
+    );
+  }
+
+  void _showEditCapitalDialog(Capital capital) {
+    final descriptionController = TextEditingController(
+      text: capital.description,
+    );
+    final amountController = TextEditingController(
+      text: capital.amount.toString(),
+    );
+    final typeController = TextEditingController(text: capital.type);
+    DateTime selectedDate = capital.date;
+    bool isSubmitting = false;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: GlassmorphismTheme.surfaceColor,
+              title: const Text(
+                'Edit Capital',
+                style: TextStyle(color: GlassmorphismTheme.textColor),
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      controller: descriptionController,
+                      decoration: const InputDecoration(
+                        labelText: 'Description',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter description';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: amountController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Amount',
+                        prefixText: '\$',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter amount';
+                        }
+                        if (double.tryParse(value) == null) {
+                          return 'Please enter a valid number';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      value: typeController.text,
+                      decoration: const InputDecoration(
+                        labelText: 'Type',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'initial',
+                          child: Text('Initial Capital'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'additional',
+                          child: Text('Additional Capital'),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        typeController.text = value ?? 'initial';
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    ListTile(
+                      title: const Text(
+                        'Date',
+                        style: TextStyle(color: GlassmorphismTheme.textColor),
+                      ),
+                      subtitle: Text(
+                        DateFormat('MMM dd, yyyy').format(selectedDate),
+                        style: const TextStyle(
+                          color: GlassmorphismTheme.textSecondaryColor,
+                        ),
+                      ),
+                      trailing: const Icon(
+                        Icons.calendar_today,
+                        color: GlassmorphismTheme.primaryColor,
+                      ),
+                      onTap: () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDate,
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime.now(),
+                        );
+                        if (date != null) {
+                          setDialogState(() {
+                            selectedDate = date;
+                          });
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: isSubmitting
+                      ? null
+                      : () async {
+                          if (descriptionController.text.isNotEmpty &&
+                              amountController.text.isNotEmpty) {
+                            setDialogState(() => isSubmitting = true);
+                            try {
+                              final amount = double.parse(
+                                amountController.text,
+                              );
+
+                              // Update capital data
+                              capital.description = descriptionController.text;
+                              capital.amount = amount;
+                              capital.type = typeController.text;
+                              capital.date = selectedDate;
+
+                              await DatabaseService.updateCapital(capital);
+
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Capital updated successfully!',
+                                  ),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                              _loadData(); // Refresh data
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Error updating capital: $e'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            } finally {
+                              setDialogState(() => isSubmitting = false);
+                            }
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: GlassmorphismTheme.primaryColor,
+                  ),
+                  child: isSubmitting
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text('Update Capital'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showDeleteConfirmation(Capital capital) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: GlassmorphismTheme.surfaceColor,
+          title: const Text(
+            'Delete Capital',
+            style: TextStyle(color: GlassmorphismTheme.textColor),
+          ),
+          content: Text(
+            'Are you sure you want to delete the capital entry "${capital.description}"? This action cannot be undone.',
+            style: const TextStyle(
+              color: GlassmorphismTheme.textSecondaryColor,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                try {
+                  await DatabaseService.deleteCapital(capital.id);
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Capital deleted successfully!'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                  _loadData(); // Refresh data
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error deleting capital: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

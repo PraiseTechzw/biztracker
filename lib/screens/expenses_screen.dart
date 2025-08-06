@@ -189,13 +189,42 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                     ],
                   ),
                 ),
-                Text(
-                  '\$${NumberFormat('#,##0.00').format(expense.amount)}',
-                  style: const TextStyle(
-                    color: GlassmorphismTheme.textColor,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '\$${NumberFormat('#,##0.00').format(expense.amount)}',
+                      style: const TextStyle(
+                        color: GlassmorphismTheme.textColor,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          onPressed: () => _showEditExpenseDialog(expense),
+                          icon: const Icon(
+                            Icons.edit,
+                            color: Colors.blue,
+                            size: 20,
+                          ),
+                          tooltip: 'Edit',
+                        ),
+                        IconButton(
+                          onPressed: () => _showDeleteConfirmation(expense),
+                          icon: const Icon(
+                            Icons.delete,
+                            color: Colors.red,
+                            size: 20,
+                          ),
+                          tooltip: 'Delete',
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -401,6 +430,252 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  void _showEditExpenseDialog(Expense expense) {
+    final categoryController = TextEditingController(text: expense.category);
+    final descriptionController = TextEditingController(
+      text: expense.description,
+    );
+    final amountController = TextEditingController(
+      text: expense.amount.toString(),
+    );
+    final paymentMethodController = TextEditingController(
+      text: expense.paymentMethod,
+    );
+    DateTime selectedDate = expense.expenseDate;
+    bool isSubmitting = false;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: GlassmorphismTheme.surfaceColor,
+              title: const Text(
+                'Edit Expense',
+                style: TextStyle(color: GlassmorphismTheme.textColor),
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      controller: categoryController,
+                      decoration: const InputDecoration(
+                        labelText: 'Category',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter category';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: descriptionController,
+                      decoration: const InputDecoration(
+                        labelText: 'Description',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter description';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: amountController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Amount',
+                        prefixText: '\$',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter amount';
+                        }
+                        if (double.tryParse(value) == null) {
+                          return 'Please enter a valid number';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: paymentMethodController,
+                      decoration: const InputDecoration(
+                        labelText: 'Payment Method',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter payment method';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    ListTile(
+                      title: const Text(
+                        'Expense Date',
+                        style: TextStyle(color: GlassmorphismTheme.textColor),
+                      ),
+                      subtitle: Text(
+                        DateFormat('MMM dd, yyyy').format(selectedDate),
+                        style: const TextStyle(
+                          color: GlassmorphismTheme.textSecondaryColor,
+                        ),
+                      ),
+                      trailing: const Icon(
+                        Icons.calendar_today,
+                        color: GlassmorphismTheme.primaryColor,
+                      ),
+                      onTap: () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDate,
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime.now(),
+                        );
+                        if (date != null) {
+                          setDialogState(() {
+                            selectedDate = date;
+                          });
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: isSubmitting
+                      ? null
+                      : () async {
+                          if (categoryController.text.isNotEmpty &&
+                              descriptionController.text.isNotEmpty &&
+                              amountController.text.isNotEmpty &&
+                              paymentMethodController.text.isNotEmpty) {
+                            setDialogState(() => isSubmitting = true);
+                            try {
+                              final amount = double.parse(
+                                amountController.text,
+                              );
+
+                              // Update expense data
+                              expense.category = categoryController.text;
+                              expense.description = descriptionController.text;
+                              expense.amount = amount;
+                              expense.paymentMethod =
+                                  paymentMethodController.text;
+                              expense.expenseDate = selectedDate;
+
+                              await DatabaseService.updateExpense(expense);
+
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Expense updated successfully!',
+                                  ),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                              _loadExpenses(); // Refresh data
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Error updating expense: $e'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            } finally {
+                              setDialogState(() => isSubmitting = false);
+                            }
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: GlassmorphismTheme.primaryColor,
+                  ),
+                  child: isSubmitting
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text('Update Expense'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showDeleteConfirmation(Expense expense) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: GlassmorphismTheme.surfaceColor,
+          title: const Text(
+            'Delete Expense',
+            style: TextStyle(color: GlassmorphismTheme.textColor),
+          ),
+          content: Text(
+            'Are you sure you want to delete the expense "${expense.description}"? This action cannot be undone.',
+            style: const TextStyle(
+              color: GlassmorphismTheme.textSecondaryColor,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                try {
+                  await DatabaseService.deleteExpense(expense.id);
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Expense deleted successfully!'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                  _loadExpenses(); // Refresh data
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error deleting expense: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
     );
   }
 }
