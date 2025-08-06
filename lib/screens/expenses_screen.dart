@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../utils/glassmorphism_theme.dart';
 import '../services/database_service.dart';
+import '../services/notification_service.dart';
 import '../models/business_data.dart';
 
 class ExpensesScreen extends StatefulWidget {
@@ -380,6 +381,11 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                                 ..createdAt = DateTime.now();
 
                               await DatabaseService.addExpense(expense);
+
+                              // Show notification for the expense
+                              await NotificationService()
+                                  .showExpenseNotification(expense);
+
                               Navigator.pop(context);
                               _loadExpenses();
                             }

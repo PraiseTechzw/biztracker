@@ -230,7 +230,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   // Add a method to load notification count
   Future<void> _loadNotificationCount() async {
     try {
-      final count = await NotificationService().getUnreadNotificationCount();
+      final count = NotificationService().getUnreadNotificationCount();
       setState(() {
         unreadNotifications = count;
       });
@@ -383,8 +383,9 @@ class _DashboardScreenState extends State<DashboardScreen>
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (context) => const NotificationsScreen()),
     );
-    // Refresh dashboard data when returning from notifications
+    // Refresh dashboard data and notification count when returning from notifications
     _loadDashboardData();
+    _loadNotificationCount();
   }
 
   Future<void> _refreshData() async {
