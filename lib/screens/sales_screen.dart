@@ -5,6 +5,7 @@ import 'package:confetti/confetti.dart';
 import '../utils/glassmorphism_theme.dart';
 import '../utils/toast_utils.dart';
 import '../services/database_service.dart';
+import '../services/notification_service.dart';
 import '../models/business_data.dart';
 import 'barcode_scanner_screen.dart';
 
@@ -1779,6 +1780,9 @@ class _SalesScreenState extends State<SalesScreen>
                                 ConfettiUtils.showSuccessConfetti(
                                   _confettiController,
                                 );
+                                // Show notification for the sale
+                                await NotificationService()
+                                    .showSaleNotification(sale);
                                 _loadData(); // Refresh both sales and stocks
                               } catch (e) {
                                 ToastUtils.showErrorToast(

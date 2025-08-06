@@ -8,6 +8,7 @@ import 'package:confetti/confetti.dart';
 import '../utils/glassmorphism_theme.dart';
 import '../utils/toast_utils.dart';
 import '../services/database_service.dart';
+import '../services/notification_service.dart';
 import '../models/business_data.dart';
 import 'settings_screen.dart';
 import 'notifications_screen.dart';
@@ -228,11 +229,17 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   // Add a method to load notification count
   Future<void> _loadNotificationCount() async {
-    // For now, set a sample notification count
-    // You can replace this with actual notification loading logic
-    setState(() {
-      unreadNotifications = 3; // Sample count - replace with actual logic
-    });
+    try {
+      final count = await NotificationService().getUnreadNotificationCount();
+      setState(() {
+        unreadNotifications = count;
+      });
+    } catch (e) {
+      print('Error loading notification count: $e');
+      setState(() {
+        unreadNotifications = 0;
+      });
+    }
   }
 
   void _checkAchievements(double sales, double profit) {
@@ -406,123 +413,134 @@ class _DashboardScreenState extends State<DashboardScreen>
             ),
           ),
           child: SafeArea(
-            child: RefreshIndicator(
-              onRefresh: _refreshData,
-              color: GlassmorphismTheme.primaryColor,
-              child: CustomScrollView(
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Simple header without complex animations
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      businessName.isNotEmpty
-                                          ? 'Hello, $businessName!'
-                                          : 'Welcome!',
-                                      style: const TextStyle(
-                                        color: GlassmorphismTheme.textColor,
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    const Text(
-                                      'Here\'s your business at a glance',
-                                      style: TextStyle(
-                                        color: GlassmorphismTheme
-                                            .textSecondaryColor,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              // Debug: Show notification count
-                              Text(
-                                'N: $unreadNotifications',
-                                style: TextStyle(
-                                  color: Colors.red,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              // Notification icon - simplified
-                              Container(
-                                margin: const EdgeInsets.only(right: 8),
-                                child: _buildNotificationsIcon(
-                                  context,
-                                  unreadCount: unreadNotifications,
-                                ),
-                              ),
-                              // Settings icon - simplified
-                              IconButton(
-                                onPressed: () {
-                                  print(
-                                    'Settings button pressed',
-                                  ); // Debug print
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          const SettingsScreen(),
-                                    ),
-                                  );
-                                },
-                                icon: const Icon(
-                                  Icons.settings,
-                                  color: GlassmorphismTheme.textColor,
-                                  size: 28,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          FadeTransition(
-                            opacity: _cardAnim,
-                            child: _buildOverviewCards(),
-                          ),
-                        ],
-                      ),
+            child: Column(
+              children: [
+                // Fixed Header - Doesn't scroll
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        GlassmorphismTheme.backgroundColor.withOpacity(0.95),
+                        Color(0xFF1E293B).withOpacity(0.95),
+                      ],
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 10,
+                        spreadRadius: 0,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (isLoading)
-                            const Center(
-                              child: CircularProgressIndicator(
-                                color: GlassmorphismTheme.primaryColor,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              businessName.isNotEmpty
+                                  ? 'Hello, $businessName!'
+                                  : 'Welcome!',
+                              style: const TextStyle(
+                                color: GlassmorphismTheme.textColor,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w600,
                               ),
-                            )
-                          else if (hasError)
-                            _buildErrorState()
-                          else
-                            Column(
+                            ),
+                            const SizedBox(height: 2),
+                            const Text(
+                              'Here\'s your business at a glance',
+                              style: TextStyle(
+                                color: GlassmorphismTheme.textSecondaryColor,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // Notification icon - simplified
+                      _buildNotificationsIcon(
+                        context,
+                        unreadCount: unreadNotifications,
+                      ),
+                      // Settings icon - simplified
+                      IconButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const SettingsScreen(),
+                            ),
+                          );
+                        },
+                        icon: const Icon(
+                          Icons.settings,
+                          color: GlassmorphismTheme.textColor,
+                          size: 28,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Scrollable Content
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: _refreshData,
+                    color: GlassmorphismTheme.primaryColor,
+                    child: CustomScrollView(
+                      slivers: [
+                        SliverToBoxAdapter(
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const SizedBox(height: 24),
-                                _buildQuickStats(),
-                                const SizedBox(height: 24),
-                                _buildRecentActivity(),
+                                FadeTransition(
+                                  opacity: _cardAnim,
+                                  child: _buildOverviewCards(),
+                                ),
                               ],
                             ),
-                        ],
-                      ),
+                          ),
+                        ),
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (isLoading)
+                                  const Center(
+                                    child: CircularProgressIndicator(
+                                      color: GlassmorphismTheme.primaryColor,
+                                    ),
+                                  )
+                                else if (hasError)
+                                  _buildErrorState()
+                                else
+                                  Column(
+                                    children: [
+                                      const SizedBox(height: 24),
+                                      _buildQuickStats(),
+                                      const SizedBox(height: 24),
+                                      _buildRecentActivity(),
+                                    ],
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -929,7 +947,6 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Widget _buildNotificationsIcon(BuildContext context, {int unreadCount = 0}) {
-    print('Building notification icon with count: $unreadCount'); // Debug print
     return Stack(
       clipBehavior: Clip.none,
       children: [

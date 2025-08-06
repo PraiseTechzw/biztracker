@@ -44,6 +44,7 @@ dependencies:
   fluttertoast: ^8.2.4
   confetti: ^0.7.0
   mobile_scanner: ^7.0.1
+  flutter_local_notifications: ^19.4.0
 
 dev_dependencies:
   flutter_test:

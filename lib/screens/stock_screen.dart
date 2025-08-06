@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import '../utils/glassmorphism_theme.dart';
 import '../utils/toast_utils.dart';
 import '../services/database_service.dart';
+import '../services/notification_service.dart';
 import '../models/business_data.dart';
 import '../utils/search_filter_utils.dart';
 import 'barcode_scanner_screen.dart';
@@ -1182,6 +1183,12 @@ class _StockScreenState extends State<StockScreen> {
                                     ..updatedAt = DateTime.now();
 
                                   await DatabaseService.addStock(newStock);
+
+                                  // Check for low stock notification
+                                  if (quantity <= reorderLevel) {
+                                    await NotificationService()
+                                        .showLowStockNotification(newStock);
+                                  }
                                 } else {
                                   // Update existing stock
                                   stock.name = nameController.text;
@@ -1194,7 +1201,7 @@ class _StockScreenState extends State<StockScreen> {
                                   stock.supplierName =
                                       supplierNameController.text.isEmpty
                                       ? null
-                                      : supplierNameController.text;
+                                      : supplierContactController.text;
                                   stock.supplierContact =
                                       supplierContactController.text.isEmpty
                                       ? null
@@ -1208,6 +1215,12 @@ class _StockScreenState extends State<StockScreen> {
                                   stock.updatedAt = DateTime.now();
 
                                   await DatabaseService.updateStock(stock);
+
+                                  // Check for low stock notification after update
+                                  if (quantity <= reorderLevel) {
+                                    await NotificationService()
+                                        .showLowStockNotification(stock);
+                                  }
                                 }
 
                                 Navigator.pop(context);
