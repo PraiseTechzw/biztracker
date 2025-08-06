@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import '../utils/glassmorphism_theme.dart';
+import '../widgets/app_bar_logo.dart';
 import 'dashboard_screen.dart';
 import 'capital_screen.dart';
 import 'stock_screen.dart';
