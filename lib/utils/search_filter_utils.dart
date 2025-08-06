@@ -1,7 +1,7 @@
 import '../models/business_data.dart';
 
 class SearchFilterUtils {
-  // Search stocks by name, description, category, or supplier
+  // Search stocks by name, description, category, supplier, or barcode
   static List<Stock> searchStocks(List<Stock> stocks, String query) {
     if (query.isEmpty) return stocks;
 
@@ -10,12 +10,14 @@ class SearchFilterUtils {
       final description = stock.description.toLowerCase();
       final category = stock.category.toLowerCase();
       final supplierName = stock.supplierName?.toLowerCase() ?? '';
+      final barcode = stock.barcode?.toLowerCase() ?? '';
       final searchQuery = query.toLowerCase();
 
       return name.contains(searchQuery) ||
           description.contains(searchQuery) ||
           category.contains(searchQuery) ||
-          supplierName.contains(searchQuery);
+          supplierName.contains(searchQuery) ||
+          barcode.contains(searchQuery);
     }).toList();
   }
 

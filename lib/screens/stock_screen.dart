@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import '../utils/glassmorphism_theme.dart';
+import '../utils/toast_utils.dart';
 import '../services/database_service.dart';
 import '../models/business_data.dart';
 import '../utils/search_filter_utils.dart';
@@ -233,18 +234,62 @@ class _StockScreenState extends State<StockScreen> {
   Widget _buildSearchBar() {
     return GlassmorphismTheme.glassmorphismContainer(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: TextField(
-        onChanged: _onSearchChanged,
-        decoration: const InputDecoration(
-          hintText: 'Search stocks...',
-          prefixIcon: Icon(
-            Icons.search,
-            color: GlassmorphismTheme.textSecondaryColor,
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              onChanged: _onSearchChanged,
+              decoration: const InputDecoration(
+                hintText: 'Search stocks by name or barcode...',
+                prefixIcon: Icon(
+                  Icons.search,
+                  color: GlassmorphismTheme.textSecondaryColor,
+                ),
+                border: InputBorder.none,
+                hintStyle: TextStyle(
+                  color: GlassmorphismTheme.textSecondaryColor,
+                ),
+              ),
+              style: const TextStyle(color: GlassmorphismTheme.textColor),
+            ),
           ),
-          border: InputBorder.none,
-          hintStyle: TextStyle(color: GlassmorphismTheme.textSecondaryColor),
-        ),
-        style: const TextStyle(color: GlassmorphismTheme.textColor),
+          IconButton(
+            onPressed: () async {
+              final result = await Navigator.push<String>(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      const BarcodeScannerScreen(title: 'Scan Stock Barcode'),
+                ),
+              );
+              if (result != null) {
+                // Search for stock with this barcode
+                final stockWithBarcode = stocks.firstWhere(
+                  (stock) => stock.barcode == result,
+                  orElse: () => Stock(),
+                );
+
+                if (stockWithBarcode.id != 0) {
+                  setState(() {
+                    searchQuery = stockWithBarcode.name;
+                    _onSearchChanged(stockWithBarcode.name);
+                  });
+                  ToastUtils.showSuccessToast(
+                    'Found: ${stockWithBarcode.name}',
+                  );
+                } else {
+                  ToastUtils.showWarningToast(
+                    'No stock found with this barcode',
+                  );
+                }
+              }
+            },
+            icon: const Icon(
+              Icons.qr_code_scanner,
+              color: GlassmorphismTheme.primaryColor,
+            ),
+          ),
+        ],
       ),
     );
   }

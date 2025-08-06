@@ -99,6 +99,55 @@ class DatabaseService {
     );
   }
 
+  // Barcode operations for Stock
+  static Future<Stock?> getStockByBarcode(String barcode) async {
+    final stocks = await getAllStocks();
+    try {
+      return stocks.firstWhere((stock) => stock.barcode == barcode);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  static Future<List<Stock>> searchStocksByBarcode(String barcode) async {
+    final stocks = await getAllStocks();
+    return stocks
+        .where(
+          (stock) =>
+              stock.barcode != null &&
+              stock.barcode!.toLowerCase().contains(barcode.toLowerCase()),
+        )
+        .toList();
+  }
+
+  static Future<bool> isBarcodeExists(String barcode) async {
+    final stock = await getStockByBarcode(barcode);
+    return stock != null;
+  }
+
+  static Future<List<String>> getAllBarcodes() async {
+    final stocks = await getAllStocks();
+    return stocks
+        .where((stock) => stock.barcode != null && stock.barcode!.isNotEmpty)
+        .map((stock) => stock.barcode!)
+        .toList();
+  }
+
+  static Future<Map<String, Stock>> getStocksByBarcodes(
+    List<String> barcodes,
+  ) async {
+    final stocks = await getAllStocks();
+    final stockMap = <String, Stock>{};
+
+    for (final stock in stocks) {
+      if (stock.barcode != null && barcodes.contains(stock.barcode)) {
+        stockMap[stock.barcode!] = stock;
+      }
+    }
+
+    return stockMap;
+  }
+
   static Future<List<String>> getStockCategories() async {
     final stocks = await getAllStocks();
     final categories = stocks.map((stock) => stock.category).toSet().toList();

@@ -832,48 +832,99 @@ class _SalesScreenState extends State<SalesScreen>
                           ),
                         const SizedBox(height: 16),
 
-                        TextFormField(
-                          controller: productNameController,
-                          style: const TextStyle(
-                            color: GlassmorphismTheme.textColor,
-                          ),
-                          decoration: InputDecoration(
-                            labelText: 'Product Name',
-                            labelStyle: const TextStyle(
-                              color: GlassmorphismTheme.textColor,
-                            ),
-                            prefixIcon: const Icon(
-                              Icons.shopping_bag,
-                              color: GlassmorphismTheme.primaryColor,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                color: Colors.white.withOpacity(0.3),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                controller: productNameController,
+                                style: const TextStyle(
+                                  color: GlassmorphismTheme.textColor,
+                                ),
+                                decoration: InputDecoration(
+                                  labelText: 'Product Name',
+                                  labelStyle: const TextStyle(
+                                    color: GlassmorphismTheme.textColor,
+                                  ),
+                                  prefixIcon: const Icon(
+                                    Icons.shopping_bag,
+                                    color: GlassmorphismTheme.primaryColor,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color: Colors.white.withOpacity(0.3),
+                                    ),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color: Colors.white.withOpacity(0.3),
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(
+                                      color: GlassmorphismTheme.primaryColor,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.white.withOpacity(0.1),
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please enter product name';
+                                  }
+                                  return null;
+                                },
                               ),
                             ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                color: Colors.white.withOpacity(0.3),
+                            const SizedBox(width: 8),
+                            IconButton(
+                              onPressed: () async {
+                                final result = await Navigator.push<String>(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const BarcodeScannerScreen(
+                                          title: 'Scan Product Barcode',
+                                        ),
+                                  ),
+                                );
+                                if (result != null) {
+                                  // Find stock by barcode
+                                  final stockWithBarcode = stocks.firstWhere(
+                                    (stock) => stock.barcode == result,
+                                    orElse: () => Stock(),
+                                  );
+
+                                  if (stockWithBarcode.id != 0) {
+                                    setModalState(() {
+                                      productNameController.text =
+                                          stockWithBarcode.name;
+                                      selectedStock = stockWithBarcode;
+                                      unitPriceController.text =
+                                          stockWithBarcode.unitSellingPrice
+                                              .toString();
+                                    });
+                                    ToastUtils.showSuccessToast(
+                                      'Product found: ${stockWithBarcode.name}',
+                                    );
+                                  } else {
+                                    ToastUtils.showWarningToast(
+                                      'No product found with this barcode',
+                                    );
+                                  }
+                                }
+                              },
+                              style: IconButton.styleFrom(
+                                backgroundColor:
+                                    GlassmorphismTheme.primaryColor,
+                                foregroundColor: Colors.white,
                               ),
+                              icon: const Icon(Icons.qr_code_scanner),
                             ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                color: GlassmorphismTheme.primaryColor,
-                                width: 2,
-                              ),
-                            ),
-                            filled: true,
-                            fillColor: Colors.white.withOpacity(0.1),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter product name';
-                            }
-                            return null;
-                          },
+                          ],
                         ),
                         const SizedBox(height: 16),
 
