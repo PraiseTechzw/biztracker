@@ -3,6 +3,37 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../models/business_data.dart';
 import 'database_service.dart';
 
+class NotificationItem {
+  final String id;
+  final String title;
+  final String message;
+  final DateTime timestamp;
+  final NotificationType type;
+  final bool isRead;
+  final String? payload;
+
+  NotificationItem({
+    required this.id,
+    required this.title,
+    required this.message,
+    required this.timestamp,
+    required this.type,
+    this.isRead = false,
+    this.payload,
+  });
+}
+
+enum NotificationType {
+  info,
+  warning,
+  success,
+  error,
+  sale,
+  stock,
+  expense,
+  achievement,
+}
+
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
@@ -10,6 +41,9 @@ class NotificationService {
 
   final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
+
+  // In-memory storage for notifications (in a real app, you'd use a database)
+  final List<NotificationItem> _notificationsList = [];
 
   // Notification channels
   static const String _salesChannelId = 'sales_notifications';
@@ -45,6 +79,134 @@ class NotificationService {
 
     // Create notification channels
     await _createNotificationChannels();
+
+    // Load initial notifications from business data
+    await _loadInitialNotifications();
+  }
+
+  Future<void> _loadInitialNotifications() async {
+    try {
+      // Load recent sales (last 7 days)
+      final sales = await DatabaseService.getAllSales();
+      final recentSales = sales
+          .where(
+            (sale) => sale.saleDate.isAfter(
+              DateTime.now().subtract(const Duration(days: 7)),
+            ),
+          )
+          .toList();
+
+      for (final sale in recentSales.take(5)) {
+        _addNotification(
+          NotificationItem(
+            id: 'sale_${sale.id}',
+            title: '💰 Sale Recorded',
+            message:
+                '${sale.productName} sold to ${sale.customerName} for \$${sale.totalAmount.toStringAsFixed(2)}',
+            timestamp: sale.saleDate,
+            type: NotificationType.sale,
+            payload: 'sale_${sale.id}',
+          ),
+        );
+      }
+
+      // Load low stock items
+      final stocks = await DatabaseService.getAllStocks();
+      final lowStockItems = stocks
+          .where((stock) => stock.quantity <= stock.reorderLevel)
+          .toList();
+
+      for (final stock in lowStockItems) {
+        _addNotification(
+          NotificationItem(
+            id: 'stock_${stock.id}',
+            title: stock.quantity <= 0
+                ? '🚨 Out of Stock!'
+                : '⚠️ Low Stock Alert',
+            message: stock.quantity <= 0
+                ? '${stock.name} is completely out of stock. Please restock immediately.'
+                : '${stock.name} is running low (${stock.quantity} units left). Reorder level: ${stock.reorderLevel}',
+            timestamp: stock.updatedAt,
+            type: NotificationType.stock,
+            payload: 'stock_${stock.id}',
+          ),
+        );
+      }
+
+      // Load recent expenses (last 7 days)
+      final expenses = await DatabaseService.getAllExpenses();
+      final recentExpenses = expenses
+          .where(
+            (expense) => expense.expenseDate.isAfter(
+              DateTime.now().subtract(const Duration(days: 7)),
+            ),
+          )
+          .toList();
+
+      for (final expense in recentExpenses.take(5)) {
+        _addNotification(
+          NotificationItem(
+            id: 'expense_${expense.id}',
+            title: '💸 Expense Recorded',
+            message:
+                '${expense.category}: ${expense.description} - \$${expense.amount.toStringAsFixed(2)}',
+            timestamp: expense.expenseDate,
+            type: NotificationType.expense,
+            payload: 'expense_${expense.id}',
+          ),
+        );
+      }
+
+      // Check for achievements
+      final totalSales = sales.fold<double>(
+        0,
+        (sum, sale) => sum + sale.totalAmount,
+      );
+      final totalExpenses = expenses.fold<double>(
+        0,
+        (sum, expense) => sum + expense.amount,
+      );
+      final netProfit = totalSales - totalExpenses;
+
+      if (totalSales >= 1000 && totalSales < 5000) {
+        _addNotification(
+          NotificationItem(
+            id: 'achievement_sales_1k',
+            title: '🎉 Sales Milestone!',
+            message: 'Congratulations! You\'ve reached \$1,000 in total sales!',
+            timestamp: DateTime.now(),
+            type: NotificationType.achievement,
+            payload: 'achievement_sales_1k',
+          ),
+        );
+      }
+
+      if (netProfit >= 1000 && netProfit < 5000) {
+        _addNotification(
+          NotificationItem(
+            id: 'achievement_profit_1k',
+            title: '🎊 Profit Milestone!',
+            message:
+                'Congratulations! You\'ve reached \$1,000 in total profit!',
+            timestamp: DateTime.now(),
+            type: NotificationType.achievement,
+            payload: 'achievement_profit_1k',
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error loading initial notifications: $e');
+    }
+  }
+
+  void _addNotification(NotificationItem notification) {
+    // Check if notification already exists
+    final existingIndex = _notificationsList.indexWhere(
+      (n) => n.id == notification.id,
+    );
+    if (existingIndex == -1) {
+      _notificationsList.add(notification);
+    }
   }
 
   Future<void> _createNotificationChannels() async {
@@ -139,10 +301,22 @@ class NotificationService {
 
   // Sales notifications
   Future<void> showSaleNotification(Sale sale) async {
+    final notification = NotificationItem(
+      id: 'sale_${sale.id}',
+      title: '💰 Sale Recorded!',
+      message:
+          '${sale.productName} sold to ${sale.customerName} for \$${sale.totalAmount.toStringAsFixed(2)}',
+      timestamp: DateTime.now(),
+      type: NotificationType.sale,
+      payload: 'sale_${sale.id}',
+    );
+
+    _addNotification(notification);
+
     await _notifications.show(
       DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      '💰 Sale Recorded!',
-      '${sale.productName} sold to ${sale.customerName} for \$${sale.totalAmount.toStringAsFixed(2)}',
+      notification.title,
+      notification.message,
       NotificationDetails(
         android: AndroidNotificationDetails(
           _salesChannelId,
@@ -159,16 +333,29 @@ class NotificationService {
           presentSound: true,
         ),
       ),
-      payload: 'sale_${sale.id}',
+      payload: notification.payload,
     );
   }
 
   // Low stock notifications
   Future<void> showLowStockNotification(Stock stock) async {
+    final notification = NotificationItem(
+      id: 'stock_${stock.id}',
+      title: stock.quantity <= 0 ? '🚨 Out of Stock!' : '⚠️ Low Stock Alert',
+      message: stock.quantity <= 0
+          ? '${stock.name} is completely out of stock. Please restock immediately.'
+          : '${stock.name} is running low (${stock.quantity} units left). Reorder level: ${stock.reorderLevel}',
+      timestamp: DateTime.now(),
+      type: NotificationType.stock,
+      payload: 'stock_${stock.id}',
+    );
+
+    _addNotification(notification);
+
     await _notifications.show(
       DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      '⚠️ Low Stock Alert',
-      '${stock.name} is running low (${stock.quantity} units left). Reorder level: ${stock.reorderLevel}',
+      notification.title,
+      notification.message,
       NotificationDetails(
         android: AndroidNotificationDetails(
           _stockChannelId,
@@ -185,16 +372,28 @@ class NotificationService {
           presentSound: true,
         ),
       ),
-      payload: 'stock_${stock.id}',
+      payload: notification.payload,
     );
   }
 
   // Out of stock notifications
   Future<void> showOutOfStockNotification(Stock stock) async {
+    final notification = NotificationItem(
+      id: 'stock_${stock.id}',
+      title: '🚨 Out of Stock!',
+      message:
+          '${stock.name} is completely out of stock. Please restock immediately.',
+      timestamp: DateTime.now(),
+      type: NotificationType.stock,
+      payload: 'stock_${stock.id}',
+    );
+
+    _addNotification(notification);
+
     await _notifications.show(
       DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      '🚨 Out of Stock!',
-      '${stock.name} is completely out of stock. Please restock immediately.',
+      notification.title,
+      notification.message,
       NotificationDetails(
         android: AndroidNotificationDetails(
           _stockChannelId,
@@ -211,16 +410,28 @@ class NotificationService {
           presentSound: true,
         ),
       ),
-      payload: 'stock_${stock.id}',
+      payload: notification.payload,
     );
   }
 
   // Expense notifications
   Future<void> showExpenseNotification(Expense expense) async {
+    final notification = NotificationItem(
+      id: 'expense_${expense.id}',
+      title: '💸 Expense Recorded',
+      message:
+          '${expense.category}: ${expense.description} - \$${expense.amount.toStringAsFixed(2)}',
+      timestamp: DateTime.now(),
+      type: NotificationType.expense,
+      payload: 'expense_${expense.id}',
+    );
+
+    _addNotification(notification);
+
     await _notifications.show(
       DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      '💸 Expense Recorded',
-      '${expense.category}: ${expense.description} - \$${expense.amount.toStringAsFixed(2)}',
+      notification.title,
+      notification.message,
       NotificationDetails(
         android: AndroidNotificationDetails(
           _expenseChannelId,
@@ -237,16 +448,27 @@ class NotificationService {
           presentSound: true,
         ),
       ),
-      payload: 'expense_${expense.id}',
+      payload: notification.payload,
     );
   }
 
   // Achievement notifications
   Future<void> showAchievementNotification(String title, String message) async {
+    final notification = NotificationItem(
+      id: 'achievement_${DateTime.now().millisecondsSinceEpoch}',
+      title: '🎉 $title',
+      message: message,
+      timestamp: DateTime.now(),
+      type: NotificationType.achievement,
+      payload: 'achievement',
+    );
+
+    _addNotification(notification);
+
     await _notifications.show(
       DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      '🎉 $title',
-      message,
+      notification.title,
+      notification.message,
       NotificationDetails(
         android: AndroidNotificationDetails(
           _achievementChannelId,
@@ -263,7 +485,7 @@ class NotificationService {
           presentSound: true,
         ),
       ),
-      payload: 'achievement',
+      payload: notification.payload,
     );
   }
 
@@ -302,10 +524,22 @@ class NotificationService {
     );
     final netProfit = totalSales - totalExpenses;
 
+    final notification = NotificationItem(
+      id: 'daily_summary_${today.millisecondsSinceEpoch}',
+      title: '📊 Daily Summary',
+      message:
+          'Sales: \$${totalSales.toStringAsFixed(2)} | Expenses: \$${totalExpenses.toStringAsFixed(2)} | Net: \$${netProfit.toStringAsFixed(2)}',
+      timestamp: DateTime.now(),
+      type: NotificationType.info,
+      payload: 'daily_summary',
+    );
+
+    _addNotification(notification);
+
     await _notifications.show(
       DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      '📊 Daily Summary',
-      'Sales: \$${totalSales.toStringAsFixed(2)} | Expenses: \$${totalExpenses.toStringAsFixed(2)} | Net: \$${netProfit.toStringAsFixed(2)}',
+      notification.title,
+      notification.message,
       NotificationDetails(
         android: AndroidNotificationDetails(
           _reminderChannelId,
@@ -322,7 +556,7 @@ class NotificationService {
           presentSound: true,
         ),
       ),
-      payload: 'daily_summary',
+      payload: notification.payload,
     );
   }
 
@@ -339,35 +573,60 @@ class NotificationService {
     }
   }
 
+  // Get all notifications
+  List<NotificationItem> getAllNotifications() {
+    // Sort by timestamp (newest first)
+    final sortedNotifications = List<NotificationItem>.from(_notificationsList);
+    sortedNotifications.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    return sortedNotifications;
+  }
+
   // Get unread notification count
-  Future<int> getUnreadNotificationCount() async {
-    final recentSales = await DatabaseService.getAllSales();
-    final recentExpenses = await DatabaseService.getAllExpenses();
-    final stocks = await DatabaseService.getAllStocks();
-
-    int count = 0;
-
-    // Count recent sales (last 24 hours)
-    final yesterday = DateTime.now().subtract(const Duration(days: 1));
-    count += recentSales
-        .where((sale) => sale.saleDate.isAfter(yesterday))
+  int getUnreadNotificationCount() {
+    return _notificationsList
+        .where((notification) => !notification.isRead)
         .length;
+  }
 
-    // Count recent expenses (last 24 hours)
-    count += recentExpenses
-        .where((expense) => expense.expenseDate.isAfter(yesterday))
-        .length;
+  // Mark notification as read
+  void markAsRead(String notificationId) {
+    final index = _notificationsList.indexWhere((n) => n.id == notificationId);
+    if (index != -1) {
+      _notificationsList[index] = NotificationItem(
+        id: _notificationsList[index].id,
+        title: _notificationsList[index].title,
+        message: _notificationsList[index].message,
+        timestamp: _notificationsList[index].timestamp,
+        type: _notificationsList[index].type,
+        isRead: true,
+        payload: _notificationsList[index].payload,
+      );
+    }
+  }
 
-    // Count low stock items
-    count += stocks
-        .where((stock) => stock.quantity <= stock.reorderLevel)
-        .length;
+  // Mark all notifications as read
+  void markAllAsRead() {
+    for (int i = 0; i < _notificationsList.length; i++) {
+      _notificationsList[i] = NotificationItem(
+        id: _notificationsList[i].id,
+        title: _notificationsList[i].title,
+        message: _notificationsList[i].message,
+        timestamp: _notificationsList[i].timestamp,
+        type: _notificationsList[i].type,
+        isRead: true,
+        payload: _notificationsList[i].payload,
+      );
+    }
+  }
 
-    return count;
+  // Delete notification
+  void deleteNotification(String notificationId) {
+    _notificationsList.removeWhere((n) => n.id == notificationId);
   }
 
   // Clear all notifications
   Future<void> clearAllNotifications() async {
+    _notificationsList.clear();
     await _notifications.cancelAll();
   }
 
