@@ -21,11 +21,6 @@ void main() async {
   // Initialize notification service
   await NotificationService().initialize();
 
-  // Show welcome notification after a short delay
-  Future.delayed(const Duration(seconds: 3), () {
-    NotificationService().showWelcomeNotification();
-  });
-
   runApp(const BizTrackerApp());
 }
 

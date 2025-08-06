@@ -506,17 +506,6 @@ class _DashboardScreenState extends State<DashboardScreen>
                           size: 28,
                         ),
                       ),
-                      // Test notification button (for development)
-                      IconButton(
-                        onPressed: () {
-                          NotificationService().showTestNotification();
-                        },
-                        icon: const Icon(
-                          Icons.notifications_active,
-                          color: Colors.orange,
-                          size: 28,
-                        ),
-                      ),
                     ],
                   ),
                 ),

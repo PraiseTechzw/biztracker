@@ -207,7 +207,7 @@ class NotificationService {
         );
       }
     } catch (e) {
-      print('Error loading initial notifications: $e');
+      // Silent error handling for production
     }
   }
 
@@ -307,29 +307,23 @@ class NotificationService {
   }
 
   void _onNotificationTapped(NotificationResponse response) {
-    // Handle notification tap - you can navigate to specific screens here
-    print('Notification tapped: ${response.payload}');
-
-    // Handle different notification types
+    // Handle notification tap - navigate to specific screens
     if (response.payload != null) {
       if (response.payload!.startsWith('sale_')) {
         // Navigate to sales screen
-        print('Navigate to sales screen');
+        // TODO: Implement navigation logic
       } else if (response.payload!.startsWith('stock_')) {
         // Navigate to stock screen
-        print('Navigate to stock screen');
+        // TODO: Implement navigation logic
       } else if (response.payload!.startsWith('expense_')) {
         // Navigate to expenses screen
-        print('Navigate to expenses screen');
+        // TODO: Implement navigation logic
       } else if (response.payload!.startsWith('achievement')) {
         // Navigate to dashboard
-        print('Navigate to dashboard');
+        // TODO: Implement navigation logic
       } else if (response.payload!.startsWith('daily_summary')) {
         // Navigate to reports screen
-        print('Navigate to reports screen');
-      } else if (response.payload!.startsWith('test_notification')) {
-        // Test notification
-        print('Test notification tapped');
+        // TODO: Implement navigation logic
       }
     }
   }
@@ -343,14 +337,7 @@ class NotificationService {
             >();
 
     if (androidImplementation != null) {
-      final bool? granted = await androidImplementation
-          .requestNotificationsPermission();
-      print('Notification permission granted: $granted');
-
-      // Check if exact alarms are permitted
-      final bool? exactAlarmsPermitted = await androidImplementation
-          .areNotificationsEnabled();
-      print('Exact alarms permitted: $exactAlarmsPermitted');
+      await androidImplementation.requestNotificationsPermission();
     }
   }
 
@@ -362,9 +349,7 @@ class NotificationService {
       // Set up weekly low stock check
       await _scheduleWeeklyStockCheck();
     } catch (e) {
-      print('Error setting up periodic notifications: $e');
-      // Fallback: Use simple notifications instead of scheduled ones
-      print('Using fallback notification system');
+      // Silent fallback for production
     }
   }
 
@@ -415,13 +400,7 @@ class NotificationService {
         payload: 'daily_summary',
       );
     } catch (e) {
-      print('Error scheduling daily summary: $e');
-      // Fallback: Show immediate notification for testing
-      await showReminderNotification(
-        '📊 Daily Business Summary',
-        'Check your daily sales, expenses, and stock updates',
-        payload: 'daily_summary',
-      );
+      // Silent fallback for production
     }
   }
 
@@ -469,13 +448,7 @@ class NotificationService {
         payload: 'weekly_stock_check',
       );
     } catch (e) {
-      print('Error scheduling weekly stock check: $e');
-      // Fallback: Show immediate notification for testing
-      await showReminderNotification(
-        '📦 Weekly Stock Review',
-        'Review your inventory levels and reorder items if needed',
-        payload: 'weekly_stock_check',
-      );
+      // Silent fallback for production
     }
   }
 
@@ -713,7 +686,7 @@ class NotificationService {
         }
       }
     } catch (e) {
-      print('Error checking low stock notifications: $e');
+      // Silent error handling for production
     }
   }
 
@@ -761,17 +734,8 @@ class NotificationService {
         payload: 'daily_summary',
       );
     } catch (e) {
-      print('Error showing daily summary notification: $e');
+      // Silent error handling for production
     }
-  }
-
-  // Show immediate test notification (for development)
-  Future<void> showTestNotification() async {
-    await showReminderNotification(
-      '🧪 Test Notification',
-      'This is a test notification to verify phone notifications are working!',
-      payload: 'test_notification',
-    );
   }
 
   // Show welcome notification
