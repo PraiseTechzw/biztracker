@@ -246,141 +246,147 @@ class _CapitalScreenState extends State<CapitalScreen>
         itemCount: capitals.length,
         itemBuilder: (context, index) {
           final capital = capitals[index];
-          return AnimatedContainer(
-            duration: const Duration(milliseconds: 350),
-            curve: Curves.easeOut,
-            child: GlassmorphismTheme.glassmorphismContainer(
-              margin: const EdgeInsets.only(bottom: 14),
-              padding: const EdgeInsets.all(18),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: capital.type == 'initial'
-                          ? GlassmorphismTheme.primaryColor.withOpacity(0.18)
-                          : Colors.green.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(12),
+          return GestureDetector(
+            onTap: () => _showCapitalDetailsBottomSheet(capital),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 350),
+              curve: Curves.easeOut,
+              child: GlassmorphismTheme.glassmorphismContainer(
+                margin: const EdgeInsets.only(bottom: 14),
+                padding: const EdgeInsets.all(18),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: capital.type == 'initial'
+                            ? GlassmorphismTheme.primaryColor.withOpacity(0.18)
+                            : Colors.green.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        capital.type == 'initial'
+                            ? Icons.account_balance_wallet
+                            : Icons.add_circle,
+                        color: capital.type == 'initial'
+                            ? GlassmorphismTheme.primaryColor
+                            : Colors.green,
+                        size: 24,
+                      ),
                     ),
-                    child: Icon(
-                      capital.type == 'initial'
-                          ? Icons.account_balance_wallet
-                          : Icons.add_circle,
-                      color: capital.type == 'initial'
-                          ? GlassmorphismTheme.primaryColor
-                          : Colors.green,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          capital.description,
-                          style: const TextStyle(
-                            color: GlassmorphismTheme.textColor,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            capital.description,
+                            style: const TextStyle(
+                              color: GlassmorphismTheme.textColor,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 2,
                           ),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 2,
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Flexible(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: capital.type == 'initial'
-                                      ? GlassmorphismTheme.primaryColor
-                                            .withOpacity(0.13)
-                                      : Colors.green.withOpacity(0.13),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  capital.type == 'initial'
-                                      ? 'Initial Capital'
-                                      : 'Additional Capital',
-                                  style: TextStyle(
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
                                     color: capital.type == 'initial'
                                         ? GlassmorphismTheme.primaryColor
-                                        : Colors.green,
+                                              .withOpacity(0.13)
+                                        : Colors.green.withOpacity(0.13),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    capital.type == 'initial'
+                                        ? 'Initial Capital'
+                                        : 'Additional Capital',
+                                    style: TextStyle(
+                                      color: capital.type == 'initial'
+                                          ? GlassmorphismTheme.primaryColor
+                                          : Colors.green,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Icon(
+                                Icons.calendar_today,
+                                size: 13,
+                                color: GlassmorphismTheme.textSecondaryColor,
+                              ),
+                              const SizedBox(width: 3),
+                              Flexible(
+                                child: Text(
+                                  DateFormat(
+                                    'MMM dd, yyyy',
+                                  ).format(capital.date),
+                                  style: const TextStyle(
+                                    color:
+                                        GlassmorphismTheme.textSecondaryColor,
                                     fontSize: 12,
-                                    fontWeight: FontWeight.w500,
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                            Icon(
-                              Icons.calendar_today,
-                              size: 13,
-                              color: GlassmorphismTheme.textSecondaryColor,
-                            ),
-                            const SizedBox(width: 3),
-                            Flexible(
-                              child: Text(
-                                DateFormat('MMM dd, yyyy').format(capital.date),
-                                style: const TextStyle(
-                                  color: GlassmorphismTheme.textSecondaryColor,
-                                  fontSize: 12,
-                                ),
-                                overflow: TextOverflow.ellipsis,
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          '\$${NumberFormat('#,##0.00').format(capital.amount)}',
+                          style: const TextStyle(
+                            color: GlassmorphismTheme.textColor,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.end,
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              onPressed: () => _showEditCapitalDialog(capital),
+                              icon: const Icon(
+                                Icons.edit,
+                                color: Colors.blue,
+                                size: 20,
                               ),
+                              tooltip: 'Edit',
+                            ),
+                            IconButton(
+                              onPressed: () => _showDeleteConfirmation(capital),
+                              icon: const Icon(
+                                Icons.delete,
+                                color: Colors.red,
+                                size: 20,
+                              ),
+                              tooltip: 'Delete',
                             ),
                           ],
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        '\$${NumberFormat('#,##0.00').format(capital.amount)}',
-                        style: const TextStyle(
-                          color: GlassmorphismTheme.textColor,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.end,
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            onPressed: () => _showEditCapitalDialog(capital),
-                            icon: const Icon(
-                              Icons.edit,
-                              color: Colors.blue,
-                              size: 20,
-                            ),
-                            tooltip: 'Edit',
-                          ),
-                          IconButton(
-                            onPressed: () => _showDeleteConfirmation(capital),
-                            icon: const Icon(
-                              Icons.delete,
-                              color: Colors.red,
-                              size: 20,
-                            ),
-                            tooltip: 'Delete',
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           );
@@ -432,6 +438,243 @@ class _CapitalScreenState extends State<CapitalScreen>
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showCapitalDetailsBottomSheet(Capital capital) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.75,
+        decoration: BoxDecoration(
+          color: GlassmorphismTheme.surfaceColor.withOpacity(0.95),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
+        ),
+        child: Column(
+          children: [
+            // Handle bar
+            Container(
+              margin: const EdgeInsets.only(top: 8),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            // Header
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: capital.type == 'initial'
+                          ? GlassmorphismTheme.primaryColor.withOpacity(0.18)
+                          : Colors.green.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      capital.type == 'initial'
+                          ? Icons.account_balance_wallet
+                          : Icons.add_circle,
+                      color: capital.type == 'initial'
+                          ? GlassmorphismTheme.primaryColor
+                          : Colors.green,
+                      size: 32,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          capital.description,
+                          style: const TextStyle(
+                            color: GlassmorphismTheme.textColor,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          capital.type == 'initial'
+                              ? 'Initial Capital'
+                              : 'Additional Capital',
+                          style: TextStyle(
+                            color: capital.type == 'initial'
+                                ? GlassmorphismTheme.primaryColor
+                                : Colors.green,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        Text(
+                          DateFormat('MMM dd, yyyy').format(capital.date),
+                          style: const TextStyle(
+                            color: GlassmorphismTheme.textSecondaryColor,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Text(
+                    '\$${NumberFormat('#,##0.00').format(capital.amount)}',
+                    style: const TextStyle(
+                      color: GlassmorphismTheme.textColor,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Capital Details Section
+                    _buildDetailSection('Capital Details', [
+                      _buildDetailRow('Description', capital.description),
+                      _buildDetailRow(
+                        'Type',
+                        capital.type == 'initial'
+                            ? 'Initial Capital'
+                            : 'Additional Capital',
+                      ),
+                      _buildDetailRow(
+                        'Amount',
+                        '\$${NumberFormat('#,##0.00').format(capital.amount)}',
+                      ),
+                      _buildDetailRow(
+                        'Date',
+                        DateFormat('MMM dd, yyyy').format(capital.date),
+                      ),
+                      _buildDetailRow(
+                        'Created',
+                        DateFormat('MMM dd, yyyy').format(capital.createdAt),
+                      ),
+                    ]),
+                    const SizedBox(height: 32),
+                  ],
+                ),
+              ),
+            ),
+            // Action Buttons
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: GlassmorphismTheme.surfaceColor.withOpacity(0.8),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(20),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _showEditCapitalDialog(capital);
+                      },
+                      icon: const Icon(Icons.edit, size: 18),
+                      label: const Text('Edit'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _showDeleteConfirmation(capital);
+                      },
+                      icon: const Icon(Icons.delete, size: 18),
+                      label: const Text('Delete'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailSection(String title, List<Widget> children) {
+    return GlassmorphismTheme.glassmorphismContainer(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              color: GlassmorphismTheme.textColor,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: GlassmorphismTheme.textSecondaryColor,
+                fontSize: 13,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                color: GlassmorphismTheme.textColor,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

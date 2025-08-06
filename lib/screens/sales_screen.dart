@@ -435,224 +435,192 @@ class _SalesScreenState extends State<SalesScreen>
         sale.dueDate!.isBefore(DateTime.now()) &&
         remainingAmount > 0;
 
-    return GlassmorphismTheme.glassmorphismContainer(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: GlassmorphismTheme.primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: stock.imagePath != null && stock.imagePath!.isNotEmpty
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Image.file(
-                          File(stock.imagePath!),
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Icon(
-                            Icons.point_of_sale,
-                            color: GlassmorphismTheme.primaryColor,
-                            size: 30,
-                          ),
-                        ),
-                      )
-                    : Icon(
-                        Icons.point_of_sale,
-                        color: GlassmorphismTheme.primaryColor,
-                        size: 30,
-                      ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            sale.productName,
-                            style: const TextStyle(
-                              color: GlassmorphismTheme.textColor,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
+    return GestureDetector(
+      onTap: () => _showSaleDetailsBottomSheet(sale),
+      child: GlassmorphismTheme.glassmorphismContainer(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: GlassmorphismTheme.primaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: stock.imagePath != null && stock.imagePath!.isNotEmpty
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.file(
+                            File(stock.imagePath!),
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => Icon(
+                              Icons.point_of_sale,
+                              color: GlassmorphismTheme.primaryColor,
+                              size: 30,
                             ),
-                            overflow: TextOverflow.ellipsis,
                           ),
+                        )
+                      : Icon(
+                          Icons.point_of_sale,
+                          color: GlassmorphismTheme.primaryColor,
+                          size: 30,
                         ),
-                        _buildPaymentStatusChip(
-                          sale,
-                          remainingAmount,
-                          isOverdue,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Customer: ${sale.customerName.isNotEmpty ? sale.customerName : 'Walk-in Customer'}',
-                      style: const TextStyle(
-                        color: GlassmorphismTheme.textSecondaryColor,
-                        fontSize: 12,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      DateFormat('MMM dd, yyyy').format(sale.saleDate),
-                      style: const TextStyle(
-                        color: GlassmorphismTheme.textSecondaryColor,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
                 ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    '\$${NumberFormat('#,##0.00').format(sale.totalAmount.isNaN ? 0.0 : sale.totalAmount)}',
-                    style: const TextStyle(
-                      color: GlassmorphismTheme.textColor,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              sale.productName,
+                              style: const TextStyle(
+                                color: GlassmorphismTheme.textColor,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          _buildPaymentStatusChip(
+                            sale,
+                            remainingAmount,
+                            isOverdue,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Customer: ${sale.customerName.isNotEmpty ? sale.customerName : 'Walk-in Customer'}',
+                        style: const TextStyle(
+                          color: GlassmorphismTheme.textSecondaryColor,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        DateFormat('MMM dd, yyyy').format(sale.saleDate),
+                        style: const TextStyle(
+                          color: GlassmorphismTheme.textSecondaryColor,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
                   ),
-                  Text(
-                    'Profit: \$${NumberFormat('#,##0.00').format(totalProfit.isNaN ? 0.0 : totalProfit)}',
-                    style: TextStyle(
-                      color: (totalProfit.isNaN ? 0.0 : totalProfit) >= 0
-                          ? Colors.green
-                          : Colors.red,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  if (remainingAmount > 0)
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
                     Text(
-                      'Remaining: \$${NumberFormat('#,##0.00').format(remainingAmount.isNaN ? 0.0 : remainingAmount)}',
+                      '\$${NumberFormat('#,##0.00').format(sale.totalAmount.isNaN ? 0.0 : sale.totalAmount)}',
+                      style: const TextStyle(
+                        color: GlassmorphismTheme.textColor,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      'Profit: \$${NumberFormat('#,##0.00').format(totalProfit.isNaN ? 0.0 : totalProfit)}',
                       style: TextStyle(
-                        color: isOverdue ? Colors.red : Colors.orange,
-                        fontSize: 11,
+                        color: (totalProfit.isNaN ? 0.0 : totalProfit) >= 0
+                            ? Colors.green
+                            : Colors.red,
+                        fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(child: _buildSaleInfo('Quantity', '${sale.quantity}')),
-              Expanded(
-                child: _buildSaleInfo(
-                  'Unit Price',
-                  '\$${NumberFormat('#,##0.00').format(sale.unitPrice.isNaN ? 0.0 : sale.unitPrice)}',
+                    if (remainingAmount > 0)
+                      Text(
+                        'Remaining: \$${NumberFormat('#,##0.00').format(remainingAmount.isNaN ? 0.0 : remainingAmount)}',
+                        style: TextStyle(
+                          color: isOverdue ? Colors.red : Colors.orange,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                  ],
                 ),
-              ),
-              Expanded(
-                child: _buildSaleInfo(
-                  'Profit Margin',
-                  '${profitMargin.isNaN ? 0.0 : profitMargin.toStringAsFixed(1)}%',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: _buildSaleInfo(
-                  'Payment Status',
-                  _getPaymentStatusText(sale.paymentStatus),
-                ),
-              ),
-              Expanded(
-                child: _buildSaleInfo(
-                  'Amount Paid',
-                  '\$${NumberFormat('#,##0.00').format(sale.amountPaid.isNaN ? 0.0 : sale.amountPaid)}',
-                ),
-              ),
-              if (sale.dueDate != null)
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(child: _buildSaleInfo('Quantity', '${sale.quantity}')),
                 Expanded(
                   child: _buildSaleInfo(
-                    'Due Date',
-                    DateFormat('MMM dd').format(sale.dueDate!),
+                    'Unit Price',
+                    '\$${NumberFormat('#,##0.00').format(sale.unitPrice.isNaN ? 0.0 : sale.unitPrice)}',
                   ),
                 ),
-            ],
-          ),
-          if (sale.notes.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Text(
-              'Notes: ${sale.notes}',
-              style: const TextStyle(
-                color: GlassmorphismTheme.textSecondaryColor,
-                fontSize: 12,
-              ),
-            ),
-          ],
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              if (remainingAmount > 0)
                 Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () => _showPaymentDialog(sale),
-                    icon: const Icon(Icons.payment, size: 16),
-                    label: const Text('Record Payment'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: GlassmorphismTheme.primaryColor,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                    ),
+                  child: _buildSaleInfo(
+                    'Profit Margin',
+                    '${profitMargin.isNaN ? 0.0 : profitMargin.toStringAsFixed(1)}%',
                   ),
                 ),
-              if (remainingAmount > 0) const SizedBox(width: 8),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () => _showEditSaleDialog(sale),
-                  icon: const Icon(Icons.edit, size: 16),
-                  label: const Text('Edit'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 8),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildSaleInfo(
+                    'Payment Status',
+                    _getPaymentStatusText(sale.paymentStatus),
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () => _showDeleteConfirmation(sale),
-                  icon: const Icon(Icons.delete, size: 16),
-                  label: const Text('Delete'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 8),
+                Expanded(
+                  child: _buildSaleInfo(
+                    'Amount Paid',
+                    '\$${NumberFormat('#,##0.00').format(sale.amountPaid.isNaN ? 0.0 : sale.amountPaid)}',
                   ),
+                ),
+                if (sale.dueDate != null)
+                  Expanded(
+                    child: _buildSaleInfo(
+                      'Due Date',
+                      DateFormat('MMM dd').format(sale.dueDate!),
+                    ),
+                  ),
+              ],
+            ),
+            if (sale.notes.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                'Notes: ${sale.notes}',
+                style: const TextStyle(
+                  color: GlassmorphismTheme.textSecondaryColor,
+                  fontSize: 12,
                 ),
               ),
             ],
-          ),
-        ],
+            const SizedBox(height: 12),
+            if (remainingAmount > 0)
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => _showPaymentDialog(sale),
+                  icon: const Icon(Icons.payment, size: 16),
+                  label: const Text('Record Payment'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: GlassmorphismTheme.primaryColor,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -678,6 +646,366 @@ class _SalesScreenState extends State<SalesScreen>
           textAlign: TextAlign.center,
         ),
       ],
+    );
+  }
+
+  void _showSaleDetailsBottomSheet(Sale sale) {
+    // Find corresponding stock for profit calculation
+    final stock = stocks.firstWhere(
+      (stock) => stock.name.toLowerCase() == sale.productName.toLowerCase(),
+      orElse: () => Stock()
+        ..unitCostPrice = 0
+        ..unitSellingPrice = sale.unitPrice,
+    );
+
+    final costPrice = stock.unitCostPrice;
+    final profitPerUnit = sale.unitPrice - costPrice;
+    final totalProfit = profitPerUnit * sale.quantity;
+    final profitMargin = sale.unitPrice > 0 && !sale.unitPrice.isNaN
+        ? (profitPerUnit / sale.unitPrice) * 100
+        : 0;
+    final remainingAmount = sale.totalAmount - sale.amountPaid;
+    final isOverdue =
+        sale.dueDate != null &&
+        sale.dueDate!.isBefore(DateTime.now()) &&
+        remainingAmount > 0;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.85,
+        decoration: BoxDecoration(
+          color: GlassmorphismTheme.surfaceColor.withOpacity(0.95),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
+        ),
+        child: Column(
+          children: [
+            // Handle bar
+            Container(
+              margin: const EdgeInsets.only(top: 8),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            // Header
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: GlassmorphismTheme.primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child:
+                        stock.imagePath != null && stock.imagePath!.isNotEmpty
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.file(
+                              File(stock.imagePath!),
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Icon(
+                                    Icons.point_of_sale,
+                                    color: GlassmorphismTheme.primaryColor,
+                                    size: 30,
+                                  ),
+                            ),
+                          )
+                        : Icon(
+                            Icons.point_of_sale,
+                            color: GlassmorphismTheme.primaryColor,
+                            size: 30,
+                          ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          sale.productName,
+                          style: const TextStyle(
+                            color: GlassmorphismTheme.textColor,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          'Customer: ${sale.customerName.isNotEmpty ? sale.customerName : 'Walk-in Customer'}',
+                          style: const TextStyle(
+                            color: GlassmorphismTheme.textSecondaryColor,
+                            fontSize: 14,
+                          ),
+                        ),
+                        Text(
+                          'Customer: ${sale.customerPhone.isNotEmpty ? sale.customerPhone : 'Walk-in Customer'}',
+                          style: const TextStyle(
+                            color: GlassmorphismTheme.textSecondaryColor,
+                            fontSize: 14,
+                          ),
+                        ),
+                        Text(
+                          DateFormat('MMM dd, yyyy').format(sale.saleDate),
+                          style: const TextStyle(
+                            color: GlassmorphismTheme.textSecondaryColor,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        '\$${NumberFormat('#,##0.00').format(sale.totalAmount.isNaN ? 0.0 : sale.totalAmount)}',
+                        style: const TextStyle(
+                          color: GlassmorphismTheme.textColor,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      _buildPaymentStatusChip(sale, remainingAmount, isOverdue),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            // Content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Sale Details Section
+                    _buildDetailSection('Sale Details', [
+                      _buildDetailRow('Product Name', sale.productName),
+                      _buildDetailRow('Quantity', '${sale.quantity}'),
+                      _buildDetailRow(
+                        'Unit Price',
+                        '\$${NumberFormat('#,##0.00').format(sale.unitPrice.isNaN ? 0.0 : sale.unitPrice)}',
+                      ),
+                      _buildDetailRow(
+                        'Total Amount',
+                        '\$${NumberFormat('#,##0.00').format(sale.totalAmount.isNaN ? 0.0 : sale.totalAmount)}',
+                      ),
+                      _buildDetailRow(
+                        'Payment Status',
+                        _getPaymentStatusText(sale.paymentStatus),
+                      ),
+                      _buildDetailRow('Payment Method', sale.paymentMethod),
+                      _buildDetailRow(
+                        'Amount Paid',
+                        '\$${NumberFormat('#,##0.00').format(sale.amountPaid.isNaN ? 0.0 : sale.amountPaid)}',
+                      ),
+                      if (remainingAmount > 0)
+                        _buildDetailRow(
+                          'Remaining Amount',
+                          '\$${NumberFormat('#,##0.00').format(remainingAmount.isNaN ? 0.0 : remainingAmount)}',
+                        ),
+                      if (sale.dueDate != null)
+                        _buildDetailRow(
+                          'Due Date',
+                          DateFormat('MMM dd, yyyy').format(sale.dueDate!),
+                        ),
+                      if (sale.lastPaymentDate != null)
+                        _buildDetailRow(
+                          'Last Payment',
+                          DateFormat(
+                            'MMM dd, yyyy',
+                          ).format(sale.lastPaymentDate!),
+                        ),
+                    ]),
+                    const SizedBox(height: 16),
+                    // Profit Analysis Section
+                    _buildDetailSection('Profit Analysis', [
+                      _buildDetailRow(
+                        'Cost Price',
+                        '\$${NumberFormat('#,##0.00').format(costPrice)}',
+                      ),
+                      _buildDetailRow(
+                        'Selling Price',
+                        '\$${NumberFormat('#,##0.00').format(sale.unitPrice.isNaN ? 0.0 : sale.unitPrice)}',
+                      ),
+                      _buildDetailRow(
+                        'Profit Per Unit',
+                        '\$${NumberFormat('#,##0.00').format(profitPerUnit.isNaN ? 0.0 : profitPerUnit)}',
+                      ),
+                      _buildDetailRow(
+                        'Total Profit',
+                        '\$${NumberFormat('#,##0.00').format(totalProfit.isNaN ? 0.0 : totalProfit)}',
+                        color: (totalProfit.isNaN ? 0.0 : totalProfit) >= 0
+                            ? Colors.green
+                            : Colors.red,
+                      ),
+                      _buildDetailRow(
+                        'Profit Margin',
+                        '${profitMargin.isNaN ? 0.0 : profitMargin.toStringAsFixed(1)}%',
+                        color: (profitMargin.isNaN ? 0.0 : profitMargin) >= 0
+                            ? Colors.green
+                            : Colors.red,
+                      ),
+                    ]),
+                    if (sale.notes.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      _buildDetailSection('Notes', [
+                        _buildDetailRow('', sale.notes, isNotes: true),
+                      ]),
+                    ],
+                    const SizedBox(height: 32),
+                  ],
+                ),
+              ),
+            ),
+            // Action Buttons
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: GlassmorphismTheme.surfaceColor.withOpacity(0.8),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(20),
+                ),
+              ),
+              child: Column(
+                children: [
+                  if (remainingAmount > 0)
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _showPaymentDialog(sale);
+                        },
+                        icon: const Icon(Icons.payment, size: 18),
+                        label: const Text('Record Payment'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: GlassmorphismTheme.primaryColor,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+                  if (remainingAmount > 0) const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _showEditSaleDialog(sale);
+                          },
+                          icon: const Icon(Icons.edit, size: 18),
+                          label: const Text('Edit'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _showDeleteConfirmation(sale);
+                          },
+                          icon: const Icon(Icons.delete, size: 18),
+                          label: const Text('Delete'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailSection(String title, List<Widget> children) {
+    return GlassmorphismTheme.glassmorphismContainer(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              color: GlassmorphismTheme.textColor,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(
+    String label,
+    String value, {
+    Color? color,
+    bool isNotes = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (!isNotes) ...[
+            SizedBox(
+              width: 120,
+              child: Text(
+                label,
+                style: const TextStyle(
+                  color: GlassmorphismTheme.textSecondaryColor,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(
+                color: color ?? GlassmorphismTheme.textColor,
+                fontSize: isNotes ? 13 : 14,
+                fontWeight: isNotes ? FontWeight.normal : FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -2371,7 +2699,9 @@ class _SalesScreenState extends State<SalesScreen>
                       ),
                       subtitle: Text(
                         selectedDueDate != null
-                            ? DateFormat('MMM dd, yyyy').format(selectedDueDate)
+                            ? DateFormat(
+                                'MMM dd, yyyy',
+                              ).format(selectedDueDate!)
                             : 'No due date',
                         style: const TextStyle(
                           color: GlassmorphismTheme.textSecondaryColor,
