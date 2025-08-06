@@ -6,6 +6,7 @@ import '../utils/glassmorphism_theme.dart';
 import '../services/database_service.dart';
 import '../models/business_data.dart';
 import '../utils/search_filter_utils.dart';
+import 'barcode_scanner_screen.dart';
 
 class StockScreen extends StatefulWidget {
   const StockScreen({super.key});
@@ -528,6 +529,7 @@ class _StockScreenState extends State<StockScreen> {
     final categoryController = TextEditingController(
       text: stock?.category ?? 'Electronics',
     );
+    final barcodeController = TextEditingController(text: stock?.barcode ?? '');
     final supplierNameController = TextEditingController(
       text: stock?.supplierName ?? '',
     );
@@ -739,6 +741,65 @@ class _StockScreenState extends State<StockScreen> {
                             }
                             return null;
                           },
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Barcode Field
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                controller: barcodeController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Barcode/QR Code (Optional)',
+                                  prefixIcon: Icon(Icons.qr_code),
+                                  border: OutlineInputBorder(),
+                                ),
+                                readOnly: true,
+                                onTap: () async {
+                                  final result = await Navigator.push<String>(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const BarcodeScannerScreen(
+                                            title: 'Scan Barcode',
+                                          ),
+                                    ),
+                                  );
+                                  if (result != null) {
+                                    setModalState(() {
+                                      barcodeController.text = result;
+                                    });
+                                  }
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton(
+                              onPressed: () async {
+                                final result = await Navigator.push<String>(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const BarcodeScannerScreen(
+                                          title: 'Scan Barcode',
+                                        ),
+                                  ),
+                                );
+                                if (result != null) {
+                                  setModalState(() {
+                                    barcodeController.text = result;
+                                  });
+                                }
+                              },
+                              style: IconButton.styleFrom(
+                                backgroundColor:
+                                    GlassmorphismTheme.primaryColor,
+                                foregroundColor: Colors.white,
+                              ),
+                              icon: const Icon(Icons.qr_code_scanner),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 16),
 

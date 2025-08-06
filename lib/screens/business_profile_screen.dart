@@ -213,6 +213,8 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen>
         // Show confetti for new profile creation
         if (widget.existingProfile == null) {
           ConfettiUtils.showSuccessConfetti(_confettiController);
+          // Wait for confetti to play before navigating
+          await Future.delayed(const Duration(milliseconds: 2500));
         }
 
         // Navigate to main app

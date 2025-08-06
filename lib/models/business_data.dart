@@ -24,6 +24,7 @@ class Stock {
   late String name;
   late String description;
   late String category;
+  late String? barcode; // Barcode/QR code for the item
   late String? supplierName;
   late String? supplierContact;
   late String? imagePath; // Path to stored image

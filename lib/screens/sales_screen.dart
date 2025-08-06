@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'dart:io';
+import 'package:confetti/confetti.dart';
 import '../utils/glassmorphism_theme.dart';
 import '../utils/toast_utils.dart';
 import '../services/database_service.dart';
@@ -13,7 +14,8 @@ class SalesScreen extends StatefulWidget {
   State<SalesScreen> createState() => _SalesScreenState();
 }
 
-class _SalesScreenState extends State<SalesScreen> {
+class _SalesScreenState extends State<SalesScreen>
+    with TickerProviderStateMixin {
   List<Sale> sales = [];
   List<Stock> stocks = [];
   bool isLoading = true;
@@ -22,11 +24,21 @@ class _SalesScreenState extends State<SalesScreen> {
   double totalPaid = 0.0;
   double totalCredit = 0.0;
   String selectedPaymentFilter = 'All';
+  late ConfettiController _confettiController;
 
   @override
   void initState() {
     super.initState();
+    _confettiController = ConfettiController(
+      duration: const Duration(seconds: 3),
+    );
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    _confettiController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -105,39 +117,42 @@ class _SalesScreenState extends State<SalesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [GlassmorphismTheme.backgroundColor, Color(0xFF1E293B)],
+    return ConfettiUtils.buildConfettiWidget(
+      controller: _confettiController,
+      child: Scaffold(
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [GlassmorphismTheme.backgroundColor, Color(0xFF1E293B)],
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              _buildAppBar(),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: isLoading
-                      ? const Center(
-                          child: CircularProgressIndicator(
-                            color: GlassmorphismTheme.primaryColor,
-                          ),
-                        )
-                      : _buildSalesList(),
+          child: SafeArea(
+            child: Column(
+              children: [
+                _buildAppBar(),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: isLoading
+                        ? const Center(
+                            child: CircularProgressIndicator(
+                              color: GlassmorphismTheme.primaryColor,
+                            ),
+                          )
+                        : _buildSalesList(),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAddSaleDialog,
-        backgroundColor: GlassmorphismTheme.primaryColor,
-        child: const Icon(Icons.add, color: Colors.white),
+        floatingActionButton: FloatingActionButton(
+          onPressed: _showAddSaleDialog,
+          backgroundColor: GlassmorphismTheme.primaryColor,
+          child: const Icon(Icons.add, color: Colors.white),
+        ),
       ),
     );
   }
@@ -1707,6 +1722,10 @@ class _SalesScreenState extends State<SalesScreen> {
                                 Navigator.pop(context);
                                 ToastUtils.showSuccessToast(
                                   'Sale recorded successfully!',
+                                );
+                                // Show confetti for successful sale
+                                ConfettiUtils.showSuccessConfetti(
+                                  _confettiController,
                                 );
                                 _loadData(); // Refresh both sales and stocks
                               } catch (e) {

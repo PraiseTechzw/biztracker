@@ -4,6 +4,7 @@ import 'package:biztracker/screens/stock_screen.dart';
 import 'package:biztracker/screens/reports_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:confetti/confetti.dart';
 import '../utils/glassmorphism_theme.dart';
 import '../utils/toast_utils.dart';
 import '../services/database_service.dart';
@@ -41,7 +42,7 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   double totalCapital = 0.0;
   double totalStockValue = 0.0;
   double totalSales = 0.0;
@@ -55,10 +56,16 @@ class _DashboardScreenState extends State<DashboardScreen>
   List<ActivityItem> recentActivities = [];
   late AnimationController _cardAnimController;
   late Animation<double> _cardAnim;
+  late ConfettiController _confettiController;
+  bool _hasShownFirstSaleConfetti = false;
+  bool _hasShownProfitMilestoneConfetti = false;
 
   @override
   void initState() {
     super.initState();
+    _confettiController = ConfettiController(
+      duration: const Duration(seconds: 4),
+    );
     _loadDashboardData();
     _loadBusinessName();
     _loadRecentActivities();
@@ -76,6 +83,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   @override
   void dispose() {
     _cardAnimController.dispose();
+    _confettiController.dispose();
     super.dispose();
   }
 
@@ -109,12 +117,43 @@ class _DashboardScreenState extends State<DashboardScreen>
         netProfit = profit;
         isLoading = false;
       });
+
+      // Check for achievements and show confetti
+      _checkAchievements(sales, profit);
     } catch (e) {
       setState(() {
         isLoading = false;
         hasError = true;
         errorMessage = 'Failed to load dashboard data: $e';
       });
+    }
+  }
+
+  void _checkAchievements(double sales, double profit) {
+    // Check for first sale achievement
+    if (sales > 0 && !_hasShownFirstSaleConfetti) {
+      _hasShownFirstSaleConfetti = true;
+      ConfettiUtils.showAchievementConfetti(_confettiController);
+      ToastUtils.showInfoToast('🎉 First sale recorded! Keep it up!');
+    }
+
+    // Check for profit milestones
+    if (profit >= 1000 && !_hasShownProfitMilestoneConfetti) {
+      _hasShownProfitMilestoneConfetti = true;
+      ConfettiUtils.showMilestoneConfetti(_confettiController);
+      ToastUtils.showInfoToast(
+        '🎊 Congratulations! You\'ve reached \$1,000 in profit!',
+      );
+    } else if (profit >= 5000 && _hasShownProfitMilestoneConfetti) {
+      ConfettiUtils.showMilestoneConfetti(_confettiController);
+      ToastUtils.showInfoToast(
+        '🎊 Amazing! You\'ve reached \$5,000 in profit!',
+      );
+    } else if (profit >= 10000 && _hasShownProfitMilestoneConfetti) {
+      ConfettiUtils.showMilestoneConfetti(_confettiController);
+      ToastUtils.showInfoToast(
+        '🎊 Outstanding! You\'ve reached \$10,000 in profit!',
+      );
     }
   }
 
@@ -223,114 +262,117 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [GlassmorphismTheme.backgroundColor, Color(0xFF1E293B)],
+    return ConfettiUtils.buildConfettiWidget(
+      controller: _confettiController,
+      child: Scaffold(
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [GlassmorphismTheme.backgroundColor, Color(0xFF1E293B)],
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: RefreshIndicator(
-            onRefresh: _refreshData,
-            color: GlassmorphismTheme.primaryColor,
-            child: CustomScrollView(
-              slivers: [
-                SliverToBoxAdapter(
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    businessName.isNotEmpty
-                                        ? 'Hello, $businessName!'
-                                        : 'Welcome!',
-                                    style: const TextStyle(
-                                      color: GlassmorphismTheme.textColor,
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  const Text(
-                                    'Here\'s your business at a glance',
-                                    style: TextStyle(
-                                      color:
-                                          GlassmorphismTheme.textSecondaryColor,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            _buildNotificationsIcon(
-                              context,
-                              unreadCount: unreadNotifications,
-                            ),
-                            const SizedBox(width: 8),
-                            IconButton(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        const SettingsScreen(),
-                                  ),
-                                );
-                              },
-                              icon: const Icon(
-                                Icons.settings,
-                                color: GlassmorphismTheme.textColor,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        FadeTransition(
-                          opacity: _cardAnim,
-                          child: _buildOverviewCards(),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (isLoading)
-                          const Center(
-                            child: CircularProgressIndicator(
-                              color: GlassmorphismTheme.primaryColor,
-                            ),
-                          )
-                        else if (hasError)
-                          _buildErrorState()
-                        else
-                          Column(
+          child: SafeArea(
+            child: RefreshIndicator(
+              onRefresh: _refreshData,
+              color: GlassmorphismTheme.primaryColor,
+              child: CustomScrollView(
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
                             children: [
-                              const SizedBox(height: 24),
-                              _buildQuickStats(),
-                              const SizedBox(height: 24),
-                              _buildRecentActivity(),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      businessName.isNotEmpty
+                                          ? 'Hello, $businessName!'
+                                          : 'Welcome!',
+                                      style: const TextStyle(
+                                        color: GlassmorphismTheme.textColor,
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    const Text(
+                                      'Here\'s your business at a glance',
+                                      style: TextStyle(
+                                        color: GlassmorphismTheme
+                                            .textSecondaryColor,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _buildNotificationsIcon(
+                                context,
+                                unreadCount: unreadNotifications,
+                              ),
+                              const SizedBox(width: 8),
+                              IconButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const SettingsScreen(),
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(
+                                  Icons.settings,
+                                  color: GlassmorphismTheme.textColor,
+                                ),
+                              ),
                             ],
                           ),
-                      ],
+                          const SizedBox(height: 16),
+                          FadeTransition(
+                            opacity: _cardAnim,
+                            child: _buildOverviewCards(),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (isLoading)
+                            const Center(
+                              child: CircularProgressIndicator(
+                                color: GlassmorphismTheme.primaryColor,
+                              ),
+                            )
+                          else if (hasError)
+                            _buildErrorState()
+                          else
+                            Column(
+                              children: [
+                                const SizedBox(height: 24),
+                                _buildQuickStats(),
+                                const SizedBox(height: 24),
+                                _buildRecentActivity(),
+                              ],
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
