@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../utils/glassmorphism_theme.dart';
-import '../widgets/biztracker_logo.dart';
 import 'business_profile_screen.dart';
 
 class WelcomeScreen extends StatefulWidget {
@@ -192,11 +191,54 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                                 opacity: _fadeAnimation,
                                 child: Column(
                                   children: [
-                                    BizTrackerLogo(
-                                      size: 140,
-                                      showText: false,
-                                      animated: true,
+                                    AnimatedBuilder(
                                       animation: _pulseAnimation,
+                                      builder: (context, child) {
+                                        return Transform.scale(
+                                          scale: _pulseAnimation.value,
+                                          child: Container(
+                                            width: 140,
+                                            height: 140,
+                                            decoration: BoxDecoration(
+                                              gradient: GlassmorphismTheme
+                                                  .primaryGradient,
+                                              borderRadius:
+                                                  BorderRadius.circular(35),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: GlassmorphismTheme
+                                                      .primaryColor
+                                                      .withOpacity(0.4),
+                                                  blurRadius: 30,
+                                                  spreadRadius: 5,
+                                                ),
+                                              ],
+                                            ),
+                                            child: ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(35),
+                                              child: Image.asset(
+                                                'assets/images/logo.png',
+                                                width: 90,
+                                                height: 90,
+                                                fit: BoxFit.contain,
+                                                errorBuilder:
+                                                    (
+                                                      context,
+                                                      error,
+                                                      stackTrace,
+                                                    ) {
+                                                      return const Icon(
+                                                        Icons.business,
+                                                        size: 70,
+                                                        color: Colors.white,
+                                                      );
+                                                    },
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      },
                                     ),
                                     const SizedBox(height: 24),
                                     const Text(

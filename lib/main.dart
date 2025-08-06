@@ -4,7 +4,6 @@ import 'services/database_service.dart';
 import 'utils/glassmorphism_theme.dart';
 import 'screens/welcome_screen.dart';
 import 'screens/main_navigation_screen.dart';
-import 'widgets/biztracker_logo.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -165,11 +164,38 @@ class _SplashScreenState extends State<SplashScreen>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  BizTrackerLogo(
-                    size: 120,
-                    showText: false,
-                    animated: true,
-                    animation: _scaleAnimation,
+                  Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      gradient: GlassmorphismTheme.primaryGradient,
+                      borderRadius: BorderRadius.circular(30),
+                      boxShadow: [
+                        BoxShadow(
+                          color: GlassmorphismTheme.primaryColor.withOpacity(
+                            0.4,
+                          ),
+                          blurRadius: 30,
+                          spreadRadius: 5,
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(30),
+                      child: Image.asset(
+                        'assets/images/logo.png',
+                        width: 80,
+                        height: 80,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Icon(
+                            Icons.business,
+                            size: 60,
+                            color: Colors.white,
+                          );
+                        },
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 24),
                   const Text(

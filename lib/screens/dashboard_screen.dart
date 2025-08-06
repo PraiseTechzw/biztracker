@@ -9,7 +9,6 @@ import '../utils/glassmorphism_theme.dart';
 import '../utils/toast_utils.dart';
 import '../services/database_service.dart';
 import '../models/business_data.dart';
-import '../widgets/app_bar_logo.dart';
 import 'settings_screen.dart';
 import 'notifications_screen.dart';
 
@@ -288,8 +287,6 @@ class _DashboardScreenState extends State<DashboardScreen>
                         children: [
                           Row(
                             children: [
-                              const AppBarLogo(size: 40, showText: true),
-                              const SizedBox(width: 16),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
