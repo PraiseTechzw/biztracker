@@ -54,8 +54,25 @@ class _DashboardScreenState extends State<DashboardScreen>
   int unreadNotifications = 0;
   String businessName = '';
   List<ActivityItem> recentActivities = [];
+
+  // Animation Controllers
   late AnimationController _cardAnimController;
+  late AnimationController _headerAnimController;
+  late AnimationController _notificationAnimController;
+  late AnimationController _settingsAnimController;
+  late AnimationController _greetingAnimController;
+  late AnimationController _pulseAnimController;
+  late AnimationController _slideAnimController;
+
+  // Animations
   late Animation<double> _cardAnim;
+  late Animation<double> _headerAnim;
+  late Animation<double> _notificationAnim;
+  late Animation<double> _settingsAnim;
+  late Animation<double> _greetingAnim;
+  late Animation<double> _pulseAnim;
+  late Animation<Offset> _slideAnim;
+
   late ConfettiController _confettiController;
   bool _hasShownFirstSaleConfetti = false;
   bool _hasShownProfitMilestoneConfetti = false;
@@ -66,23 +83,98 @@ class _DashboardScreenState extends State<DashboardScreen>
     _confettiController = ConfettiController(
       duration: const Duration(seconds: 4),
     );
-    _loadDashboardData();
-    _loadBusinessName();
-    _loadRecentActivities();
+
+    // Initialize animation controllers
     _cardAnimController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
     );
+    _headerAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+    _notificationAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _settingsAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _greetingAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
+    _pulseAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    );
+    _slideAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+
+    // Initialize animations
     _cardAnim = CurvedAnimation(
       parent: _cardAnimController,
       curve: Curves.easeOutBack,
     );
+    _headerAnim = CurvedAnimation(
+      parent: _headerAnimController,
+      curve: Curves.easeOutCubic,
+    );
+    _notificationAnim = CurvedAnimation(
+      parent: _notificationAnimController,
+      curve: Curves.elasticOut,
+    );
+    _settingsAnim = CurvedAnimation(
+      parent: _settingsAnimController,
+      curve: Curves.elasticOut,
+    );
+    _greetingAnim = CurvedAnimation(
+      parent: _greetingAnimController,
+      curve: Curves.easeOutQuart,
+    );
+    _pulseAnim = Tween<double>(begin: 1.0, end: 1.1).animate(
+      CurvedAnimation(parent: _pulseAnimController, curve: Curves.easeInOut),
+    );
+    _slideAnim = Tween<Offset>(begin: const Offset(0, -0.5), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _slideAnimController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
+
+    // Start animations
+    _startHeaderAnimations();
+
+    _loadDashboardData();
+    _loadBusinessName();
+    _loadRecentActivities();
+    _loadNotificationCount();
+  }
+
+  void _startHeaderAnimations() async {
+    // Start all animations immediately to ensure visibility
+    _slideAnimController.forward();
+    _greetingAnimController.forward();
+    _notificationAnimController.forward();
+    _settingsAnimController.forward();
+    _headerAnimController.forward();
     _cardAnimController.forward();
+    _pulseAnimController.repeat(reverse: true);
   }
 
   @override
   void dispose() {
     _cardAnimController.dispose();
+    _headerAnimController.dispose();
+    _notificationAnimController.dispose();
+    _settingsAnimController.dispose();
+    _greetingAnimController.dispose();
+    _pulseAnimController.dispose();
+    _slideAnimController.dispose();
     _confettiController.dispose();
     super.dispose();
   }
@@ -120,6 +212,11 @@ class _DashboardScreenState extends State<DashboardScreen>
 
       // Check for achievements and show confetti
       _checkAchievements(sales, profit);
+
+      // Trigger notification animation if there are unread notifications
+      if (unreadNotifications > 0) {
+        _notificationAnimController.forward();
+      }
     } catch (e) {
       setState(() {
         isLoading = false;
@@ -127,6 +224,15 @@ class _DashboardScreenState extends State<DashboardScreen>
         errorMessage = 'Failed to load dashboard data: $e';
       });
     }
+  }
+
+  // Add a method to load notification count
+  Future<void> _loadNotificationCount() async {
+    // For now, set a sample notification count
+    // You can replace this with actual notification loading logic
+    setState(() {
+      unreadNotifications = 3; // Sample count - replace with actual logic
+    });
   }
 
   void _checkAchievements(double sales, double profit) {
@@ -160,9 +266,23 @@ class _DashboardScreenState extends State<DashboardScreen>
   Future<void> _loadBusinessName() async {
     try {
       final profile = await DatabaseService.getBusinessProfile();
-      setState(() {
-        businessName = profile?.businessName ?? '';
-      });
+      final newBusinessName = profile?.businessName ?? '';
+
+      if (newBusinessName != businessName) {
+        // Animate the greeting when business name changes
+        _greetingAnimController.reverse();
+        await Future.delayed(const Duration(milliseconds: 300));
+
+        setState(() {
+          businessName = newBusinessName;
+        });
+
+        _greetingAnimController.forward();
+      } else {
+        setState(() {
+          businessName = newBusinessName;
+        });
+      }
     } catch (e) {
       // Handle error silently
     }
@@ -248,6 +368,11 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   void _openNotificationsScreen() async {
+    // Add a small bounce animation when opening notifications
+    _notificationAnimController.forward();
+    await Future.delayed(const Duration(milliseconds: 150));
+    _notificationAnimController.reverse();
+
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (context) => const NotificationsScreen()),
     );
@@ -256,8 +381,15 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Future<void> _refreshData() async {
+    // Add a subtle animation when refreshing
+    _headerAnimController.reverse();
+    await Future.delayed(const Duration(milliseconds: 300));
+
     await _loadDashboardData();
     await _loadRecentActivities();
+
+    // Restart header animations
+    _headerAnimController.forward();
   }
 
   @override
@@ -285,6 +417,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // Simple header without complex animations
                           Row(
                             children: [
                               Expanded(
@@ -313,13 +446,29 @@ class _DashboardScreenState extends State<DashboardScreen>
                                   ],
                                 ),
                               ),
-                              _buildNotificationsIcon(
-                                context,
-                                unreadCount: unreadNotifications,
+                              // Debug: Show notification count
+                              Text(
+                                'N: $unreadNotifications',
+                                style: TextStyle(
+                                  color: Colors.red,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                              const SizedBox(width: 8),
+                              // Notification icon - simplified
+                              Container(
+                                margin: const EdgeInsets.only(right: 8),
+                                child: _buildNotificationsIcon(
+                                  context,
+                                  unreadCount: unreadNotifications,
+                                ),
+                              ),
+                              // Settings icon - simplified
                               IconButton(
                                 onPressed: () {
+                                  print(
+                                    'Settings button pressed',
+                                  ); // Debug print
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
@@ -331,6 +480,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                 icon: const Icon(
                                   Icons.settings,
                                   color: GlassmorphismTheme.textColor,
+                                  size: 28,
                                 ),
                               ),
                             ],
@@ -779,17 +929,21 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Widget _buildNotificationsIcon(BuildContext context, {int unreadCount = 0}) {
+    print('Building notification icon with count: $unreadCount'); // Debug print
     return Stack(
       clipBehavior: Clip.none,
       children: [
+        // Simple notification icon
         IconButton(
           icon: const Icon(
             Icons.notifications,
             color: GlassmorphismTheme.primaryColor,
+            size: 28,
           ),
-          tooltip: 'Notifications',
+          tooltip: 'Notifications ($unreadCount unread)',
           onPressed: _openNotificationsScreen,
         ),
+        // Notification badge
         if (unreadCount > 0)
           Positioned(
             right: 6,
