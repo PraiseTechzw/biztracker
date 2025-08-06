@@ -242,31 +242,41 @@ class _DashboardScreenState extends State<DashboardScreen>
     }
   }
 
-  void _checkAchievements(double sales, double profit) {
+  void _checkAchievements(double sales, double profit) async {
     // Check for first sale achievement
     if (sales > 0 && !_hasShownFirstSaleConfetti) {
-      _hasShownFirstSaleConfetti = true;
-      ConfettiUtils.showAchievementConfetti(_confettiController);
-      ToastUtils.showInfoToast('🎉 First sale recorded! Keep it up!');
-      // Show phone notification
-      NotificationService().showAchievementNotification(
-        'First Sale!',
-        'Congratulations! You\'ve recorded your first sale. Keep it up!',
-      );
+      final hasShownFirstSale =
+          await DatabaseService.hasShownFirstSaleAchievement();
+      if (!hasShownFirstSale) {
+        _hasShownFirstSaleConfetti = true;
+        await DatabaseService.markFirstSaleAchievementAsShown();
+        ConfettiUtils.showAchievementConfetti(_confettiController);
+        ToastUtils.showInfoToast('🎉 First sale recorded! Keep it up!');
+        // Show phone notification
+        NotificationService().showAchievementNotification(
+          'First Sale!',
+          'Congratulations! You\'ve recorded your first sale. Keep it up!',
+        );
+      }
     }
 
     // Check for profit milestones
     if (profit >= 1000 && !_hasShownProfitMilestoneConfetti) {
-      _hasShownProfitMilestoneConfetti = true;
-      ConfettiUtils.showMilestoneConfetti(_confettiController);
-      ToastUtils.showInfoToast(
-        '🎊 Congratulations! You\'ve reached \$1,000 in profit!',
-      );
-      // Show phone notification
-      NotificationService().showAchievementNotification(
-        'Profit Milestone!',
-        'Congratulations! You\'ve reached \$1,000 in total profit!',
-      );
+      final hasShownProfitMilestone =
+          await DatabaseService.hasShownProfitMilestoneAchievement();
+      if (!hasShownProfitMilestone) {
+        _hasShownProfitMilestoneConfetti = true;
+        await DatabaseService.markProfitMilestoneAchievementAsShown();
+        ConfettiUtils.showMilestoneConfetti(_confettiController);
+        ToastUtils.showInfoToast(
+          '🎊 Congratulations! You\'ve reached \$1,000 in profit!',
+        );
+        // Show phone notification
+        NotificationService().showAchievementNotification(
+          'Profit Milestone!',
+          'Congratulations! You\'ve reached \$1,000 in total profit!',
+        );
+      }
     } else if (profit >= 5000 && _hasShownProfitMilestoneConfetti) {
       ConfettiUtils.showMilestoneConfetti(_confettiController);
       ToastUtils.showInfoToast(

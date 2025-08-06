@@ -204,30 +204,6 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            onPressed: () => _showEditExpenseDialog(expense),
-                            icon: const Icon(
-                              Icons.edit,
-                              color: Colors.blue,
-                              size: 20,
-                            ),
-                            tooltip: 'Edit',
-                          ),
-                          IconButton(
-                            onPressed: () => _showDeleteConfirmation(expense),
-                            icon: const Icon(
-                              Icons.delete,
-                              color: Colors.red,
-                              size: 20,
-                            ),
-                            tooltip: 'Delete',
-                          ),
-                        ],
-                      ),
                     ],
                   ),
                 ],
@@ -235,6 +211,231 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  void _showExpenseDetailsBottomSheet(Expense expense) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.75,
+        decoration: BoxDecoration(
+          color: GlassmorphismTheme.surfaceColor.withOpacity(0.95),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
+        ),
+        child: Column(
+          children: [
+            // Handle bar
+            Container(
+              margin: const EdgeInsets.only(top: 8),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            // Header
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: GlassmorphismTheme.primaryColor.withOpacity(0.18),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.receipt_long,
+                      color: GlassmorphismTheme.primaryColor,
+                      size: 32,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          expense.description,
+                          style: const TextStyle(
+                            color: GlassmorphismTheme.textColor,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          expense.category,
+                          style: TextStyle(
+                            color: GlassmorphismTheme.primaryColor,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        Text(
+                          DateFormat(
+                            'MMM dd, yyyy',
+                          ).format(expense.expenseDate),
+                          style: const TextStyle(
+                            color: GlassmorphismTheme.textSecondaryColor,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Text(
+                    '\$${NumberFormat('#,##0.00').format(expense.amount)}',
+                    style: const TextStyle(
+                      color: GlassmorphismTheme.textColor,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Expense Details Section
+                    _buildDetailSection('Expense Details', [
+                      _buildDetailRow('Description', expense.description),
+                      _buildDetailRow('Category', expense.category),
+                      _buildDetailRow(
+                        'Amount',
+                        '\$${NumberFormat('#,##0.00').format(expense.amount)}',
+                      ),
+                      _buildDetailRow('Payment Method', expense.paymentMethod),
+                      _buildDetailRow(
+                        'Date',
+                        DateFormat('MMM dd, yyyy').format(expense.expenseDate),
+                      ),
+                      _buildDetailRow(
+                        'Created',
+                        DateFormat('MMM dd, yyyy').format(expense.createdAt),
+                      ),
+                    ]),
+                    const SizedBox(height: 32),
+                  ],
+                ),
+              ),
+            ),
+            // Action Buttons
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: GlassmorphismTheme.surfaceColor.withOpacity(0.8),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(20),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _showEditExpenseDialog(expense);
+                      },
+                      icon: const Icon(Icons.edit, size: 18),
+                      label: const Text('Edit'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _showDeleteConfirmation(expense);
+                      },
+                      icon: const Icon(Icons.delete, size: 18),
+                      label: const Text('Delete'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailSection(String title, List<Widget> children) {
+    return GlassmorphismTheme.glassmorphismContainer(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              color: GlassmorphismTheme.textColor,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: GlassmorphismTheme.textSecondaryColor,
+                fontSize: 13,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                color: GlassmorphismTheme.textColor,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

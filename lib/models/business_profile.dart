@@ -40,6 +40,10 @@ class BusinessProfile {
   String? logoPath; // Path to stored logo image
   String? bannerPath; // Path to stored banner image
 
+  // Achievement tracking
+  late bool hasShownFirstSaleAchievement;
+  late bool hasShownProfitMilestoneAchievement;
+
   // Timestamps
   @Index()
   late DateTime createdAt;

@@ -1052,74 +1052,174 @@ class _CapitalScreenState extends State<CapitalScreen>
   }
 
   Widget _buildExpenseCard(Expense expense) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 350),
-      curve: Curves.easeOut,
-      child: GlassmorphismTheme.glassmorphismContainer(
-        margin: const EdgeInsets.only(bottom: 14),
-        padding: const EdgeInsets.all(18),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(12),
+    return GestureDetector(
+      onTap: () => _showExpenseDetailsBottomSheet(expense),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeOut,
+        child: GlassmorphismTheme.glassmorphismContainer(
+          margin: const EdgeInsets.only(bottom: 14),
+          padding: const EdgeInsets.all(18),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.receipt_long,
+                  color: Colors.red,
+                  size: 24,
+                ),
               ),
-              child: const Icon(
-                Icons.receipt_long,
-                color: Colors.red,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    expense.description,
-                    style: const TextStyle(
-                      color: GlassmorphismTheme.textColor,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      expense.description,
+                      style: const TextStyle(
+                        color: GlassmorphismTheme.textColor,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
                     ),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 2,
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              expense.category,
+                              style: const TextStyle(
+                                color: Colors.red,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                          decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Icon(
+                          Icons.calendar_today,
+                          size: 13,
+                          color: GlassmorphismTheme.textSecondaryColor,
+                        ),
+                        const SizedBox(width: 3),
+                        Flexible(
                           child: Text(
-                            expense.category,
+                            DateFormat(
+                              'MMM dd, yyyy',
+                            ).format(expense.expenseDate),
                             style: const TextStyle(
-                              color: Colors.red,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w500,
+                              color: GlassmorphismTheme.textSecondaryColor,
+                              fontSize: 12,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Icon(
-                        Icons.calendar_today,
-                        size: 13,
-                        color: GlassmorphismTheme.textSecondaryColor,
-                      ),
-                      const SizedBox(width: 3),
-                      Flexible(
-                        child: Text(
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              Flexible(
+                child: Text(
+                  '\$${NumberFormat('#,##0.00').format(expense.amount)}',
+                  style: const TextStyle(
+                    color: Colors.red,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.end,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showExpenseDetailsBottomSheet(Expense expense) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.75,
+        decoration: BoxDecoration(
+          color: GlassmorphismTheme.surfaceColor.withOpacity(0.95),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
+        ),
+        child: Column(
+          children: [
+            // Handle bar
+            Container(
+              margin: const EdgeInsets.only(top: 8),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            // Header
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.18),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.receipt_long,
+                      color: Colors.red,
+                      size: 32,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          expense.description,
+                          style: const TextStyle(
+                            color: GlassmorphismTheme.textColor,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          expense.category,
+                          style: const TextStyle(
+                            color: Colors.red,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        Text(
                           DateFormat(
                             'MMM dd, yyyy',
                           ).format(expense.expenseDate),
@@ -1127,30 +1227,349 @@ class _CapitalScreenState extends State<CapitalScreen>
                             color: GlassmorphismTheme.textSecondaryColor,
                             fontSize: 12,
                           ),
-                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
+                  ),
+                  Text(
+                    '\$${NumberFormat('#,##0.00').format(expense.amount)}',
+                    style: const TextStyle(
+                      color: Colors.red,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 10),
-            Flexible(
-              child: Text(
-                '\$${NumberFormat('#,##0.00').format(expense.amount)}',
-                style: const TextStyle(
-                  color: Colors.red,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+            // Content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Expense Details Section
+                    _buildDetailSection('Expense Details', [
+                      _buildDetailRow('Description', expense.description),
+                      _buildDetailRow('Category', expense.category),
+                      _buildDetailRow(
+                        'Amount',
+                        '\$${NumberFormat('#,##0.00').format(expense.amount)}',
+                      ),
+                      _buildDetailRow('Payment Method', expense.paymentMethod),
+                      _buildDetailRow(
+                        'Date',
+                        DateFormat('MMM dd, yyyy').format(expense.expenseDate),
+                      ),
+                      _buildDetailRow(
+                        'Created',
+                        DateFormat('MMM dd, yyyy').format(expense.createdAt),
+                      ),
+                    ]),
+                    const SizedBox(height: 32),
+                  ],
                 ),
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.end,
+              ),
+            ),
+            // Action Buttons
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: GlassmorphismTheme.surfaceColor.withOpacity(0.8),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(20),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _showEditExpenseDialog(expense);
+                      },
+                      icon: const Icon(Icons.edit, size: 18),
+                      label: const Text('Edit'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _showDeleteExpenseConfirmation(expense);
+                      },
+                      icon: const Icon(Icons.delete, size: 18),
+                      label: const Text('Delete'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  void _showEditExpenseDialog(Expense expense) {
+    final formKey = GlobalKey<FormState>();
+    final categoryController = TextEditingController(text: expense.category);
+    final descriptionController = TextEditingController(
+      text: expense.description,
+    );
+    final amountController = TextEditingController(
+      text: expense.amount.toString(),
+    );
+    final paymentMethodController = TextEditingController(
+      text: expense.paymentMethod,
+    );
+    DateTime selectedDate = expense.expenseDate;
+    bool isSubmitting = false;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: GlassmorphismTheme.surfaceColor,
+              title: const Text(
+                'Edit Expense',
+                style: TextStyle(color: GlassmorphismTheme.textColor),
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      controller: categoryController,
+                      decoration: const InputDecoration(
+                        labelText: 'Category',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter category';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: descriptionController,
+                      decoration: const InputDecoration(
+                        labelText: 'Description',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter description';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: amountController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Amount',
+                        prefixText: '\$',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter amount';
+                        }
+                        if (double.tryParse(value) == null) {
+                          return 'Please enter a valid number';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: paymentMethodController,
+                      decoration: const InputDecoration(
+                        labelText: 'Payment Method',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter payment method';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    ListTile(
+                      title: const Text(
+                        'Date',
+                        style: TextStyle(color: GlassmorphismTheme.textColor),
+                      ),
+                      subtitle: Text(
+                        DateFormat('MMM dd, yyyy').format(selectedDate),
+                        style: const TextStyle(
+                          color: GlassmorphismTheme.textSecondaryColor,
+                        ),
+                      ),
+                      trailing: const Icon(
+                        Icons.calendar_today,
+                        color: GlassmorphismTheme.primaryColor,
+                      ),
+                      onTap: () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDate,
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime.now(),
+                        );
+                        if (date != null) {
+                          setDialogState(() {
+                            selectedDate = date;
+                          });
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: isSubmitting
+                      ? null
+                      : () async {
+                          if (formKey.currentState!.validate()) {
+                            setDialogState(() => isSubmitting = true);
+                            try {
+                              final amount = double.parse(
+                                amountController.text,
+                              );
+
+                              // Update expense data
+                              expense.category = categoryController.text;
+                              expense.description = descriptionController.text;
+                              expense.amount = amount;
+                              expense.paymentMethod =
+                                  paymentMethodController.text;
+                              expense.expenseDate = selectedDate;
+
+                              await DatabaseService.updateExpense(expense);
+
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Expense updated successfully!',
+                                  ),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                              _loadData(); // Refresh data
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Error updating expense: $e'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            } finally {
+                              setDialogState(() => isSubmitting = false);
+                            }
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: GlassmorphismTheme.primaryColor,
+                  ),
+                  child: isSubmitting
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text('Update Expense'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showDeleteExpenseConfirmation(Expense expense) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: GlassmorphismTheme.surfaceColor,
+          title: const Text(
+            'Delete Expense',
+            style: TextStyle(color: GlassmorphismTheme.textColor),
+          ),
+          content: Text(
+            'Are you sure you want to delete the expense "${expense.description}"? This action cannot be undone.',
+            style: const TextStyle(
+              color: GlassmorphismTheme.textSecondaryColor,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                try {
+                  await DatabaseService.deleteExpense(expense.id);
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Expense deleted successfully!'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                  _loadData(); // Refresh data
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error deleting expense: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
     );
   }
 

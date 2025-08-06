@@ -22,6 +22,33 @@ class DatabaseService {
     await isar.close();
   }
 
+  // Achievement tracking
+  static Future<bool> hasShownFirstSaleAchievement() async {
+    final profile = await getBusinessProfile();
+    return profile?.hasShownFirstSaleAchievement ?? false;
+  }
+
+  static Future<void> markFirstSaleAchievementAsShown() async {
+    final profile = await getBusinessProfile();
+    if (profile != null) {
+      profile.hasShownFirstSaleAchievement = true;
+      await updateBusinessProfile(profile);
+    }
+  }
+
+  static Future<bool> hasShownProfitMilestoneAchievement() async {
+    final profile = await getBusinessProfile();
+    return profile?.hasShownProfitMilestoneAchievement ?? false;
+  }
+
+  static Future<void> markProfitMilestoneAchievementAsShown() async {
+    final profile = await getBusinessProfile();
+    if (profile != null) {
+      profile.hasShownProfitMilestoneAchievement = true;
+      await updateBusinessProfile(profile);
+    }
+  }
+
   // Capital operations
   static Future<void> addCapital(Capital capital) async {
     await isar.writeTxn(() async {

@@ -77,73 +77,83 @@ const BusinessProfileSchema = CollectionSchema(
       name: r'fullAddress',
       type: IsarType.string,
     ),
-    r'industry': PropertySchema(
+    r'hasShownFirstSaleAchievement': PropertySchema(
       id: 12,
+      name: r'hasShownFirstSaleAchievement',
+      type: IsarType.bool,
+    ),
+    r'hasShownProfitMilestoneAchievement': PropertySchema(
+      id: 13,
+      name: r'hasShownProfitMilestoneAchievement',
+      type: IsarType.bool,
+    ),
+    r'industry': PropertySchema(
+      id: 14,
       name: r'industry',
       type: IsarType.string,
     ),
     r'isActive': PropertySchema(
-      id: 13,
+      id: 15,
       name: r'isActive',
       type: IsarType.bool,
     ),
     r'isProfileComplete': PropertySchema(
-      id: 14,
+      id: 16,
       name: r'isProfileComplete',
       type: IsarType.bool,
     ),
     r'logoPath': PropertySchema(
-      id: 15,
+      id: 17,
       name: r'logoPath',
       type: IsarType.string,
     ),
     r'ownerEmail': PropertySchema(
-      id: 16,
+      id: 18,
       name: r'ownerEmail',
       type: IsarType.string,
     ),
     r'ownerName': PropertySchema(
-      id: 17,
+      id: 19,
       name: r'ownerName',
       type: IsarType.string,
     ),
     r'ownerPhone': PropertySchema(
-      id: 18,
+      id: 20,
       name: r'ownerPhone',
       type: IsarType.string,
     ),
     r'phoneNumber': PropertySchema(
-      id: 19,
+      id: 21,
       name: r'phoneNumber',
       type: IsarType.string,
     ),
     r'postalCode': PropertySchema(
-      id: 20,
+      id: 22,
       name: r'postalCode',
       type: IsarType.string,
     ),
     r'registrationNumber': PropertySchema(
-      id: 21,
+      id: 23,
       name: r'registrationNumber',
       type: IsarType.string,
     ),
     r'state': PropertySchema(
-      id: 22,
+      id: 24,
       name: r'state',
       type: IsarType.string,
     ),
     r'taxId': PropertySchema(
-      id: 23,
+      id: 25,
       name: r'taxId',
       type: IsarType.string,
     ),
     r'updatedAt': PropertySchema(
-      id: 24,
+      id: 26,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
     r'website': PropertySchema(
-      id: 25,
+      id: 27,
       name: r'website',
       type: IsarType.string,
     )
@@ -328,20 +338,22 @@ void _businessProfileSerialize(
   writer.writeString(offsets[9], object.displayName);
   writer.writeString(offsets[10], object.email);
   writer.writeString(offsets[11], object.fullAddress);
-  writer.writeString(offsets[12], object.industry);
-  writer.writeBool(offsets[13], object.isActive);
-  writer.writeBool(offsets[14], object.isProfileComplete);
-  writer.writeString(offsets[15], object.logoPath);
-  writer.writeString(offsets[16], object.ownerEmail);
-  writer.writeString(offsets[17], object.ownerName);
-  writer.writeString(offsets[18], object.ownerPhone);
-  writer.writeString(offsets[19], object.phoneNumber);
-  writer.writeString(offsets[20], object.postalCode);
-  writer.writeString(offsets[21], object.registrationNumber);
-  writer.writeString(offsets[22], object.state);
-  writer.writeString(offsets[23], object.taxId);
-  writer.writeDateTime(offsets[24], object.updatedAt);
-  writer.writeString(offsets[25], object.website);
+  writer.writeBool(offsets[12], object.hasShownFirstSaleAchievement);
+  writer.writeBool(offsets[13], object.hasShownProfitMilestoneAchievement);
+  writer.writeString(offsets[14], object.industry);
+  writer.writeBool(offsets[15], object.isActive);
+  writer.writeBool(offsets[16], object.isProfileComplete);
+  writer.writeString(offsets[17], object.logoPath);
+  writer.writeString(offsets[18], object.ownerEmail);
+  writer.writeString(offsets[19], object.ownerName);
+  writer.writeString(offsets[20], object.ownerPhone);
+  writer.writeString(offsets[21], object.phoneNumber);
+  writer.writeString(offsets[22], object.postalCode);
+  writer.writeString(offsets[23], object.registrationNumber);
+  writer.writeString(offsets[24], object.state);
+  writer.writeString(offsets[25], object.taxId);
+  writer.writeDateTime(offsets[26], object.updatedAt);
+  writer.writeString(offsets[27], object.website);
 }
 
 BusinessProfile _businessProfileDeserialize(
@@ -361,20 +373,22 @@ BusinessProfile _businessProfileDeserialize(
   object.createdAt = reader.readDateTime(offsets[7]);
   object.currency = reader.readStringOrNull(offsets[8]);
   object.email = reader.readStringOrNull(offsets[10]);
+  object.hasShownFirstSaleAchievement = reader.readBool(offsets[12]);
+  object.hasShownProfitMilestoneAchievement = reader.readBool(offsets[13]);
   object.id = id;
-  object.industry = reader.readStringOrNull(offsets[12]);
-  object.isActive = reader.readBool(offsets[13]);
-  object.logoPath = reader.readStringOrNull(offsets[15]);
-  object.ownerEmail = reader.readStringOrNull(offsets[16]);
-  object.ownerName = reader.readStringOrNull(offsets[17]);
-  object.ownerPhone = reader.readStringOrNull(offsets[18]);
-  object.phoneNumber = reader.readStringOrNull(offsets[19]);
-  object.postalCode = reader.readStringOrNull(offsets[20]);
-  object.registrationNumber = reader.readStringOrNull(offsets[21]);
-  object.state = reader.readStringOrNull(offsets[22]);
-  object.taxId = reader.readStringOrNull(offsets[23]);
-  object.updatedAt = reader.readDateTime(offsets[24]);
-  object.website = reader.readStringOrNull(offsets[25]);
+  object.industry = reader.readStringOrNull(offsets[14]);
+  object.isActive = reader.readBool(offsets[15]);
+  object.logoPath = reader.readStringOrNull(offsets[17]);
+  object.ownerEmail = reader.readStringOrNull(offsets[18]);
+  object.ownerName = reader.readStringOrNull(offsets[19]);
+  object.ownerPhone = reader.readStringOrNull(offsets[20]);
+  object.phoneNumber = reader.readStringOrNull(offsets[21]);
+  object.postalCode = reader.readStringOrNull(offsets[22]);
+  object.registrationNumber = reader.readStringOrNull(offsets[23]);
+  object.state = reader.readStringOrNull(offsets[24]);
+  object.taxId = reader.readStringOrNull(offsets[25]);
+  object.updatedAt = reader.readDateTime(offsets[26]);
+  object.website = reader.readStringOrNull(offsets[27]);
   return object;
 }
 
@@ -410,15 +424,15 @@ P _businessProfileDeserializeProp<P>(
     case 11:
       return (reader.readString(offset)) as P;
     case 12:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 13:
       return (reader.readBool(offset)) as P;
     case 14:
-      return (reader.readBool(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 15:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 16:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 17:
       return (reader.readStringOrNull(offset)) as P;
     case 18:
@@ -434,8 +448,12 @@ P _businessProfileDeserializeProp<P>(
     case 23:
       return (reader.readStringOrNull(offset)) as P;
     case 24:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 25:
+      return (reader.readStringOrNull(offset)) as P;
+    case 26:
+      return (reader.readDateTime(offset)) as P;
+    case 27:
       return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -2413,6 +2431,26 @@ extension BusinessProfileQueryFilter
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'fullAddress',
         value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessProfile, BusinessProfile, QAfterFilterCondition>
+      hasShownFirstSaleAchievementEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'hasShownFirstSaleAchievement',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessProfile, BusinessProfile, QAfterFilterCondition>
+      hasShownProfitMilestoneAchievementEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'hasShownProfitMilestoneAchievement',
+        value: value,
       ));
     });
   }
@@ -4417,6 +4455,34 @@ extension BusinessProfileQuerySortBy
   }
 
   QueryBuilder<BusinessProfile, BusinessProfile, QAfterSortBy>
+      sortByHasShownFirstSaleAchievement() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'hasShownFirstSaleAchievement', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BusinessProfile, BusinessProfile, QAfterSortBy>
+      sortByHasShownFirstSaleAchievementDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'hasShownFirstSaleAchievement', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BusinessProfile, BusinessProfile, QAfterSortBy>
+      sortByHasShownProfitMilestoneAchievement() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'hasShownProfitMilestoneAchievement', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BusinessProfile, BusinessProfile, QAfterSortBy>
+      sortByHasShownProfitMilestoneAchievementDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'hasShownProfitMilestoneAchievement', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BusinessProfile, BusinessProfile, QAfterSortBy>
       sortByIndustry() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'industry', Sort.asc);
@@ -4776,6 +4842,34 @@ extension BusinessProfileQuerySortThenBy
     });
   }
 
+  QueryBuilder<BusinessProfile, BusinessProfile, QAfterSortBy>
+      thenByHasShownFirstSaleAchievement() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'hasShownFirstSaleAchievement', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BusinessProfile, BusinessProfile, QAfterSortBy>
+      thenByHasShownFirstSaleAchievementDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'hasShownFirstSaleAchievement', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BusinessProfile, BusinessProfile, QAfterSortBy>
+      thenByHasShownProfitMilestoneAchievement() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'hasShownProfitMilestoneAchievement', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BusinessProfile, BusinessProfile, QAfterSortBy>
+      thenByHasShownProfitMilestoneAchievementDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'hasShownProfitMilestoneAchievement', Sort.desc);
+    });
+  }
+
   QueryBuilder<BusinessProfile, BusinessProfile, QAfterSortBy> thenById() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.asc);
@@ -5069,6 +5163,20 @@ extension BusinessProfileQueryWhereDistinct
     });
   }
 
+  QueryBuilder<BusinessProfile, BusinessProfile, QDistinct>
+      distinctByHasShownFirstSaleAchievement() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'hasShownFirstSaleAchievement');
+    });
+  }
+
+  QueryBuilder<BusinessProfile, BusinessProfile, QDistinct>
+      distinctByHasShownProfitMilestoneAchievement() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'hasShownProfitMilestoneAchievement');
+    });
+  }
+
   QueryBuilder<BusinessProfile, BusinessProfile, QDistinct> distinctByIndustry(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -5253,6 +5361,20 @@ extension BusinessProfileQueryProperty
       fullAddressProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'fullAddress');
+    });
+  }
+
+  QueryBuilder<BusinessProfile, bool, QQueryOperations>
+      hasShownFirstSaleAchievementProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'hasShownFirstSaleAchievement');
+    });
+  }
+
+  QueryBuilder<BusinessProfile, bool, QQueryOperations>
+      hasShownProfitMilestoneAchievementProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'hasShownProfitMilestoneAchievement');
     });
   }
 
