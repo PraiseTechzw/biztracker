@@ -6,6 +6,7 @@ import '../utils/glassmorphism_theme.dart';
 import '../utils/toast_utils.dart';
 import '../services/database_service.dart';
 import '../models/business_data.dart';
+import 'barcode_scanner_screen.dart';
 
 class SalesScreen extends StatefulWidget {
   const SalesScreen({super.key});
