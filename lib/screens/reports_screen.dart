@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../utils/glassmorphism_theme.dart';
 import '../services/database_service.dart';
+import '../services/pdf_report_service.dart';
 import '../models/business_data.dart';
 import '../widgets/chart_widget.dart';
 
@@ -93,92 +94,61 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   Future<void> _exportReport() async {
     try {
-      final summary = _getFinancialSummary();
-      final analysis = _getSalesAnalysis();
-      final breakdown = _getExpenseBreakdown();
-      final inventory = _getInventoryReport();
+      if (businessProfile == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please set up your business profile first'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
 
-      final report =
-          '''
-BUSINESS REPORT
-${businessProfile?.businessName ?? 'Business Name'}
-Generated on: ${DateFormat('MMMM dd, yyyy').format(DateTime.now())}
-Period: ${DateFormat('MMM dd, yyyy').format(startDate)} - ${DateFormat('MMM dd, yyyy').format(endDate)}
-
-FINANCIAL SUMMARY
-================
-Total Revenue: \$${NumberFormat('#,##0.00').format(summary['totalRevenue'])}
-Total Expenses: \$${NumberFormat('#,##0.00').format(summary['totalExpenses'])}
-Net Profit: \$${NumberFormat('#,##0.00').format(summary['netProfit'])}
-Profit Margin: ${summary['profitMargin'].toStringAsFixed(1)}%
-Total Capital: \$${NumberFormat('#,##0.00').format(summary['totalCapital'])}
-Stock Value: \$${NumberFormat('#,##0.00').format(summary['totalStockValue'])}
-
-SALES ANALYSIS
-==============
-Total Sales: \$${NumberFormat('#,##0.00').format(analysis['totalSales'])}
-Sales Count: ${analysis['salesCount']}
-Paid Sales: \$${NumberFormat('#,##0.00').format(analysis['totalPaid'])}
-Credit Sales: \$${NumberFormat('#,##0.00').format(analysis['totalCredit'])}
-Partial Payments: \$${NumberFormat('#,##0.00').format(analysis['totalPartial'])}
-
-Payment Methods:
-- Cash: ${analysis['cashSales']} transactions
-- Card: ${analysis['cardSales']} transactions
-- Bank Transfer: ${analysis['bankSales']} transactions
-
-EXPENSE BREAKDOWN
-================
-Total Expenses: \$${NumberFormat('#,##0.00').format(breakdown['totalExpenses'])}
-Expenses Count: ${breakdown['expensesCount']}
-
-Expense Categories:
-${breakdown['categoryBreakdown'].entries.map((entry) => '- ${entry.key}: \$${NumberFormat('#,##0.00').format(entry.value)}').join('\n')}
-
-INVENTORY REPORT
-================
-Total Items: ${inventory['totalItems']}
-Total Value: \$${NumberFormat('#,##0.00').format(inventory['totalValue'])}
-Total Cost: \$${NumberFormat('#,##0.00').format(inventory['totalCost'])}
-Selling Value: \$${NumberFormat('#,##0.00').format(inventory['totalSellingValue'])}
-Low Stock Items: ${inventory['lowStockItems']}
-
-Inventory Categories:
-${inventory['categoryBreakdown'].entries.map((entry) => '- ${entry.key}: ${entry.value} items').join('\n')}
-
-PERFORMANCE METRICS
-==================
-Collection Rate: ${analysis['totalSales'] > 0 ? (analysis['totalPaid'] / analysis['totalSales'] * 100).toStringAsFixed(1) : '0.0'}%
-Inventory Turnover: ${inventory['totalValue'] > 0 ? (summary['totalRevenue'] / inventory['totalValue']).toStringAsFixed(2) : '0.00'}x
-ROI: ${summary['totalCapital'] > 0 ? (summary['netProfit'] / summary['totalCapital'] * 100).toStringAsFixed(1) : '0.0'}%
-
-END OF REPORT
-=============
-''';
-
-      // Show the report in a dialog
+      // Show loading dialog
       showDialog(
         context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Business Report'),
-          content: SingleChildScrollView(
-            child: SelectableText(
-              report,
-              style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-            ),
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(color: GlassmorphismTheme.primaryColor),
+              SizedBox(width: 16),
+              Text('Generating PDF Report...'),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Close'),
-            ),
-          ],
+        ),
+      );
+
+      // Generate PDF report
+      await PdfReportService.generateBusinessReport(
+        businessProfile: businessProfile!,
+        sales: sales,
+        expenses: expenses,
+        stocks: stocks,
+        capitals: capitals,
+        startDate: startDate,
+        endDate: endDate,
+      );
+
+      // Close loading dialog
+      Navigator.of(context).pop();
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('PDF report generated successfully!'),
+          backgroundColor: Colors.green,
         ),
       );
     } catch (e) {
+      // Close loading dialog if open
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error generating report: $e'),
+          content: Text('Error generating PDF report: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -460,6 +430,8 @@ END OF REPORT
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _buildQuickActions(),
+            const SizedBox(height: 16),
             _buildReportTypeSelector(),
             const SizedBox(height: 16),
             _buildDateRangeSelector(),
@@ -467,6 +439,120 @@ END OF REPORT
             _buildSelectedReport(),
             const SizedBox(height: 24),
             _buildChartsSection(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickActions() {
+    return GlassmorphismTheme.glassmorphismContainer(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Quick Actions',
+            style: TextStyle(
+              color: GlassmorphismTheme.textColor,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildQuickActionButton('Last 7 Days', Icons.today, () {
+                  setState(() {
+                    endDate = DateTime.now();
+                    startDate = DateTime.now().subtract(
+                      const Duration(days: 7),
+                    );
+                  });
+                }),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildQuickActionButton(
+                  'Last 30 Days',
+                  Icons.calendar_month,
+                  () {
+                    setState(() {
+                      endDate = DateTime.now();
+                      startDate = DateTime.now().subtract(
+                        const Duration(days: 30),
+                      );
+                    });
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildQuickActionButton(
+                  'This Month',
+                  Icons.calendar_today,
+                  () {
+                    setState(() {
+                      final now = DateTime.now();
+                      endDate = now;
+                      startDate = DateTime(now.year, now.month, 1);
+                    });
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildQuickActionButton(
+                  'This Year',
+                  Icons.calendar_view_month,
+                  () {
+                    setState(() {
+                      final now = DateTime.now();
+                      endDate = now;
+                      startDate = DateTime(now.year, 1, 1);
+                    });
+                  },
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickActionButton(
+    String label,
+    IconData icon,
+    VoidCallback onTap,
+  ) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        decoration: BoxDecoration(
+          color: GlassmorphismTheme.surfaceColor.withOpacity(0.5),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.white.withOpacity(0.2)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: GlassmorphismTheme.primaryColor, size: 16),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: const TextStyle(
+                color: GlassmorphismTheme.textColor,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ],
         ),
       ),
@@ -1417,11 +1503,28 @@ END OF REPORT
 
         const SizedBox(height: 16),
 
+        // Payment Status Chart
+        if (analysis['paidCount'] > 0 ||
+            analysis['creditCount'] > 0 ||
+            analysis['partialCount'] > 0)
+          ChartWidget(
+            title: 'Payment Status',
+            type: ChartType.doughnut,
+            data: {
+              'Paid': analysis['paidCount'].toDouble(),
+              'Credit': analysis['creditCount'].toDouble(),
+              'Partial': analysis['partialCount'].toDouble(),
+            },
+            height: 200,
+          ),
+
+        const SizedBox(height: 16),
+
         // Expense Categories Chart
         if (breakdown['categoryBreakdown'].isNotEmpty)
           ChartWidget(
             title: 'Expense Categories',
-            type: ChartType.doughnut,
+            type: ChartType.pie,
             data: breakdown['categoryBreakdown'],
             height: 200,
           ),
@@ -1432,7 +1535,7 @@ END OF REPORT
         if (inventory['categoryBreakdown'].isNotEmpty)
           ChartWidget(
             title: 'Inventory by Category',
-            type: ChartType.pie,
+            type: ChartType.doughnut,
             data: Map<String, double>.fromEntries(
               (inventory['categoryBreakdown'] as Map<String, int>).entries.map(
                 (entry) => MapEntry(entry.key, entry.value.toDouble()),
@@ -1440,7 +1543,79 @@ END OF REPORT
             ),
             height: 200,
           ),
+
+        const SizedBox(height: 16),
+
+        // Monthly Sales Trend (if we have data)
+        if (sales.isNotEmpty) _buildMonthlySalesTrend(),
+
+        const SizedBox(height: 16),
+
+        // Performance Metrics Chart
+        _buildPerformanceMetricsChart(summary, analysis, inventory),
       ],
+    );
+  }
+
+  Widget _buildMonthlySalesTrend() {
+    // Group sales by month
+    final monthlyData = <String, double>{};
+    final currentYear = DateTime.now().year;
+
+    for (int month = 1; month <= 12; month++) {
+      final monthName = DateFormat('MMM').format(DateTime(currentYear, month));
+      monthlyData[monthName] = 0.0;
+    }
+
+    for (final sale in sales) {
+      if (sale.saleDate.year == currentYear) {
+        final monthName = DateFormat('MMM').format(sale.saleDate);
+        monthlyData[monthName] =
+            (monthlyData[monthName] ?? 0.0) + sale.totalAmount;
+      }
+    }
+
+    // Only show chart if there's data
+    if (monthlyData.values.any((value) => value > 0)) {
+      return ChartWidget(
+        title: 'Monthly Sales Trend (${currentYear})',
+        type: ChartType.line,
+        data: monthlyData,
+        height: 200,
+      );
+    }
+
+    return const SizedBox.shrink();
+  }
+
+  Widget _buildPerformanceMetricsChart(
+    Map<String, dynamic> summary,
+    Map<String, dynamic> analysis,
+    Map<String, dynamic> inventory,
+  ) {
+    final avgSaleValue = analysis['salesCount'] > 0
+        ? analysis['totalSales'] / analysis['salesCount']
+        : 0.0;
+    final collectionRate = analysis['totalSales'] > 0
+        ? (analysis['totalPaid'] / analysis['totalSales']) * 100
+        : 0.0;
+    final inventoryTurnover = inventory['totalValue'] > 0
+        ? summary['totalRevenue'] / inventory['totalValue']
+        : 0.0;
+    final roi = summary['totalCapital'] > 0
+        ? (summary['netProfit'] / summary['totalCapital']) * 100
+        : 0.0;
+
+    return ChartWidget(
+      title: 'Performance Metrics',
+      type: ChartType.bar,
+      data: {
+        'Avg Sale': avgSaleValue,
+        'Collection %': collectionRate,
+        'Turnover': inventoryTurnover * 10, // Scale for better visualization
+        'ROI %': roi,
+      },
+      height: 200,
     );
   }
 }
