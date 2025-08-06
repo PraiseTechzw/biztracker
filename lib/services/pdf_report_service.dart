@@ -23,12 +23,11 @@ class PdfReportService {
     // Add logo if available
     pw.MemoryImage? logoImage;
     try {
-      if (businessProfile.logoPath != null) {
-        final logoFile = File(businessProfile.logoPath!);
-        if (await logoFile.exists()) {
-          final logoBytes = await logoFile.readAsBytes();
-          logoImage = pw.MemoryImage(logoBytes);
-        }
+      // Try to load the logo from assets
+      final logoFile = File('assets/images/logo.png');
+      if (await logoFile.exists()) {
+        final logoBytes = await logoFile.readAsBytes();
+        logoImage = pw.MemoryImage(logoBytes);
       }
     } catch (e) {
       // Logo not available, continue without it
@@ -45,13 +44,21 @@ class PdfReportService {
     );
 
     pdf.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(32),
+        build: (context) =>
+            _buildTitlePage(businessProfile, startDate, endDate, logoImage),
+      ),
+    );
+
+    pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(32),
         header: (context) => _buildHeader(context, businessProfile, logoImage),
         footer: (context) => _buildFooter(context),
         build: (context) => [
-          _buildTitlePage(businessProfile, startDate, endDate, logoImage),
           _buildFinancialSummary(reportData),
           _buildSalesAnalysis(reportData),
           _buildExpenseBreakdown(reportData),
@@ -63,7 +70,54 @@ class PdfReportService {
     );
 
     // Save and share the PDF
-    await _saveAndSharePdf(pdf, businessProfile.businessName);
+    try {
+      await _saveAndSharePdf(pdf, businessProfile.businessName);
+    } catch (e) {
+      // If PDF generation fails, try with a simpler version
+      final simplePdf = pw.Document();
+      simplePdf.addPage(
+        pw.Page(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(32),
+          build: (context) => pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                'Business Report',
+                style: pw.TextStyle(
+                  fontSize: 24,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.blue800,
+                ),
+              ),
+              pw.SizedBox(height: 20),
+              pw.Text(
+                'Business: ${businessProfile.businessName}',
+                style: pw.TextStyle(fontSize: 16),
+              ),
+              pw.Text(
+                'Period: ${DateFormat('MMM dd, yyyy').format(startDate)} - ${DateFormat('MMM dd, yyyy').format(endDate)}',
+                style: pw.TextStyle(fontSize: 14),
+              ),
+              pw.SizedBox(height: 20),
+              pw.Text(
+                'Total Revenue: \$${NumberFormat('#,##0.00').format(reportData['financialSummary']['totalRevenue'])}',
+                style: pw.TextStyle(fontSize: 14),
+              ),
+              pw.Text(
+                'Total Expenses: \$${NumberFormat('#,##0.00').format(reportData['financialSummary']['totalExpenses'])}',
+                style: pw.TextStyle(fontSize: 14),
+              ),
+              pw.Text(
+                'Net Profit: \$${NumberFormat('#,##0.00').format(reportData['financialSummary']['netProfit'])}',
+                style: pw.TextStyle(fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+      );
+      await _saveAndSharePdf(simplePdf, businessProfile.businessName);
+    }
   }
 
   static pw.Widget _buildHeader(
@@ -176,7 +230,7 @@ class PdfReportService {
     pw.MemoryImage? logoImage,
   ) {
     return pw.Container(
-      height: 700,
+      height: 600,
       decoration: pw.BoxDecoration(
         gradient: pw.LinearGradient(
           begin: pw.Alignment.topLeft,
@@ -445,9 +499,9 @@ class PdfReportService {
             ),
           ],
         ),
-        pw.SizedBox(height: 20),
+        pw.SizedBox(height: 16),
         pw.Container(
-          padding: const pw.EdgeInsets.all(24),
+          padding: const pw.EdgeInsets.all(16),
           decoration: pw.BoxDecoration(
             gradient: pw.LinearGradient(
               begin: pw.Alignment.topLeft,
@@ -472,7 +526,14 @@ class PdfReportService {
                       ),
                     ),
                     child: pw.Center(
-                      child: pw.Text('💡', style: pw.TextStyle(fontSize: 12)),
+                      child: pw.Text(
+                        'i',
+                        style: pw.TextStyle(
+                          fontSize: 14,
+                          fontWeight: pw.FontWeight.bold,
+                          color: PdfColors.white,
+                        ),
+                      ),
                     ),
                   ),
                   pw.SizedBox(width: 12),
@@ -487,12 +548,12 @@ class PdfReportService {
                   ),
                 ],
               ),
-              pw.SizedBox(height: 20),
+              pw.SizedBox(height: 16),
               pw.Row(
                 children: [
                   pw.Expanded(
                     child: _buildInsightItem(
-                      '📊',
+                      'S',
                       'Sales Volume',
                       '${summary['salesCount']} transactions',
                       PdfColors.green,
@@ -501,7 +562,7 @@ class PdfReportService {
                   pw.SizedBox(width: 16),
                   pw.Expanded(
                     child: _buildInsightItem(
-                      '💰',
+                      'A',
                       'Avg Sale Value',
                       '\$${NumberFormat('#,##0.00').format(summary['totalRevenue'] / (summary['salesCount'] > 0 ? summary['salesCount'] : 1))}',
                       PdfColors.blue,
@@ -509,12 +570,12 @@ class PdfReportService {
                   ),
                 ],
               ),
-              pw.SizedBox(height: 12),
+              pw.SizedBox(height: 8),
               pw.Row(
                 children: [
                   pw.Expanded(
                     child: _buildInsightItem(
-                      '📈',
+                      'P',
                       'Profit Margin',
                       '${summary['profitMargin'].toStringAsFixed(1)}%',
                       summary['profitMargin'] >= 0
@@ -525,7 +586,7 @@ class PdfReportService {
                   pw.SizedBox(width: 16),
                   pw.Expanded(
                     child: _buildInsightItem(
-                      '📋',
+                      'E',
                       'Expenses',
                       '${summary['expensesCount']} items',
                       PdfColors.orange,
@@ -547,7 +608,7 @@ class PdfReportService {
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
                     pw.Text(
-                      '📋 Executive Summary',
+                      'Executive Summary',
                       style: pw.TextStyle(
                         fontSize: 14,
                         fontWeight: pw.FontWeight.bold,
@@ -557,8 +618,8 @@ class PdfReportService {
                     pw.SizedBox(height: 8),
                     pw.Text(
                       summary['netProfit'] >= 0
-                          ? '✅ Your business is profitable with a strong ${summary['profitMargin'].toStringAsFixed(1)}% profit margin.'
-                          : '⚠️ Your business is currently operating at a loss. Focus on increasing revenue or reducing expenses.',
+                          ? 'Your business is profitable with a strong ${summary['profitMargin'].toStringAsFixed(1)}% profit margin.'
+                          : 'Your business is currently operating at a loss. Focus on increasing revenue or reducing expenses.',
                       style: pw.TextStyle(
                         fontSize: 12,
                         color: PdfColors.grey700,
@@ -566,7 +627,7 @@ class PdfReportService {
                     ),
                     pw.SizedBox(height: 4),
                     pw.Text(
-                      '📊 With ${summary['salesCount']} sales transactions, your average sale value is \$${NumberFormat('#,##0.00').format(summary['totalRevenue'] / (summary['salesCount'] > 0 ? summary['salesCount'] : 1))}.',
+                      'With ${summary['salesCount']} sales transactions, your average sale value is \$${NumberFormat('#,##0.00').format(summary['totalRevenue'] / (summary['salesCount'] > 0 ? summary['salesCount'] : 1))}.',
                       style: pw.TextStyle(
                         fontSize: 12,
                         color: PdfColors.grey700,
@@ -985,7 +1046,7 @@ class PdfReportService {
         pw.Header(
           level: 1,
           child: pw.Text(
-            '📊 VISUAL ANALYTICS & DATA INSIGHTS',
+            'VISUAL ANALYTICS & DATA INSIGHTS',
             style: pw.TextStyle(
               fontSize: 20,
               fontWeight: pw.FontWeight.bold,
@@ -993,11 +1054,11 @@ class PdfReportService {
             ),
           ),
         ),
-        pw.SizedBox(height: 20),
+        pw.SizedBox(height: 16),
 
         // Modern analytics overview
         pw.Container(
-          padding: const pw.EdgeInsets.all(24),
+          padding: const pw.EdgeInsets.all(16),
           decoration: pw.BoxDecoration(
             gradient: pw.LinearGradient(
               begin: pw.Alignment.topLeft,
@@ -1022,7 +1083,14 @@ class PdfReportService {
                       ),
                     ),
                     child: pw.Center(
-                      child: pw.Text('📈', style: pw.TextStyle(fontSize: 16)),
+                      child: pw.Text(
+                        'A',
+                        style: pw.TextStyle(
+                          fontSize: 16,
+                          fontWeight: pw.FontWeight.bold,
+                          color: PdfColors.white,
+                        ),
+                      ),
                     ),
                   ),
                   pw.SizedBox(width: 12),
@@ -1037,14 +1105,14 @@ class PdfReportService {
                   ),
                 ],
               ),
-              pw.SizedBox(height: 20),
+              pw.SizedBox(height: 16),
 
               // Chart categories grid
               pw.Row(
                 children: [
                   pw.Expanded(
                     child: _buildChartCategory(
-                      '💰',
+                      'F',
                       'Financial Metrics',
                       'Revenue vs Expenses',
                       PdfColors.green,
@@ -1055,7 +1123,7 @@ class PdfReportService {
                   pw.SizedBox(width: 12),
                   pw.Expanded(
                     child: _buildChartCategory(
-                      '💳',
+                      'P',
                       'Payment Analysis',
                       'Methods & Status',
                       PdfColors.blue,
@@ -1066,12 +1134,12 @@ class PdfReportService {
                   ),
                 ],
               ),
-              pw.SizedBox(height: 12),
+              pw.SizedBox(height: 8),
               pw.Row(
                 children: [
                   pw.Expanded(
                     child: _buildChartCategory(
-                      '📋',
+                      'E',
                       'Expense Breakdown',
                       'Category Analysis',
                       PdfColors.orange,
@@ -1081,7 +1149,7 @@ class PdfReportService {
                   pw.SizedBox(width: 12),
                   pw.Expanded(
                     child: _buildChartCategory(
-                      '📦',
+                      'I',
                       'Inventory Insights',
                       'Stock Distribution',
                       PdfColors.purple,
@@ -1090,7 +1158,7 @@ class PdfReportService {
                   ),
                 ],
               ),
-              pw.SizedBox(height: 20),
+              pw.SizedBox(height: 16),
 
               // Data insights summary
               pw.Container(
@@ -1106,7 +1174,7 @@ class PdfReportService {
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
                     pw.Text(
-                      '🔍 Key Data Insights',
+                      'Key Data Insights',
                       style: pw.TextStyle(
                         fontSize: 14,
                         fontWeight: pw.FontWeight.bold,
@@ -1152,7 +1220,7 @@ class PdfReportService {
                   ],
                 ),
               ),
-              pw.SizedBox(height: 16),
+              pw.SizedBox(height: 12),
 
               // Chart recommendations
               pw.Container(
@@ -1168,7 +1236,7 @@ class PdfReportService {
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
                     pw.Text(
-                      '💡 Chart Recommendations',
+                      'Chart Recommendations',
                       style: pw.TextStyle(
                         fontSize: 14,
                         fontWeight: pw.FontWeight.bold,
