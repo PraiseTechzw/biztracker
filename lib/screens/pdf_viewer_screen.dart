@@ -136,23 +136,13 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(
-                      Icons.zoom_out,
-                      color: GlassmorphismTheme.textColor,
-                    ),
-                    onPressed: () => pdfViewController.zoomTo(zoom: 0.8),
-                  ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.zoom_in,
-                      color: GlassmorphismTheme.textColor,
-                    ),
-                    onPressed: () => pdfViewController.zoomTo(zoom: 1.2),
-                  ),
-                ],
+              // Zoom controls removed - using built-in pinch to zoom
+              const Text(
+                'Pinch to zoom',
+                style: TextStyle(
+                  color: GlassmorphismTheme.textColor,
+                  fontSize: 12,
+                ),
               ),
             ],
           ),

@@ -1551,11 +1551,11 @@ class PdfReportService {
 
   static PdfColor _lightenColor(PdfColor color) {
     // Simple color lightening for gradient effect
-    if (color == PdfColors.green) return PdfColors.green300;
-    if (color == PdfColors.blue) return PdfColors.blue300;
-    if (color == PdfColors.red) return PdfColors.red300;
-    if (color == PdfColors.orange) return PdfColors.orange300;
-    if (color == PdfColors.purple) return PdfColors.purple300;
+    if (color == PdfColors.green700) return PdfColors.green500;
+    if (color == PdfColors.blue700) return PdfColors.blue500;
+    if (color == PdfColors.red700) return PdfColors.red500;
+    if (color == PdfColors.orange700) return PdfColors.orange500;
+    if (color == PdfColors.purple700) return PdfColors.purple500;
     return color;
   }
 
