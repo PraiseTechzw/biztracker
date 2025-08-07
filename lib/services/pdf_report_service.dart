@@ -11,7 +11,7 @@ import '../models/business_profile.dart';
 import '../models/business_data.dart';
 
 class PdfReportService {
-  static Future<void> generateBusinessReport({
+  static Future<Uint8List> generateBusinessReport({
     required BusinessProfile businessProfile,
     required List<Sale> sales,
     required List<Expense> expenses,
@@ -87,55 +87,88 @@ class PdfReportService {
       ),
     );
 
-    // Save and share the PDF
+    // Return PDF bytes for in-app viewing
+    return await pdf.save();
+  }
+
+  static Future<Uint8List> generateBusinessReportBytes({
+    required BusinessProfile businessProfile,
+    required List<Sale> sales,
+    required List<Expense> expenses,
+    required List<Stock> stocks,
+    required List<Capital> capitals,
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    final pdf = pw.Document();
+
+    // Add logo if available - Modern approach
+    pw.MemoryImage? logoImage;
     try {
-      await _saveAndSharePdf(pdf, businessProfile.businessName);
-    } catch (e) {
-      // If PDF generation fails, try with a simpler version
-      final simplePdf = pw.Document();
-      simplePdf.addPage(
-        pw.Page(
-          pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.all(32),
-          build: (context) => pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Text(
-                'Business Report',
-                style: pw.TextStyle(
-                  fontSize: 24,
-                  fontWeight: pw.FontWeight.bold,
-                  color: PdfColors.blue800,
-                ),
-              ),
-              pw.SizedBox(height: 20),
-              pw.Text(
-                'Business: ${businessProfile.businessName}',
-                style: pw.TextStyle(fontSize: 16),
-              ),
-              pw.Text(
-                'Period: ${DateFormat('MMM dd, yyyy').format(startDate)} - ${DateFormat('MMM dd, yyyy').format(endDate)}',
-                style: pw.TextStyle(fontSize: 14),
-              ),
-              pw.SizedBox(height: 20),
-              pw.Text(
-                'Total Revenue: \$${NumberFormat('#,##0.00').format(reportData['financialSummary']['totalRevenue'])}',
-                style: pw.TextStyle(fontSize: 14),
-              ),
-              pw.Text(
-                'Total Expenses: \$${NumberFormat('#,##0.00').format(reportData['financialSummary']['totalExpenses'])}',
-                style: pw.TextStyle(fontSize: 14),
-              ),
-              pw.Text(
-                'Net Profit: \$${NumberFormat('#,##0.00').format(reportData['financialSummary']['netProfit'])}',
-                style: pw.TextStyle(fontSize: 14),
-              ),
-            ],
-          ),
-        ),
+      // Try to load logo using Flutter's asset system
+      final ByteData? logoData = await rootBundle.load(
+        'assets/images/logo.png',
       );
-      await _saveAndSharePdf(simplePdf, businessProfile.businessName);
+      if (logoData != null) {
+        final Uint8List logoBytes = logoData.buffer.asUint8List();
+        logoImage = pw.MemoryImage(logoBytes);
+        print('Logo loaded successfully from assets');
+      } else {
+        print('Logo not found in assets');
+      }
+    } catch (e) {
+      print('Logo loading error: $e');
+      // Fallback: try file system
+      try {
+        final logoFile = File('assets/images/logo.png');
+        if (await logoFile.exists()) {
+          final logoBytes = await logoFile.readAsBytes();
+          logoImage = pw.MemoryImage(logoBytes);
+          print('Logo loaded from file system');
+        }
+      } catch (e2) {
+        print('File system logo loading error: $e2');
+      }
     }
+
+    // Calculate report data
+    final reportData = _calculateReportData(
+      sales: sales,
+      expenses: expenses,
+      stocks: stocks,
+      capitals: capitals,
+      startDate: startDate,
+      endDate: endDate,
+    );
+
+    pdf.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(32),
+        build: (context) =>
+            _buildTitlePage(businessProfile, startDate, endDate, logoImage),
+      ),
+    );
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(32),
+        header: (context) => _buildHeader(context, businessProfile, logoImage),
+        footer: (context) => _buildFooter(context),
+        build: (context) => [
+          _buildFinancialSummary(reportData),
+          _buildSalesAnalysis(reportData),
+          _buildExpenseBreakdown(reportData),
+          _buildInventoryReport(reportData),
+          _buildPerformanceMetrics(reportData),
+          _buildCharts(reportData),
+        ],
+      ),
+    );
+
+    // Return PDF bytes
+    return await pdf.save();
   }
 
   static pw.Widget _buildHeader(
@@ -290,30 +323,55 @@ class PdfReportService {
                       ),
                     ),
                     child: pw.Center(
-                      child: pw.Container(
-                        width: 80,
-                        height: 80,
-                        decoration: pw.BoxDecoration(
-                          gradient: pw.LinearGradient(
-                            begin: pw.Alignment.topLeft,
-                            end: pw.Alignment.bottomRight,
-                            colors: [PdfColors.blue800, PdfColors.blue600],
-                          ),
-                          borderRadius: const pw.BorderRadius.all(
-                            pw.Radius.circular(16),
-                          ),
-                        ),
-                        child: pw.Center(
-                          child: pw.Text(
-                            'BIZ',
-                            style: pw.TextStyle(
-                              fontSize: 20,
-                              fontWeight: pw.FontWeight.bold,
-                              color: PdfColors.white,
+                      child: logoImage != null
+                          ? pw.Container(
+                              width: 100,
+                              height: 100,
+                              decoration: pw.BoxDecoration(
+                                color: PdfColors.white,
+                                borderRadius: const pw.BorderRadius.all(
+                                  pw.Radius.circular(16),
+                                ),
+                                border: pw.Border.all(
+                                  color: PdfColors.blue800,
+                                  width: 2,
+                                ),
+                              ),
+                              child: pw.Center(
+                                child: pw.Image(
+                                  logoImage!,
+                                  width: 80,
+                                  height: 80,
+                                ),
+                              ),
+                            )
+                          : pw.Container(
+                              width: 100,
+                              height: 100,
+                              decoration: pw.BoxDecoration(
+                                gradient: pw.LinearGradient(
+                                  begin: pw.Alignment.topLeft,
+                                  end: pw.Alignment.bottomRight,
+                                  colors: [
+                                    PdfColors.blue800,
+                                    PdfColors.blue600,
+                                  ],
+                                ),
+                                borderRadius: const pw.BorderRadius.all(
+                                  pw.Radius.circular(16),
+                                ),
+                              ),
+                              child: pw.Center(
+                                child: pw.Text(
+                                  'BIZ',
+                                  style: pw.TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: pw.FontWeight.bold,
+                                    color: PdfColors.white,
+                                  ),
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                      ),
                     ),
                   ),
                 pw.Column(
@@ -626,7 +684,7 @@ class PdfReportService {
                       'S',
                       'Sales Volume',
                       '${summary['salesCount']} transactions',
-                      PdfColors.green,
+                      PdfColors.green700,
                     ),
                   ),
                   pw.SizedBox(width: 16),
@@ -635,7 +693,7 @@ class PdfReportService {
                       'A',
                       'Avg Sale Value',
                       '\$${NumberFormat('#,##0.00').format(summary['totalRevenue'] / (summary['salesCount'] > 0 ? summary['salesCount'] : 1))}',
-                      PdfColors.blue,
+                      PdfColors.blue700,
                     ),
                   ),
                 ],
@@ -649,8 +707,8 @@ class PdfReportService {
                       'Profit Margin',
                       '${summary['profitMargin'].toStringAsFixed(1)}%',
                       summary['profitMargin'] >= 0
-                          ? PdfColors.green
-                          : PdfColors.red,
+                          ? PdfColors.green700
+                          : PdfColors.red700,
                     ),
                   ),
                   pw.SizedBox(width: 16),
@@ -659,7 +717,7 @@ class PdfReportService {
                       'E',
                       'Expenses',
                       '${summary['expensesCount']} items',
-                      PdfColors.orange,
+                      PdfColors.orange700,
                     ),
                   ),
                 ],
@@ -1185,7 +1243,7 @@ class PdfReportService {
                       'F',
                       'Financial Metrics',
                       'Revenue vs Expenses',
-                      PdfColors.green,
+                      PdfColors.green700,
                       summary['totalRevenue'] > 0 ||
                           summary['totalExpenses'] > 0,
                     ),
@@ -1196,7 +1254,7 @@ class PdfReportService {
                       'P',
                       'Payment Analysis',
                       'Methods & Status',
-                      PdfColors.blue,
+                      PdfColors.blue700,
                       analysis['cashSales'] > 0 ||
                           analysis['cardSales'] > 0 ||
                           analysis['bankSales'] > 0,
@@ -1212,7 +1270,7 @@ class PdfReportService {
                       'E',
                       'Expense Breakdown',
                       'Category Analysis',
-                      PdfColors.orange,
+                      PdfColors.orange700,
                       breakdown['categoryBreakdown'].isNotEmpty,
                     ),
                   ),
@@ -1222,7 +1280,7 @@ class PdfReportService {
                       'I',
                       'Inventory Insights',
                       'Stock Distribution',
-                      PdfColors.purple,
+                      PdfColors.purple700,
                       inventory['categoryBreakdown'].isNotEmpty,
                     ),
                   ),

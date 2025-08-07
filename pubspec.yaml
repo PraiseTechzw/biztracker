@@ -49,8 +49,9 @@ dependencies:
   pdf: ^3.10.7
   printing: ^5.11.1
   share_plus: ^7.2.1
-  flutter_cache_manager: ^3.3.1
-  http: ^1.1.0
+  flutter_cache_manager: ^3.4.1
+  http: ^1.4.0
+  flutter_pdfview: ^1.4.1+1
 
 dev_dependencies:
   flutter_test:

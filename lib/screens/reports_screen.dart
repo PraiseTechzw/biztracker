@@ -1,11 +1,16 @@
 import 'package:biztracker/models/business_profile.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../utils/glassmorphism_theme.dart';
 import '../services/database_service.dart';
 import '../services/pdf_report_service.dart';
 import '../models/business_data.dart';
 import '../widgets/chart_widget.dart';
+import 'pdf_viewer_screen.dart';
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
@@ -104,23 +109,36 @@ class _ReportsScreenState extends State<ReportsScreen> {
         return;
       }
 
-      // Show loading dialog
+      // Show loading dialog with progress
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => const AlertDialog(
-          content: Row(
+        builder: (context) => AlertDialog(
+          title: const Text('Generating Report'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              CircularProgressIndicator(color: GlassmorphismTheme.primaryColor),
-              SizedBox(width: 16),
-              Text('Generating PDF Report...'),
+              const CircularProgressIndicator(
+                color: GlassmorphismTheme.primaryColor,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Creating your business report...',
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Period: ${DateFormat('MMM dd, yyyy').format(startDate)} - ${DateFormat('MMM dd, yyyy').format(endDate)}',
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+                textAlign: TextAlign.center,
+              ),
             ],
           ),
         ),
       );
 
       // Generate PDF report
-      await PdfReportService.generateBusinessReport(
+      final pdfBytes = await PdfReportService.generateBusinessReportBytes(
         businessProfile: businessProfile!,
         sales: sales,
         expenses: expenses,
@@ -133,11 +151,34 @@ class _ReportsScreenState extends State<ReportsScreen> {
       // Close loading dialog
       Navigator.of(context).pop();
 
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('PDF report generated successfully!'),
-          backgroundColor: Colors.green,
+      // Show success dialog with options
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Report Generated!'),
+          content: const Text(
+            'Your business report has been created successfully. What would you like to do with it?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _viewReportInApp(pdfBytes);
+              },
+              child: const Text('View in App'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _shareReport(pdfBytes);
+              },
+              child: const Text('Share'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
+            ),
+          ],
         ),
       );
     } catch (e) {
@@ -149,6 +190,52 @@ class _ReportsScreenState extends State<ReportsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error generating PDF report: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _viewReportInApp(Uint8List pdfBytes) async {
+    try {
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}/business_report.pdf');
+      await file.writeAsBytes(pdfBytes);
+
+      // Navigate to PDF viewer screen
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => PdfViewerScreen(pdfPath: file.path),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error viewing PDF: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _shareReport(Uint8List pdfBytes) async {
+    try {
+      final tempDir = await getTemporaryDirectory();
+      final file = File(
+        '${tempDir.path}/business_report_${DateTime.now().millisecondsSinceEpoch}.pdf',
+      );
+      await file.writeAsBytes(pdfBytes);
+
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        text:
+            'Business Report for ${businessProfile?.businessName ?? 'Business'}',
+        subject: 'BizTracker Business Report',
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error sharing PDF: $e'),
           backgroundColor: Colors.red,
         ),
       );
