@@ -35,6 +35,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     );
   }
 
+  // build the bottom navigation bar
   Widget _buildBottomNavigationBar() {
     return Container(
       decoration: BoxDecoration(

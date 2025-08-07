@@ -1051,6 +1051,7 @@ class _CapitalScreenState extends State<CapitalScreen>
     );
   }
 
+  // build the expense card
   Widget _buildExpenseCard(Expense expense) {
     return GestureDetector(
       onTap: () => _showExpenseDetailsBottomSheet(expense),

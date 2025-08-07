@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:io';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:share_plus/share_plus.dart';
 import '../utils/glassmorphism_theme.dart';
@@ -12,7 +11,7 @@ class PdfViewerScreen extends StatefulWidget {
   @override
   State<PdfViewerScreen> createState() => _PdfViewerScreenState();
 }
-
+// state of the screen
 class _PdfViewerScreenState extends State<PdfViewerScreen> {
   late PDFViewController pdfViewController;
   int currentPage = 1;
@@ -53,7 +52,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
       ),
     );
   }
-
+// build the body of the screen
   Widget _buildBody() {
     if (hasError) {
       return Center(
@@ -93,7 +92,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
         ),
       );
     }
-
+    // loading indicator waiting for the pdf to load
     if (isLoading) {
       return Center(
         child: GlassmorphismTheme.glassmorphismContainer(
