@@ -1,10 +1,12 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:io' show Directory;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import '../models/business_profile.dart';
 import '../models/business_data.dart';
 
@@ -20,17 +22,33 @@ class PdfReportService {
   }) async {
     final pdf = pw.Document();
 
-    // Add logo if available
+    // Add logo if available - Modern approach
     pw.MemoryImage? logoImage;
     try {
-      // Try to load the logo from assets
-      final logoFile = File('assets/images/logo.png');
-      if (await logoFile.exists()) {
-        final logoBytes = await logoFile.readAsBytes();
+      // Try to load logo using Flutter's asset system
+      final ByteData? logoData = await rootBundle.load(
+        'assets/images/logo.png',
+      );
+      if (logoData != null) {
+        final Uint8List logoBytes = logoData.buffer.asUint8List();
         logoImage = pw.MemoryImage(logoBytes);
+        print('Logo loaded successfully from assets');
+      } else {
+        print('Logo not found in assets');
       }
     } catch (e) {
-      // Logo not available, continue without it
+      print('Logo loading error: $e');
+      // Fallback: try file system
+      try {
+        final logoFile = File('assets/images/logo.png');
+        if (await logoFile.exists()) {
+          final logoBytes = await logoFile.readAsBytes();
+          logoImage = pw.MemoryImage(logoBytes);
+          print('Logo loaded from file system');
+        }
+      } catch (e2) {
+        print('File system logo loading error: $e2');
+      }
     }
 
     // Calculate report data
@@ -193,12 +211,24 @@ class PdfReportService {
                   ),
                 ),
                 child: pw.Center(
-                  child: pw.Text(
-                    'BT',
-                    style: pw.TextStyle(
-                      fontSize: 8,
-                      fontWeight: pw.FontWeight.bold,
+                  child: pw.Container(
+                    width: 16,
+                    height: 16,
+                    decoration: pw.BoxDecoration(
                       color: PdfColors.white,
+                      borderRadius: const pw.BorderRadius.all(
+                        pw.Radius.circular(2),
+                      ),
+                    ),
+                    child: pw.Center(
+                      child: pw.Text(
+                        'B',
+                        style: pw.TextStyle(
+                          fontSize: 8,
+                          fontWeight: pw.FontWeight.bold,
+                          color: PdfColors.blue800,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -260,12 +290,28 @@ class PdfReportService {
                       ),
                     ),
                     child: pw.Center(
-                      child: pw.Text(
-                        'BT',
-                        style: pw.TextStyle(
-                          fontSize: 24,
-                          fontWeight: pw.FontWeight.bold,
-                          color: PdfColors.white,
+                      child: pw.Container(
+                        width: 80,
+                        height: 80,
+                        decoration: pw.BoxDecoration(
+                          gradient: pw.LinearGradient(
+                            begin: pw.Alignment.topLeft,
+                            end: pw.Alignment.bottomRight,
+                            colors: [PdfColors.blue800, PdfColors.blue600],
+                          ),
+                          borderRadius: const pw.BorderRadius.all(
+                            pw.Radius.circular(16),
+                          ),
+                        ),
+                        child: pw.Center(
+                          child: pw.Text(
+                            'BIZ',
+                            style: pw.TextStyle(
+                              fontSize: 20,
+                              fontWeight: pw.FontWeight.bold,
+                              color: PdfColors.white,
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -413,12 +459,24 @@ class PdfReportService {
                         ),
                       ),
                       child: pw.Center(
-                        child: pw.Text(
-                          'BT',
-                          style: pw.TextStyle(
-                            fontSize: 6,
-                            fontWeight: pw.FontWeight.bold,
+                        child: pw.Container(
+                          width: 12,
+                          height: 12,
+                          decoration: pw.BoxDecoration(
                             color: PdfColors.white,
+                            borderRadius: const pw.BorderRadius.all(
+                              pw.Radius.circular(2),
+                            ),
+                          ),
+                          child: pw.Center(
+                            child: pw.Text(
+                              'B',
+                              style: pw.TextStyle(
+                                fontSize: 6,
+                                fontWeight: pw.FontWeight.bold,
+                                color: PdfColors.blue800,
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -526,12 +584,24 @@ class PdfReportService {
                       ),
                     ),
                     child: pw.Center(
-                      child: pw.Text(
-                        'i',
-                        style: pw.TextStyle(
-                          fontSize: 14,
-                          fontWeight: pw.FontWeight.bold,
+                      child: pw.Container(
+                        width: 24,
+                        height: 24,
+                        decoration: pw.BoxDecoration(
                           color: PdfColors.white,
+                          borderRadius: const pw.BorderRadius.all(
+                            pw.Radius.circular(12),
+                          ),
+                        ),
+                        child: pw.Center(
+                          child: pw.Text(
+                            'i',
+                            style: pw.TextStyle(
+                              fontSize: 14,
+                              fontWeight: pw.FontWeight.bold,
+                              color: PdfColors.blue800,
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -1290,41 +1360,65 @@ class PdfReportService {
     bool hasData,
   ) {
     return pw.Container(
-      padding: const pw.EdgeInsets.all(12),
+      padding: const pw.EdgeInsets.all(16),
       decoration: pw.BoxDecoration(
-        color: hasData ? PdfColors.white : PdfColors.grey100,
-        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
+        color: hasData ? PdfColors.white : PdfColors.grey50,
+        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(12)),
         border: pw.Border.all(
           color: hasData ? color : PdfColors.grey300,
-          width: hasData ? 1 : 0.5,
+          width: hasData ? 2 : 1,
         ),
       ),
       child: pw.Column(
         children: [
-          pw.Text(icon, style: pw.TextStyle(fontSize: 20)),
-          pw.SizedBox(height: 6),
+          pw.Container(
+            width: 36,
+            height: 36,
+            decoration: pw.BoxDecoration(
+              gradient: hasData
+                  ? pw.LinearGradient(
+                      begin: pw.Alignment.topLeft,
+                      end: pw.Alignment.bottomRight,
+                      colors: [color, _lightenColor(color)],
+                    )
+                  : null,
+              color: hasData ? null : PdfColors.grey200,
+              borderRadius: const pw.BorderRadius.all(pw.Radius.circular(18)),
+            ),
+            child: pw.Center(
+              child: pw.Text(
+                icon,
+                style: pw.TextStyle(
+                  fontSize: 16,
+                  fontWeight: pw.FontWeight.bold,
+                  color: hasData ? PdfColors.white : PdfColors.grey500,
+                ),
+              ),
+            ),
+          ),
+          pw.SizedBox(height: 8),
           pw.Text(
             title,
             style: pw.TextStyle(
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: pw.FontWeight.bold,
               color: hasData ? PdfColors.grey800 : PdfColors.grey500,
             ),
             textAlign: pw.TextAlign.center,
           ),
-          pw.SizedBox(height: 2),
+          pw.SizedBox(height: 4),
           pw.Text(
             subtitle,
             style: pw.TextStyle(
-              fontSize: 9,
+              fontSize: 10,
               color: hasData ? PdfColors.grey600 : PdfColors.grey400,
             ),
             textAlign: pw.TextAlign.center,
           ),
-          pw.SizedBox(height: 4),
+          pw.SizedBox(height: 8),
           pw.Container(
-            width: 20,
-            height: 4,
+            width: 24,
+            height: 3,
             decoration: pw.BoxDecoration(
               color: hasData ? color : PdfColors.grey300,
               borderRadius: const pw.BorderRadius.all(pw.Radius.circular(2)),
@@ -1342,30 +1436,51 @@ class PdfReportService {
     PdfColor color,
   ) {
     return pw.Container(
-      padding: const pw.EdgeInsets.all(12),
+      padding: const pw.EdgeInsets.all(16),
       decoration: pw.BoxDecoration(
         color: PdfColors.white,
-        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
-        border: pw.Border.all(color: color),
+        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(12)),
+        border: pw.Border.all(color: color, width: 2),
       ),
       child: pw.Column(
         children: [
-          pw.Text(icon, style: pw.TextStyle(fontSize: 16)),
-          pw.SizedBox(height: 4),
+          pw.Container(
+            width: 40,
+            height: 40,
+            decoration: pw.BoxDecoration(
+              gradient: pw.LinearGradient(
+                begin: pw.Alignment.topLeft,
+                end: pw.Alignment.bottomRight,
+                colors: [color, _lightenColor(color)],
+              ),
+              borderRadius: const pw.BorderRadius.all(pw.Radius.circular(20)),
+            ),
+            child: pw.Center(
+              child: pw.Text(
+                icon,
+                style: pw.TextStyle(
+                  fontSize: 18,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.white,
+                ),
+              ),
+            ),
+          ),
+          pw.SizedBox(height: 12),
           pw.Text(
             title,
             style: pw.TextStyle(
-              fontSize: 10,
+              fontSize: 11,
               fontWeight: pw.FontWeight.bold,
-              color: PdfColors.grey700,
+              color: PdfColors.grey800,
             ),
             textAlign: pw.TextAlign.center,
           ),
-          pw.SizedBox(height: 4),
+          pw.SizedBox(height: 6),
           pw.Text(
             value,
             style: pw.TextStyle(
-              fontSize: 12,
+              fontSize: 14,
               fontWeight: pw.FontWeight.bold,
               color: color,
             ),
@@ -1374,6 +1489,16 @@ class PdfReportService {
         ],
       ),
     );
+  }
+
+  static PdfColor _lightenColor(PdfColor color) {
+    // Simple color lightening for gradient effect
+    if (color == PdfColors.green) return PdfColors.green300;
+    if (color == PdfColors.blue) return PdfColors.blue300;
+    if (color == PdfColors.red) return PdfColors.red300;
+    if (color == PdfColors.orange) return PdfColors.orange300;
+    if (color == PdfColors.purple) return PdfColors.purple300;
+    return color;
   }
 
   static pw.Widget _buildMetricCard(
