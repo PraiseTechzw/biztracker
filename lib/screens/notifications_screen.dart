@@ -285,6 +285,18 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         return Colors.red;
       case NotificationType.achievement:
         return Colors.purple;
+      case NotificationType.reminder:
+        return Colors.blue;
+      case NotificationType.goal:
+        return Colors.indigo;
+      case NotificationType.challenge:
+        return Colors.purple;
+      case NotificationType.milestone:
+        return Colors.amber;
+      case NotificationType.prediction:
+        return Colors.teal;
+      case NotificationType.insight:
+        return Colors.cyan;
     }
   }
 
@@ -306,6 +318,18 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         return Icons.receipt;
       case NotificationType.achievement:
         return Icons.emoji_events;
+      case NotificationType.reminder:
+        return Icons.schedule;
+      case NotificationType.goal:
+        return Icons.flag;
+      case NotificationType.challenge:
+        return Icons.sports_esports;
+      case NotificationType.milestone:
+        return Icons.star;
+      case NotificationType.prediction:
+        return Icons.trending_up;
+      case NotificationType.insight:
+        return Icons.lightbulb;
     }
   }
 

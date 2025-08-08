@@ -9,6 +9,7 @@ import '../utils/glassmorphism_theme.dart';
 import '../utils/toast_utils.dart';
 import '../services/database_service.dart';
 import '../services/notification_service.dart';
+import '../services/engagement_service.dart';
 import '../models/business_data.dart';
 import 'settings_screen.dart';
 import 'notifications_screen.dart';
@@ -154,6 +155,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     _loadBusinessName();
     _loadRecentActivities();
     _loadNotificationCount();
+    _recordActivity();
   }
 
   void _startHeaderAnimations() async {
@@ -240,6 +242,10 @@ class _DashboardScreenState extends State<DashboardScreen>
         unreadNotifications = 0;
       });
     }
+  }
+
+  void _recordActivity() {
+    EngagementService().recordActivity();
   }
 
   void _checkAchievements(double sales, double profit) async {

@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../utils/glassmorphism_theme.dart';
 import '../services/database_service.dart';
 import '../services/notification_service.dart';
+import '../services/engagement_service.dart';
 import '../models/business_data.dart';
 
 class ExpensesScreen extends StatefulWidget {
@@ -620,6 +621,10 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                               // Show notification for the expense
                               await NotificationService()
                                   .showExpenseNotification(expense);
+
+                              // Record activity for engagement tracking
+                              EngagementService().recordActivity();
+                              EngagementService().checkForNewAchievements();
 
                               Navigator.pop(context);
                               _loadExpenses();

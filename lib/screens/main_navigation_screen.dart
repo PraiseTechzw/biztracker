@@ -103,6 +103,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 label: 'Reports',
               ),
               BottomNavigationBarItem(
+                icon: Icon(Icons.workspace_premium),
+                label: 'Achievements',
+              ),
+              BottomNavigationBarItem(
                 icon: Icon(Icons.person),
                 label: 'Profile',
               ),
