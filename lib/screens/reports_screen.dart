@@ -5,12 +5,12 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:open_file/open_file.dart';
 import '../utils/glassmorphism_theme.dart';
 import '../services/database_service.dart';
 import '../services/pdf_report_service.dart';
 import '../models/business_data.dart';
 import '../widgets/chart_widget.dart';
-import 'pdf_viewer_screen.dart';
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
@@ -166,34 +166,20 @@ class _ReportsScreenState extends State<ReportsScreen> {
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                _viewReportInApp(pdfBytes);
+                _shareReport(pdfBytes);
               },
-              child: const Text('View in App'),
+              child: const Text('Share PDF'),
             ),
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                _shareReport(pdfBytes);
+                _openWithPdfApp(pdfBytes);
               },
-              child: const Text('Share'),
+              child: const Text('Open with PDF App'),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: const Text('Close'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _testPdfViewer(pdfBytes);
-              },
-              child: const Text('Test Viewer'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _testSimplePdfViewer(pdfBytes);
-              },
-              child: const Text('Simple Viewer'),
             ),
           ],
         ),
@@ -207,105 +193,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error generating PDF report: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
-  Future<void> _viewReportInApp(Uint8List pdfBytes) async {
-    try {
-      print('Saving PDF to temp directory...');
-      final tempDir = await getTemporaryDirectory();
-      final file = File('${tempDir.path}/business_report.pdf');
-      await file.writeAsBytes(pdfBytes);
-      print('PDF saved to: ${file.path}');
-
-      // Navigate to PDF viewer screen
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) =>
-              PdfViewerScreen(pdfPath: file.path, pdfBytes: pdfBytes),
-        ),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error viewing PDF: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
-  Future<void> _testSimplePdfViewer(Uint8List pdfBytes) async {
-    try {
-      print('Testing simple PDF viewer with ${pdfBytes.length} bytes');
-
-      // Show a simple dialog with PDF info
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('PDF Info'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('PDF Size: ${pdfBytes.length} bytes'),
-              const SizedBox(height: 16),
-              const Text('PDF generated successfully!'),
-              const SizedBox(height: 8),
-              const Text('The PDF viewer is having issues.'),
-              const SizedBox(height: 8),
-              const Text('You can still share the PDF.'),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _shareReport(pdfBytes);
-              },
-              child: const Text('Share PDF'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Close'),
-            ),
-          ],
-        ),
-      );
-    } catch (e) {
-      print('Simple PDF viewer error: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error with simple viewer: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
-  Future<void> _testPdfViewer(Uint8List pdfBytes) async {
-    try {
-      print('Testing PDF viewer with ${pdfBytes.length} bytes');
-      final tempDir = await getTemporaryDirectory();
-      final file = File('${tempDir.path}/test_report.pdf');
-      await file.writeAsBytes(pdfBytes);
-      print('Test PDF saved to: ${file.path}');
-
-      // Navigate to PDF viewer screen
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) =>
-              PdfViewerScreen(pdfPath: file.path, pdfBytes: pdfBytes),
-        ),
-      );
-    } catch (e) {
-      print('Test PDF viewer error: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error testing PDF viewer: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -330,6 +217,51 @@ class _ReportsScreenState extends State<ReportsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error sharing PDF: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _openWithPdfApp(Uint8List pdfBytes) async {
+    try {
+      final tempDir = await getTemporaryDirectory();
+      final file = File(
+        '${tempDir.path}/business_report_${DateTime.now().millisecondsSinceEpoch}.pdf',
+      );
+      await file.writeAsBytes(pdfBytes);
+
+      // Open the PDF file directly with the system's default PDF app
+      final result = await OpenFile.open(file.path);
+
+      if (result.type != ResultType.done) {
+        // If opening fails, show error and fallback to share
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not open PDF: ${result.message}'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+
+        // Fallback to share
+        await Share.shareXFiles(
+          [XFile(file.path)],
+          text:
+              'Business Report for ${businessProfile?.businessName ?? 'Business'}',
+          subject: 'BizTracker Business Report',
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('PDF opened successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error opening PDF: $e'),
           backgroundColor: Colors.red,
         ),
       );
