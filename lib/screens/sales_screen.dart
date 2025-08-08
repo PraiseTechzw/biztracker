@@ -7,6 +7,7 @@ import '../utils/toast_utils.dart';
 import '../services/database_service.dart';
 import '../services/notification_service.dart';
 import '../services/engagement_service.dart';
+import '../services/ad_service.dart';
 import '../models/business_data.dart';
 import 'barcode_scanner_screen.dart';
 
@@ -2147,6 +2148,12 @@ class _SalesScreenState extends State<SalesScreen>
                                 // Record activity for engagement tracking
                                 EngagementService().recordActivity();
                                 EngagementService().checkForNewAchievements();
+
+                                // Show interstitial ad for sale action
+                                AdService.instance.showAdForAction(
+                                  'sale_recorded',
+                                );
+
                                 _loadData(); // Refresh both sales and stocks
                               } catch (e) {
                                 ToastUtils.showErrorToast(

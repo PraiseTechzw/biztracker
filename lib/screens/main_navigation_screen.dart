@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import '../utils/glassmorphism_theme.dart';
+import '../services/ad_service.dart';
 import 'dashboard_screen.dart';
 import 'capital_screen.dart';
 import 'stock_screen.dart';
@@ -32,7 +33,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_currentIndex],
+      body: Column(
+        children: [
+          Expanded(child: _screens[_currentIndex]),
+          // Banner ad at the bottom
+          AdService.instance.createBannerAd(),
+        ],
+      ),
       bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }

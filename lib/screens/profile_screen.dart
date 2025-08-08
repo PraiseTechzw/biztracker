@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../utils/glassmorphism_theme.dart';
+import '../services/ad_service.dart';
 import 'profile_update_screen.dart';
+import 'premium_screen.dart';
 import '../models/business_profile.dart';
 import '../services/database_service.dart';
 
@@ -196,6 +198,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               p.updatedAt.toLocal().toString().split(' ').first,
             ),
           ]),
+          const SizedBox(height: 16),
+          _buildAdSettingsCard(),
           const SizedBox(height: 32),
           ElevatedButton(
             onPressed: () {
@@ -491,6 +495,69 @@ class _ProfileScreenState extends State<ProfileScreen> {
       const SnackBar(
         content: Text('Profile saved successfully'),
         backgroundColor: Colors.green,
+      ),
+    );
+  }
+
+  Widget _buildAdSettingsCard() {
+    return GlassmorphismTheme.glassmorphismContainer(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.ads_click,
+                color: GlassmorphismTheme.primaryColor,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Ad Settings',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: GlassmorphismTheme.textColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildSwitchTile(
+            'Enable Ads',
+            'Show ads to support app development',
+            Icons.ads_click,
+            AdService.instance.adsEnabled,
+            (value) {
+              AdService.instance.toggleAds(value);
+              setState(() {});
+            },
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const PremiumScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.workspace_premium),
+              label: const Text('Premium & Ad-Free Options'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: GlassmorphismTheme.primaryColor,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -4,6 +4,7 @@ import '../utils/glassmorphism_theme.dart';
 import '../services/database_service.dart';
 import '../services/notification_service.dart';
 import '../services/engagement_service.dart';
+import '../services/ad_service.dart';
 import '../models/business_data.dart';
 
 class ExpensesScreen extends StatefulWidget {
@@ -625,6 +626,11 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                               // Record activity for engagement tracking
                               EngagementService().recordActivity();
                               EngagementService().checkForNewAchievements();
+
+                              // Show interstitial ad for expense action
+                              AdService.instance.showAdForAction(
+                                'expense_added',
+                              );
 
                               Navigator.pop(context);
                               _loadExpenses();

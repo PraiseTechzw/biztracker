@@ -9,6 +9,7 @@ import 'package:open_file/open_file.dart';
 import '../utils/glassmorphism_theme.dart';
 import '../services/database_service.dart';
 import '../services/pdf_report_service.dart';
+import '../services/ad_service.dart';
 import '../models/business_data.dart';
 import '../widgets/chart_widget.dart';
 
@@ -153,6 +154,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
       // Close loading dialog
       Navigator.of(context).pop();
+
+      // Show interstitial ad for report generation
+      AdService.instance.showAdForAction('report_generated');
 
       // Show success dialog with options
       showDialog(

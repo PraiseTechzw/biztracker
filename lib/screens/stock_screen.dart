@@ -7,6 +7,7 @@ import '../utils/toast_utils.dart';
 import '../services/database_service.dart';
 import '../services/notification_service.dart';
 import '../services/engagement_service.dart';
+import '../services/ad_service.dart';
 import '../models/business_data.dart';
 import '../utils/search_filter_utils.dart';
 import 'barcode_scanner_screen.dart';
@@ -1188,6 +1189,11 @@ class _StockScreenState extends State<StockScreen> {
                                   // Record activity for engagement tracking
                                   EngagementService().recordActivity();
                                   EngagementService().checkForNewAchievements();
+
+                                  // Show interstitial ad for stock action
+                                  AdService.instance.showAdForAction(
+                                    'stock_added',
+                                  );
 
                                   // Check for low stock notification
                                   if (quantity <= reorderLevel) {
