@@ -6,7 +6,6 @@ list(APPEND FLUTTER_PLUGIN_LIST
   file_selector_linux
   isar_flutter_libs
   printing
-  syncfusion_pdfviewer_linux
   url_launcher_linux
 )
 
