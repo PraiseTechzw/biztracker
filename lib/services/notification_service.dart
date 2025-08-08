@@ -3,6 +3,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import 'dart:typed_data';
+import 'dart:math';
 import '../models/business_data.dart';
 import 'database_service.dart';
 
@@ -12,8 +13,10 @@ class NotificationItem {
   final String message;
   final DateTime timestamp;
   final NotificationType type;
+  final NotificationPriority priority;
   final bool isRead;
   final String? payload;
+  final Map<String, dynamic>? context;
 
   NotificationItem({
     required this.id,
@@ -21,8 +24,10 @@ class NotificationItem {
     required this.message,
     required this.timestamp,
     required this.type,
+    this.priority = NotificationPriority.normal,
     this.isRead = false,
     this.payload,
+    this.context,
   });
 }
 
@@ -35,6 +40,38 @@ enum NotificationType {
   stock,
   expense,
   achievement,
+  reminder,
+  goal,
+  challenge,
+  milestone,
+  prediction,
+  insight,
+}
+
+enum NotificationPriority { low, normal, high, urgent }
+
+class SmartNotificationSchedule {
+  final String id;
+  final String title;
+  final String message;
+  final NotificationType type;
+  final NotificationPriority priority;
+  final List<int> daysOfWeek; // 1-7 (Monday-Sunday)
+  final TimeOfDay time;
+  final bool isActive;
+  final Map<String, dynamic>? conditions;
+
+  SmartNotificationSchedule({
+    required this.id,
+    required this.title,
+    required this.message,
+    required this.type,
+    this.priority = NotificationPriority.normal,
+    required this.daysOfWeek,
+    required this.time,
+    this.isActive = true,
+    this.conditions,
+  });
 }
 
 class NotificationService {
@@ -45,8 +82,18 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
 
-  // In-memory storage for notifications (in a real app, you'd use a database)
+  // In-memory storage for notifications
   final List<NotificationItem> _notificationsList = [];
+  final List<SmartNotificationSchedule> _schedules = [];
+
+  // User preferences for notifications
+  bool _notificationsEnabled = true;
+  NotificationPriority _minimumPriority = NotificationPriority.low;
+  List<NotificationType> _enabledTypes = NotificationType.values.toList();
+  Map<String, TimeOfDay> _quietHours = {
+    'start': const TimeOfDay(hour: 22, minute: 0),
+    'end': const TimeOfDay(hour: 8, minute: 0),
+  };
 
   // Notification channels
   static const String _salesChannelId = 'sales_notifications';
@@ -54,6 +101,18 @@ class NotificationService {
   static const String _expenseChannelId = 'expense_notifications';
   static const String _achievementChannelId = 'achievement_notifications';
   static const String _reminderChannelId = 'reminder_notifications';
+  static const String _smartChannelId = 'smart_notifications';
+  static const String _priorityChannelId = 'priority_notifications';
+
+  // Getters
+  List<NotificationItem> get notifications =>
+      List.unmodifiable(_notificationsList);
+  List<SmartNotificationSchedule> get schedules =>
+      List.unmodifiable(_schedules);
+  bool get notificationsEnabled => _notificationsEnabled;
+  NotificationPriority get minimumPriority => _minimumPriority;
+  List<NotificationType> get enabledTypes => List.unmodifiable(_enabledTypes);
+  Map<String, TimeOfDay> get quietHours => Map.unmodifiable(_quietHours);
 
   Future<void> initialize() async {
     // Initialize timezone data
@@ -92,8 +151,14 @@ class NotificationService {
     // Request notification permissions
     await _requestPermissions();
 
+    // Set up smart notification schedules
+    await _setupSmartSchedules();
+
     // Set up periodic notifications
     await _setupPeriodicNotifications();
+
+    // Start predictive notification analysis
+    _startPredictiveAnalysis();
   }
 
   Future<void> _loadInitialNotifications() async {
@@ -109,16 +174,13 @@ class NotificationService {
           .toList();
 
       for (final sale in recentSales.take(5)) {
-        _addNotification(
-          NotificationItem(
-            id: 'sale_${sale.id}',
-            title: '💰 Sale Recorded',
-            message:
-                '${sale.productName} sold to ${sale.customerName} for \$${sale.totalAmount.toStringAsFixed(2)}',
-            timestamp: sale.saleDate,
-            type: NotificationType.sale,
-            payload: 'sale_${sale.id}',
-          ),
+        await sendSmartNotification(
+          title: '💰 Sale Recorded',
+          message:
+              '${sale.productName} sold to ${sale.customerName} for \$${sale.totalAmount.toStringAsFixed(2)}',
+          type: NotificationType.sale,
+          priority: NotificationPriority.high,
+          context: {'sale_id': sale.id.toString()},
         );
       }
 
@@ -129,19 +191,16 @@ class NotificationService {
           .toList();
 
       for (final stock in lowStockItems) {
-        _addNotification(
-          NotificationItem(
-            id: 'stock_${stock.id}',
-            title: stock.quantity <= 0
-                ? '🚨 Out of Stock!'
-                : '⚠️ Low Stock Alert',
-            message: stock.quantity <= 0
-                ? '${stock.name} is completely out of stock. Please restock immediately.'
-                : '${stock.name} is running low (${stock.quantity} units left). Reorder level: ${stock.reorderLevel}',
-            timestamp: stock.updatedAt,
-            type: NotificationType.stock,
-            payload: 'stock_${stock.id}',
-          ),
+        await sendSmartNotification(
+          title: stock.quantity <= 0
+              ? '🚨 Out of Stock!'
+              : '⚠️ Low Stock Alert',
+          message: stock.quantity <= 0
+              ? '${stock.name} is completely out of stock. Please restock immediately.'
+              : '${stock.name} is running low (${stock.quantity} units left). Reorder level: ${stock.reorderLevel}',
+          type: NotificationType.stock,
+          priority: NotificationPriority.high,
+          context: {'stock_id': stock.id.toString()},
         );
       }
 
@@ -156,16 +215,13 @@ class NotificationService {
           .toList();
 
       for (final expense in recentExpenses.take(5)) {
-        _addNotification(
-          NotificationItem(
-            id: 'expense_${expense.id}',
-            title: '💸 Expense Recorded',
-            message:
-                '${expense.category}: ${expense.description} - \$${expense.amount.toStringAsFixed(2)}',
-            timestamp: expense.expenseDate,
-            type: NotificationType.expense,
-            payload: 'expense_${expense.id}',
-          ),
+        await sendSmartNotification(
+          title: '💸 Expense Recorded',
+          message:
+              '${expense.category}: ${expense.description} - \$${expense.amount.toStringAsFixed(2)}',
+          type: NotificationType.expense,
+          priority: NotificationPriority.normal,
+          context: {'expense_id': expense.id.toString()},
         );
       }
 
@@ -181,43 +237,24 @@ class NotificationService {
       final netProfit = totalSales - totalExpenses;
 
       if (totalSales >= 1000 && totalSales < 5000) {
-        _addNotification(
-          NotificationItem(
-            id: 'achievement_sales_1k',
-            title: '🎉 Sales Milestone!',
-            message: 'Congratulations! You\'ve reached \$1,000 in total sales!',
-            timestamp: DateTime.now(),
-            type: NotificationType.achievement,
-            payload: 'achievement_sales_1k',
-          ),
+        await sendSmartNotification(
+          title: '🎉 Sales Milestone!',
+          message: 'Congratulations! You\'ve reached \$1,000 in total sales!',
+          type: NotificationType.achievement,
+          priority: NotificationPriority.high,
         );
       }
 
       if (netProfit >= 1000 && netProfit < 5000) {
-        _addNotification(
-          NotificationItem(
-            id: 'achievement_profit_1k',
-            title: '🎊 Profit Milestone!',
-            message:
-                'Congratulations! You\'ve reached \$1,000 in total profit!',
-            timestamp: DateTime.now(),
-            type: NotificationType.achievement,
-            payload: 'achievement_profit_1k',
-          ),
+        await sendSmartNotification(
+          title: '🎊 Profit Milestone!',
+          message: 'Congratulations! You\'ve reached \$1,000 in total profit!',
+          type: NotificationType.achievement,
+          priority: NotificationPriority.high,
         );
       }
     } catch (e) {
       // Silent error handling for production
-    }
-  }
-
-  void _addNotification(NotificationItem notification) {
-    // Check if notification already exists
-    final existingIndex = _notificationsList.indexWhere(
-      (n) => n.id == notification.id,
-    );
-    if (existingIndex == -1) {
-      _notificationsList.add(notification);
     }
   }
 
@@ -226,7 +263,7 @@ class NotificationService {
     const AndroidNotificationChannel salesChannel = AndroidNotificationChannel(
       _salesChannelId,
       'Sales Notifications',
-      description: 'Notifications for sales activities',
+      description: 'Notifications about sales and revenue',
       importance: Importance.high,
       playSound: true,
       enableVibration: true,
@@ -236,7 +273,7 @@ class NotificationService {
     const AndroidNotificationChannel stockChannel = AndroidNotificationChannel(
       _stockChannelId,
       'Stock Notifications',
-      description: 'Notifications for stock updates and alerts',
+      description: 'Notifications about inventory and stock levels',
       importance: Importance.high,
       playSound: true,
       enableVibration: true,
@@ -247,7 +284,7 @@ class NotificationService {
         AndroidNotificationChannel(
           _expenseChannelId,
           'Expense Notifications',
-          description: 'Notifications for expense tracking',
+          description: 'Notifications about expenses and costs',
           importance: Importance.defaultImportance,
           playSound: true,
           enableVibration: true,
@@ -258,7 +295,8 @@ class NotificationService {
         AndroidNotificationChannel(
           _achievementChannelId,
           'Achievement Notifications',
-          description: 'Notifications for business achievements',
+          description:
+              'Notifications about business achievements and milestones',
           importance: Importance.high,
           playSound: true,
           enableVibration: true,
@@ -269,8 +307,29 @@ class NotificationService {
         AndroidNotificationChannel(
           _reminderChannelId,
           'Reminder Notifications',
-          description: 'Notifications for business reminders',
+          description: 'Smart reminders and scheduled notifications',
           importance: Importance.defaultImportance,
+          playSound: true,
+          enableVibration: true,
+        );
+
+    // Smart notifications channel
+    const AndroidNotificationChannel smartChannel = AndroidNotificationChannel(
+      _smartChannelId,
+      'Smart Notifications',
+      description: 'AI-powered insights and predictions',
+      importance: Importance.high,
+      playSound: true,
+      enableVibration: true,
+    );
+
+    // Priority notifications channel
+    const AndroidNotificationChannel priorityChannel =
+        AndroidNotificationChannel(
+          _priorityChannelId,
+          'Priority Notifications',
+          description: 'High priority business alerts',
+          importance: Importance.max,
           playSound: true,
           enableVibration: true,
         );
@@ -304,6 +363,18 @@ class NotificationService {
           AndroidFlutterLocalNotificationsPlugin
         >()
         ?.createNotificationChannel(reminderChannel);
+
+    await _notifications
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.createNotificationChannel(smartChannel);
+
+    await _notifications
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.createNotificationChannel(priorityChannel);
   }
 
   void _onNotificationTapped(NotificationResponse response) {
@@ -452,171 +523,525 @@ class NotificationService {
     }
   }
 
+  // Smart Notification Methods
+  Future<void> sendSmartNotification({
+    required String title,
+    required String message,
+    required NotificationType type,
+    NotificationPriority priority = NotificationPriority.normal,
+    Map<String, dynamic>? context,
+    String? payload,
+  }) async {
+    if (!_notificationsEnabled) return;
+    if (!_enabledTypes.contains(type)) return;
+    if (priority.index < _minimumPriority.index) return;
+    if (_isInQuietHours()) return;
+
+    final notification = NotificationItem(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      title: title,
+      message: message,
+      timestamp: DateTime.now(),
+      type: type,
+      priority: priority,
+      context: context,
+      payload: payload,
+    );
+
+    _notificationsList.insert(0, notification);
+
+    // Determine channel based on type and priority
+    String channelId = _getChannelId(type, priority);
+
+    // Create notification details
+    final notificationDetails = NotificationDetails(
+      android: AndroidNotificationDetails(
+        channelId,
+        _getChannelName(type),
+        channelDescription: _getChannelDescription(type),
+        importance: _getImportance(priority),
+        priority: _getPriority(priority),
+        icon: _getNotificationIcon(type),
+        color: _getNotificationColor(type),
+        enableVibration: true,
+        playSound: true,
+        showWhen: true,
+        when: DateTime.now().millisecondsSinceEpoch,
+      ),
+      iOS: const DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      ),
+    );
+
+    // Show notification
+    await _notifications.show(
+      notification.hashCode,
+      title,
+      message,
+      notificationDetails,
+      payload: payload,
+    );
+  }
+
+  // Contextual Alerts
+  Future<void> sendContextualAlert({
+    required String title,
+    required String message,
+    required NotificationType type,
+    required Map<String, dynamic> context,
+    NotificationPriority priority = NotificationPriority.normal,
+  }) async {
+    // Analyze context to determine if notification should be sent
+    if (_shouldSendContextualAlert(context)) {
+      await sendSmartNotification(
+        title: title,
+        message: message,
+        type: type,
+        priority: priority,
+        context: context,
+      );
+    }
+  }
+
+  // Smart Reminders
+  Future<void> scheduleSmartReminder({
+    required String title,
+    required String message,
+    required DateTime scheduledTime,
+    NotificationType type = NotificationType.reminder,
+    NotificationPriority priority = NotificationPriority.normal,
+    Map<String, dynamic>? conditions,
+  }) async {
+    final schedule = SmartNotificationSchedule(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      title: title,
+      message: message,
+      type: type,
+      priority: priority,
+      daysOfWeek: [scheduledTime.weekday],
+      time: TimeOfDay.fromDateTime(scheduledTime),
+      conditions: conditions,
+    );
+
+    _schedules.add(schedule);
+    await _activateSchedule(schedule);
+  }
+
+  // Predictive Notifications
+  Future<void> sendPredictiveNotification({
+    required String title,
+    required String message,
+    required NotificationType type,
+    required double confidence,
+    Map<String, dynamic>? predictionData,
+  }) async {
+    if (confidence > 0.7) {
+      // Only send if confidence is high
+      await sendSmartNotification(
+        title: title,
+        message: message,
+        type: type,
+        priority: NotificationPriority.high,
+        context: {
+          'prediction': true,
+          'confidence': confidence,
+          'data': predictionData,
+        },
+      );
+    }
+  }
+
+  // Priority-based Alerts
+  Future<void> sendPriorityAlert({
+    required String title,
+    required String message,
+    required NotificationType type,
+    required NotificationPriority priority,
+    Map<String, dynamic>? context,
+  }) async {
+    await sendSmartNotification(
+      title: title,
+      message: message,
+      type: type,
+      priority: priority,
+      context: context,
+    );
+  }
+
+  // Custom Notification Schedules
+  Future<void> addCustomSchedule(SmartNotificationSchedule schedule) async {
+    _schedules.add(schedule);
+    if (schedule.isActive) {
+      await _activateSchedule(schedule);
+    }
+  }
+
+  Future<void> removeCustomSchedule(String scheduleId) async {
+    _schedules.removeWhere((schedule) => schedule.id == scheduleId);
+    await _notifications.cancel(int.parse(scheduleId));
+  }
+
+  // Notification Preferences
+  void updateNotificationPreferences({
+    bool? enabled,
+    NotificationPriority? minimumPriority,
+    List<NotificationType>? enabledTypes,
+    Map<String, TimeOfDay>? quietHours,
+  }) {
+    if (enabled != null) _notificationsEnabled = enabled;
+    if (minimumPriority != null) _minimumPriority = minimumPriority;
+    if (enabledTypes != null) _enabledTypes = enabledTypes;
+    if (quietHours != null) _quietHours = quietHours;
+  }
+
+  // Helper Methods
+  String _getChannelId(NotificationType type, NotificationPriority priority) {
+    if (priority == NotificationPriority.urgent ||
+        priority == NotificationPriority.high) {
+      return _priorityChannelId;
+    }
+
+    switch (type) {
+      case NotificationType.sale:
+        return _salesChannelId;
+      case NotificationType.stock:
+        return _stockChannelId;
+      case NotificationType.expense:
+        return _expenseChannelId;
+      case NotificationType.achievement:
+      case NotificationType.milestone:
+      case NotificationType.goal:
+        return _achievementChannelId;
+      case NotificationType.reminder:
+      case NotificationType.prediction:
+      case NotificationType.insight:
+        return _reminderChannelId;
+      case NotificationType.prediction:
+      case NotificationType.insight:
+        return _smartChannelId;
+      default:
+        return _reminderChannelId;
+    }
+  }
+
+  String _getChannelName(NotificationType type) {
+    switch (type) {
+      case NotificationType.sale:
+        return 'Sales Notifications';
+      case NotificationType.stock:
+        return 'Stock Notifications';
+      case NotificationType.expense:
+        return 'Expense Notifications';
+      case NotificationType.achievement:
+        return 'Achievement Notifications';
+      case NotificationType.reminder:
+      case NotificationType.prediction:
+      case NotificationType.insight:
+        return 'Reminder Notifications';
+      case NotificationType.prediction:
+      case NotificationType.insight:
+        return 'Smart Notifications';
+      default:
+        return 'General Notifications';
+    }
+  }
+
+  String _getChannelDescription(NotificationType type) {
+    switch (type) {
+      case NotificationType.sale:
+        return 'Notifications about sales and revenue';
+      case NotificationType.stock:
+        return 'Notifications about inventory and stock levels';
+      case NotificationType.expense:
+        return 'Notifications about expenses and costs';
+      case NotificationType.achievement:
+        return 'Notifications about business achievements and milestones';
+      case NotificationType.reminder:
+      case NotificationType.prediction:
+      case NotificationType.insight:
+        return 'Smart reminders and scheduled notifications';
+      case NotificationType.prediction:
+      case NotificationType.insight:
+        return 'AI-powered insights and predictions';
+      default:
+        return 'General business notifications';
+    }
+  }
+
+  Importance _getImportance(NotificationPriority priority) {
+    switch (priority) {
+      case NotificationPriority.low:
+        return Importance.low;
+      case NotificationPriority.normal:
+        return Importance.defaultImportance;
+      case NotificationPriority.high:
+        return Importance.high;
+      case NotificationPriority.urgent:
+        return Importance.max;
+    }
+  }
+
+  Priority _getPriority(NotificationPriority priority) {
+    switch (priority) {
+      case NotificationPriority.low:
+        return Priority.low;
+      case NotificationPriority.normal:
+        return Priority.defaultPriority;
+      case NotificationPriority.high:
+        return Priority.high;
+      case NotificationPriority.urgent:
+        return Priority.max;
+    }
+  }
+
+  String _getNotificationIcon(NotificationType type) {
+    switch (type) {
+      case NotificationType.sale:
+        return '@mipmap/ic_launcher';
+      case NotificationType.stock:
+        return '@mipmap/ic_launcher';
+      case NotificationType.expense:
+        return '@mipmap/ic_launcher';
+      case NotificationType.achievement:
+        return '@mipmap/ic_launcher';
+      case NotificationType.reminder:
+      case NotificationType.prediction:
+      case NotificationType.insight:
+        return '@mipmap/ic_launcher';
+      default:
+        return '@mipmap/ic_launcher';
+    }
+  }
+
+  Color _getNotificationColor(NotificationType type) {
+    switch (type) {
+      case NotificationType.sale:
+        return Colors.green;
+      case NotificationType.stock:
+        return Colors.orange;
+      case NotificationType.expense:
+        return Colors.red;
+      case NotificationType.achievement:
+        return Colors.purple;
+      case NotificationType.reminder:
+      case NotificationType.prediction:
+      case NotificationType.insight:
+        return Colors.blue;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  bool _isInQuietHours() {
+    final now = TimeOfDay.now();
+    final start = _quietHours['start']!;
+    final end = _quietHours['end']!;
+
+    if (start.hour < end.hour) {
+      // Same day quiet hours (e.g., 10 PM to 8 AM)
+      return now.hour >= start.hour || now.hour < end.hour;
+    } else {
+      // Overnight quiet hours (e.g., 10 PM to 8 AM)
+      return now.hour >= start.hour && now.hour < end.hour;
+    }
+  }
+
+  bool _shouldSendContextualAlert(Map<String, dynamic> context) {
+    // Implement contextual logic here
+    // For example, don't send stock alerts if user just checked stock
+    // Don't send expense alerts if user just recorded an expense
+    return true; // Placeholder
+  }
+
+  Future<void> _setupSmartSchedules() async {
+    // Add default smart schedules
+    final defaultSchedules = [
+      SmartNotificationSchedule(
+        id: 'daily_summary',
+        title: 'Daily Business Summary',
+        message: 'Check your daily business performance',
+        type: NotificationType.reminder,
+        priority: NotificationPriority.normal,
+        daysOfWeek: [1, 2, 3, 4, 5, 6, 7], // Every day
+        time: const TimeOfDay(hour: 18, minute: 0), // 6 PM
+      ),
+      SmartNotificationSchedule(
+        id: 'weekly_review',
+        title: 'Weekly Business Review',
+        message: 'Time for your weekly business analysis',
+        type: NotificationType.reminder,
+        priority: NotificationPriority.high,
+        daysOfWeek: [1], // Monday
+        time: const TimeOfDay(hour: 9, minute: 0), // 9 AM
+      ),
+    ];
+
+    for (final schedule in defaultSchedules) {
+      await addCustomSchedule(schedule);
+    }
+  }
+
+  Future<void> _activateSchedule(SmartNotificationSchedule schedule) async {
+    // Schedule the notification
+    final now = DateTime.now();
+    final scheduledTime = _getNextScheduledTime(schedule, now);
+
+    if (scheduledTime != null) {
+      await _scheduleNotification(schedule, scheduledTime);
+    }
+  }
+
+  DateTime? _getNextScheduledTime(
+    SmartNotificationSchedule schedule,
+    DateTime from,
+  ) {
+    final today = from.weekday;
+    final targetDays = schedule.daysOfWeek;
+
+    // Find the next occurrence
+    for (int i = 0; i < 7; i++) {
+      int checkDay = (today + i) % 7;
+      if (checkDay == 0) checkDay = 7; // Convert Sunday from 0 to 7
+
+      if (targetDays.contains(checkDay)) {
+        final targetDate = from.add(Duration(days: i));
+        return DateTime(
+          targetDate.year,
+          targetDate.month,
+          targetDate.day,
+          schedule.time.hour,
+          schedule.time.minute,
+        );
+      }
+    }
+
+    return null;
+  }
+
+  Future<void> _scheduleNotification(
+    SmartNotificationSchedule schedule,
+    DateTime scheduledTime,
+  ) async {
+    final notificationDetails = NotificationDetails(
+      android: AndroidNotificationDetails(
+        _getChannelId(schedule.type, schedule.priority),
+        _getChannelName(schedule.type),
+        channelDescription: _getChannelDescription(schedule.type),
+        importance: _getImportance(schedule.priority),
+        priority: _getPriority(schedule.priority),
+      ),
+      iOS: const DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      ),
+    );
+
+    await _notifications.zonedSchedule(
+      int.parse(schedule.id),
+      schedule.title,
+      schedule.message,
+      tz.TZDateTime.from(scheduledTime, tz.local),
+      notificationDetails,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+    );
+  }
+
+  void _startPredictiveAnalysis() {
+    // Start background analysis for predictive notifications
+    // This would analyze business patterns and send predictive alerts
+    Future.delayed(const Duration(minutes: 30), () {
+      _analyzeBusinessPatterns();
+    });
+  }
+
+  Future<void> _analyzeBusinessPatterns() async {
+    // Analyze sales patterns
+    final sales = await DatabaseService.getAllSales();
+    if (sales.isNotEmpty) {
+      final recentSales = sales
+          .where(
+            (sale) => sale.saleDate.isAfter(
+              DateTime.now().subtract(const Duration(days: 7)),
+            ),
+          )
+          .toList();
+
+      if (recentSales.isEmpty) {
+        await sendPredictiveNotification(
+          title: 'Sales Alert',
+          message:
+              'No sales recorded this week. Consider reviewing your strategy.',
+          type: NotificationType.prediction,
+          confidence: 0.8,
+          predictionData: {'type': 'low_sales_week'},
+        );
+      }
+    }
+
+    // Analyze stock patterns
+    final stocks = await DatabaseService.getAllStocks();
+    final lowStockItems = stocks
+        .where((stock) => stock.quantity <= stock.reorderLevel)
+        .toList();
+
+    if (lowStockItems.isNotEmpty) {
+      await sendPredictiveNotification(
+        title: 'Stock Alert',
+        message: '${lowStockItems.length} items are running low on stock.',
+        type: NotificationType.prediction,
+        confidence: 0.9,
+        predictionData: {'type': 'low_stock', 'count': lowStockItems.length},
+      );
+    }
+  }
+
   // Sales notifications
   Future<void> showSaleNotification(Sale sale) async {
-    final notification = NotificationItem(
-      id: 'sale_${sale.id}',
+    await sendSmartNotification(
       title: '💰 Sale Recorded!',
       message:
           '${sale.productName} sold to ${sale.customerName} for \$${sale.totalAmount.toStringAsFixed(2)}',
-      timestamp: DateTime.now(),
       type: NotificationType.sale,
-      payload: 'sale_${sale.id}',
-    );
-
-    _addNotification(notification);
-
-    await _notifications.show(
-      DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      notification.title,
-      notification.message,
-      NotificationDetails(
-        android: AndroidNotificationDetails(
-          _salesChannelId,
-          'Sales Notifications',
-          channelDescription: 'Notifications for sales activities',
-          importance: Importance.high,
-          priority: Priority.high,
-          icon: '@mipmap/ic_launcher',
-          color: const Color(0xFF4CAF50),
-        ),
-        iOS: const DarwinNotificationDetails(
-          presentAlert: true,
-          presentBadge: true,
-          presentSound: true,
-        ),
-      ),
-      payload: notification.payload,
+      priority: NotificationPriority.high,
+      context: {'sale_id': sale.id.toString()},
     );
   }
 
   // Low stock notifications
   Future<void> showLowStockNotification(Stock stock) async {
-    final notification = NotificationItem(
-      id: 'stock_${stock.id}',
+    await sendSmartNotification(
       title: stock.quantity <= 0 ? '🚨 Out of Stock!' : '⚠️ Low Stock Alert',
       message: stock.quantity <= 0
           ? '${stock.name} is completely out of stock. Please restock immediately.'
           : '${stock.name} is running low (${stock.quantity} units left). Reorder level: ${stock.reorderLevel}',
-      timestamp: DateTime.now(),
       type: NotificationType.stock,
-      payload: 'stock_${stock.id}',
-    );
-
-    _addNotification(notification);
-
-    await _notifications.show(
-      DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      notification.title,
-      notification.message,
-      NotificationDetails(
-        android: AndroidNotificationDetails(
-          _stockChannelId,
-          'Stock Notifications',
-          channelDescription: 'Notifications for stock updates and alerts',
-          importance: Importance.high,
-          priority: Priority.high,
-          icon: '@mipmap/ic_launcher',
-          color: const Color(0xFFFF9800),
-        ),
-        iOS: const DarwinNotificationDetails(
-          presentAlert: true,
-          presentBadge: true,
-          presentSound: true,
-        ),
-      ),
-      payload: notification.payload,
+      priority: NotificationPriority.high,
+      context: {'stock_id': stock.id.toString()},
     );
   }
 
   // Out of stock notifications
   Future<void> showOutOfStockNotification(Stock stock) async {
-    final notification = NotificationItem(
-      id: 'stock_${stock.id}',
+    await sendSmartNotification(
       title: '🚨 Out of Stock!',
       message:
           '${stock.name} is completely out of stock. Please restock immediately.',
-      timestamp: DateTime.now(),
       type: NotificationType.stock,
-      payload: 'stock_${stock.id}',
-    );
-
-    _addNotification(notification);
-
-    await _notifications.show(
-      DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      notification.title,
-      notification.message,
-      NotificationDetails(
-        android: AndroidNotificationDetails(
-          _stockChannelId,
-          'Stock Notifications',
-          channelDescription: 'Notifications for stock updates and alerts',
-          importance: Importance.high,
-          priority: Priority.high,
-          icon: '@mipmap/ic_launcher',
-          color: const Color(0xFFF44336),
-          enableVibration: true,
-          vibrationPattern: Int64List.fromList([0, 500, 200, 500]),
-          playSound: true,
-
-          largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
-          showWhen: true,
-          when: DateTime.now().millisecondsSinceEpoch,
-        ),
-        iOS: const DarwinNotificationDetails(
-          presentAlert: true,
-          presentBadge: true,
-          presentSound: true,
-        ),
-      ),
-      payload: notification.payload,
+      priority: NotificationPriority.high,
+      context: {'stock_id': stock.id.toString()},
     );
   }
 
   // Achievement notifications
   Future<void> showAchievementNotification(String title, String message) async {
-    final notification = NotificationItem(
-      id: 'achievement_${DateTime.now().millisecondsSinceEpoch}',
+    await sendSmartNotification(
       title: title,
       message: message,
-      timestamp: DateTime.now(),
       type: NotificationType.achievement,
-      payload: 'achievement',
-    );
-
-    _addNotification(notification);
-
-    await _notifications.show(
-      DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      notification.title,
-      notification.message,
-      NotificationDetails(
-        android: AndroidNotificationDetails(
-          _achievementChannelId,
-          'Achievement Notifications',
-          channelDescription: 'Notifications for business achievements',
-          importance: Importance.high,
-          priority: Priority.high,
-          icon: '@mipmap/ic_launcher',
-          color: const Color(0xFF4CAF50),
-          enableVibration: true,
-          vibrationPattern: Int64List.fromList([0, 300, 100, 300, 100, 300]),
-          playSound: true,
-
-          largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
-          showWhen: true,
-          when: DateTime.now().millisecondsSinceEpoch,
-          autoCancel: false,
-          ongoing: false,
-        ),
-        iOS: const DarwinNotificationDetails(
-          presentAlert: true,
-          presentBadge: true,
-          presentSound: true,
-        ),
-      ),
-      payload: notification.payload,
+      priority: NotificationPriority.high,
     );
   }
 
@@ -626,47 +1051,12 @@ class NotificationService {
     String message, {
     String? payload,
   }) async {
-    final notification = NotificationItem(
-      id: 'reminder_${DateTime.now().millisecondsSinceEpoch}',
+    await sendSmartNotification(
       title: title,
       message: message,
-      timestamp: DateTime.now(),
-      type: NotificationType.info,
-      payload: payload ?? 'reminder',
-    );
-
-    _addNotification(notification);
-
-    await _notifications.show(
-      DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      notification.title,
-      notification.message,
-      NotificationDetails(
-        android: AndroidNotificationDetails(
-          _reminderChannelId,
-          'Reminder Notifications',
-          channelDescription: 'Notifications for business reminders',
-          importance: Importance.defaultImportance,
-          priority: Priority.defaultPriority,
-          icon: '@mipmap/ic_launcher',
-          color: const Color(0xFF2196F3),
-          enableVibration: true,
-          vibrationPattern: Int64List.fromList([0, 200, 100, 200]),
-          playSound: true,
-
-          largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
-          showWhen: true,
-          when: DateTime.now().millisecondsSinceEpoch,
-          autoCancel: true,
-          ongoing: false,
-        ),
-        iOS: const DarwinNotificationDetails(
-          presentAlert: true,
-          presentBadge: true,
-          presentSound: true,
-        ),
-      ),
-      payload: notification.payload,
+      type: NotificationType.reminder,
+      priority: NotificationPriority.normal,
+      payload: payload,
     );
   }
 
@@ -749,39 +1139,13 @@ class NotificationService {
 
   // Expense notifications
   Future<void> showExpenseNotification(Expense expense) async {
-    final notification = NotificationItem(
-      id: 'expense_${expense.id}',
+    await sendSmartNotification(
       title: '💸 Expense Recorded',
       message:
           '${expense.category}: ${expense.description} - \$${expense.amount.toStringAsFixed(2)}',
-      timestamp: DateTime.now(),
       type: NotificationType.expense,
-      payload: 'expense_${expense.id}',
-    );
-
-    _addNotification(notification);
-
-    await _notifications.show(
-      DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      notification.title,
-      notification.message,
-      NotificationDetails(
-        android: AndroidNotificationDetails(
-          _expenseChannelId,
-          'Expense Notifications',
-          channelDescription: 'Notifications for expense tracking',
-          importance: Importance.defaultImportance,
-          priority: Priority.defaultPriority,
-          icon: '@mipmap/ic_launcher',
-          color: const Color(0xFFE91E63),
-        ),
-        iOS: const DarwinNotificationDetails(
-          presentAlert: true,
-          presentBadge: true,
-          presentSound: true,
-        ),
-      ),
-      payload: notification.payload,
+      priority: NotificationPriority.normal,
+      context: {'expense_id': expense.id.toString()},
     );
   }
 
@@ -810,8 +1174,10 @@ class NotificationService {
         message: _notificationsList[index].message,
         timestamp: _notificationsList[index].timestamp,
         type: _notificationsList[index].type,
+        priority: _notificationsList[index].priority,
         isRead: true,
         payload: _notificationsList[index].payload,
+        context: _notificationsList[index].context,
       );
     }
   }
@@ -825,8 +1191,10 @@ class NotificationService {
         message: _notificationsList[i].message,
         timestamp: _notificationsList[i].timestamp,
         type: _notificationsList[i].type,
+        priority: _notificationsList[i].priority,
         isRead: true,
         payload: _notificationsList[i].payload,
+        context: _notificationsList[i].context,
       );
     }
   }
@@ -847,4 +1215,3 @@ class NotificationService {
     await _notifications.cancel(id);
   }
 }
- 

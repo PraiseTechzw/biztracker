@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'services/database_service.dart';
 import 'services/notification_service.dart';
+import 'services/engagement_service.dart';
 import 'utils/glassmorphism_theme.dart';
 import 'screens/welcome_screen.dart';
 import 'screens/main_navigation_screen.dart';
@@ -20,6 +21,9 @@ void main() async {
 
   // Initialize notification service
   await NotificationService().initialize();
+
+  // Initialize engagement service
+  await EngagementService().initialize();
 
   runApp(const BizTrackerApp());
 }

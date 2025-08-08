@@ -6,6 +6,7 @@ import 'capital_screen.dart';
 import 'stock_screen.dart';
 import 'sales_screen.dart';
 import 'reports_screen.dart';
+import 'achievements_screen.dart';
 import 'profile_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
@@ -24,6 +25,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     const StockScreen(),
     const SalesScreen(),
     const ReportsScreen(),
+    const AchievementsScreen(),
     const ProfileScreen(),
   ];
 
