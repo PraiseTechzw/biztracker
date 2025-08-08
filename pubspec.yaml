@@ -51,7 +51,7 @@ dependencies:
   share_plus: ^7.2.1
   flutter_cache_manager: ^3.4.1
   http: ^1.4.0
-  flutter_pdfview: ^1.4.1+1
+  syncfusion_flutter_pdfviewer: ^30.2.4
 
 dev_dependencies:
   flutter_test:

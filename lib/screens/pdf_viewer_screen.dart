@@ -1,24 +1,65 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
-import 'package:flutter_pdfview/flutter_pdfview.dart';
+import 'dart:typed_data';
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:share_plus/share_plus.dart';
 import '../utils/glassmorphism_theme.dart';
 
 class PdfViewerScreen extends StatefulWidget {
   final String pdfPath;
+  final Uint8List? pdfBytes;
 
-  const PdfViewerScreen({super.key, required this.pdfPath});
+  const PdfViewerScreen({super.key, required this.pdfPath, this.pdfBytes});
 
   @override
   State<PdfViewerScreen> createState() => _PdfViewerScreenState();
 }
 
 class _PdfViewerScreenState extends State<PdfViewerScreen> {
-  late PDFViewController pdfViewController;
-  int currentPage = 1;
-  int totalPages = 0;
+  late PdfViewerController _pdfViewerController;
   bool isLoading = true;
   bool hasError = false;
+  String? errorMessage;
+  int? fileSize;
+  String? filePath;
+
+  @override
+  void initState() {
+    super.initState();
+    _pdfViewerController = PdfViewerController();
+    print('PDF Viewer initialized with path: ${widget.pdfPath}');
+    _checkFileExists();
+  }
+
+  Future<void> _checkFileExists() async {
+    try {
+      final file = File(widget.pdfPath);
+      final exists = await file.exists();
+      print('PDF file exists: $exists');
+
+      if (exists) {
+        final size = await file.length();
+        print('PDF file size: $size bytes');
+        setState(() {
+          fileSize = size;
+          filePath = widget.pdfPath;
+        });
+      } else {
+        setState(() {
+          hasError = true;
+          errorMessage = 'PDF file not found';
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Error checking file: $e');
+      setState(() {
+        hasError = true;
+        errorMessage = 'Error checking file: $e';
+        isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -75,7 +116,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Could not load the PDF file.',
+                  errorMessage ?? 'Could not load the PDF file.',
                   style: TextStyle(
                     fontSize: 14,
                     color: GlassmorphismTheme.textColor.withOpacity(0.8),
@@ -120,71 +161,218 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
       );
     }
 
-    return Column(
-      children: [
-        // Page indicator
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          color: GlassmorphismTheme.backgroundColor.withOpacity(0.9),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    // Try to use Syncfusion PDF viewer with fallback
+    try {
+      if (widget.pdfBytes != null) {
+        return SfPdfViewer.memory(
+          widget.pdfBytes!,
+          controller: _pdfViewerController,
+          onDocumentLoaded: (PdfDocumentLoadedDetails details) {
+            print(
+              'PDF loaded successfully from memory: ${details.document.pages.count} pages',
+            );
+            setState(() {
+              isLoading = false;
+            });
+          },
+          onDocumentLoadFailed: (PdfDocumentLoadFailedDetails details) {
+            print('PDF load failed from memory: ${details.error}');
+            setState(() {
+              hasError = true;
+              errorMessage = 'Failed to load PDF: ${details.error}';
+            });
+          },
+          onPageChanged: (PdfPageChangedDetails details) {
+            print('Page changed to: ${details.newPageNumber}');
+          },
+          enableDoubleTapZooming: true,
+          enableTextSelection: true,
+          canShowScrollHead: true,
+          canShowScrollStatus: true,
+          canShowPaginationDialog: true,
+        );
+      } else {
+        return SfPdfViewer.file(
+          File(widget.pdfPath),
+          controller: _pdfViewerController,
+          onDocumentLoaded: (PdfDocumentLoadedDetails details) {
+            print(
+              'PDF loaded successfully from file: ${details.document.pages.count} pages',
+            );
+            setState(() {
+              isLoading = false;
+            });
+          },
+          onDocumentLoadFailed: (PdfDocumentLoadFailedDetails details) {
+            print('PDF load failed from file: ${details.error}');
+            setState(() {
+              hasError = true;
+              errorMessage = 'Failed to load PDF: ${details.error}';
+            });
+          },
+          onPageChanged: (PdfPageChangedDetails details) {
+            print('Page changed to: ${details.newPageNumber}');
+          },
+          enableDoubleTapZooming: true,
+          enableTextSelection: true,
+          canShowScrollHead: true,
+          canShowScrollStatus: true,
+          canShowPaginationDialog: true,
+        );
+      }
+    } catch (e) {
+      print('Syncfusion PDF viewer error: $e');
+      // Fallback to simple viewer
+      return _buildSimpleViewer();
+    }
+  }
+
+  Widget _buildSimpleViewer() {
+    return Center(
+      child: GlassmorphismTheme.glassmorphismContainer(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                'Page $currentPage of $totalPages',
-                style: const TextStyle(
-                  color: GlassmorphismTheme.textColor,
-                  fontWeight: FontWeight.bold,
+              // PDF Icon
+              Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  color: GlassmorphismTheme.primaryColor,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Icon(
+                  Icons.picture_as_pdf,
+                  size: 60,
+                  color: Colors.white,
                 ),
               ),
-              // Zoom controls removed - using built-in pinch to zoom
+              const SizedBox(height: 24),
+
+              // Title
               const Text(
-                'Pinch to zoom',
+                'Business Report',
                 style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
                   color: GlassmorphismTheme.textColor,
-                  fontSize: 12,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Success message
+              const Text(
+                'PDF Generated Successfully!',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.green,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // File info
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: GlassmorphismTheme.backgroundColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: GlassmorphismTheme.primaryColor.withOpacity(0.3),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    _buildInfoRow('File Size', '${fileSize ?? 0} bytes'),
+                    const SizedBox(height: 8),
+                    _buildInfoRow('File Path', filePath ?? 'Unknown'),
+                    const SizedBox(height: 8),
+                    _buildInfoRow('Status', 'Ready to share'),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
+
+              // Action buttons
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () => _sharePdf(),
+                    icon: const Icon(Icons.share),
+                    label: const Text('Share PDF'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: GlassmorphismTheme.primaryColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                    ),
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: () => _downloadPdf(),
+                    icon: const Icon(Icons.download),
+                    label: const Text('Download'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Note
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                ),
+                child: const Column(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.blue, size: 20),
+                    SizedBox(height: 8),
+                    Text(
+                      'Note: PDF viewer is not available in this version.\nYou can share or download the PDF file.',
+                      style: TextStyle(fontSize: 12, color: Colors.blue),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
         ),
-        // PDF viewer
-        Expanded(
-          child: PDFView(
-            filePath: widget.pdfPath,
-            enableSwipe: true,
-            swipeHorizontal: false,
-            autoSpacing: true,
-            pageFling: true,
-            pageSnap: true,
-            defaultPage: 0,
-            fitPolicy: FitPolicy.BOTH,
-            preventLinkNavigation: false,
-            onRender: (pages) {
-              setState(() {
-                totalPages = pages!;
-                isLoading = false;
-              });
-            },
-            onViewCreated: (PDFViewController controller) {
-              pdfViewController = controller;
-            },
-            onPageChanged: (page, total) {
-              setState(() {
-                currentPage = page! + 1;
-              });
-            },
-            onError: (error) {
-              setState(() {
-                hasError = true;
-                isLoading = false;
-              });
-            },
-            onPageError: (page, error) {
-              setState(() {
-                hasError = true;
-                isLoading = false;
-              });
-            },
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            color: GlassmorphismTheme.textColor.withOpacity(0.8),
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: GlassmorphismTheme.textColor,
           ),
         ),
       ],
@@ -226,5 +414,11 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
         ),
       );
     }
+  }
+
+  @override
+  void dispose() {
+    _pdfViewerController.dispose();
+    super.dispose();
   }
 }

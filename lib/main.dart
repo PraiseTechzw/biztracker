@@ -9,6 +9,10 @@ import 'screens/main_navigation_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // TODO: Add Syncfusion license key here
+  // SfLicense.registerLicense('YOUR_LICENSE_KEY_HERE');
+  // Get free license from: https://www.syncfusion.com/downloads
+
   // Set preferred orientations
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,

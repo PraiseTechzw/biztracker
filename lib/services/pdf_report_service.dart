@@ -1,6 +1,5 @@
-import 'dart:io';
 import 'dart:typed_data';
-import 'dart:io' show Directory;
+import 'dart:io';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
@@ -88,7 +87,9 @@ class PdfReportService {
     );
 
     // Return PDF bytes for in-app viewing
-    return await pdf.save();
+    final bytes = await pdf.save();
+    print('PDF generated successfully: ${bytes.length} bytes');
+    return bytes;
   }
 
   static Future<Uint8List> generateBusinessReportBytes({
@@ -213,7 +214,7 @@ class PdfReportService {
             ),
           ),
           pw.Text(
-            'Generated: ${DateFormat('MMM dd, yyyy').format(DateTime.now())}',
+            'Generated: ${_formatDateSimple(DateTime.now())}',
             style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
           ),
         ],
@@ -385,7 +386,7 @@ class PdfReportService {
                       ),
                     ),
                     pw.Text(
-                      DateFormat('MMM dd, yyyy').format(DateTime.now()),
+                      _formatDateSimple(DateTime.now()),
                       style: pw.TextStyle(
                         fontSize: 14,
                         fontWeight: pw.FontWeight.bold,
@@ -488,7 +489,7 @@ class PdfReportService {
                           ),
                         ),
                         child: pw.Text(
-                          '${DateFormat('MMMM dd, yyyy').format(startDate)} - ${DateFormat('MMMM dd, yyyy').format(endDate)}',
+                          '${_formatDateSimple(startDate)} - ${_formatDateSimple(endDate)}',
                           style: pw.TextStyle(
                             fontSize: 16,
                             fontWeight: pw.FontWeight.bold,
@@ -1311,35 +1312,35 @@ class PdfReportService {
                     ),
                     pw.SizedBox(height: 8),
                     pw.Text(
-                      '• ${summary['salesCount']} sales transactions analyzed',
+                      '- ${summary['salesCount']} sales transactions analyzed',
                       style: pw.TextStyle(
                         fontSize: 11,
                         color: PdfColors.grey700,
                       ),
                     ),
                     pw.Text(
-                      '• ${breakdown['expensesCount']} expense items categorized',
+                      '- ${breakdown['expensesCount']} expense items categorized',
                       style: pw.TextStyle(
                         fontSize: 11,
                         color: PdfColors.grey700,
                       ),
                     ),
                     pw.Text(
-                      '• ${inventory['totalItems']} inventory items tracked',
+                      '- ${inventory['totalItems']} inventory items tracked',
                       style: pw.TextStyle(
                         fontSize: 11,
                         color: PdfColors.grey700,
                       ),
                     ),
                     pw.Text(
-                      '• ${breakdown['categoryBreakdown'].length} expense categories identified',
+                      '- ${breakdown['categoryBreakdown'].length} expense categories identified',
                       style: pw.TextStyle(
                         fontSize: 11,
                         color: PdfColors.grey700,
                       ),
                     ),
                     pw.Text(
-                      '• ${inventory['categoryBreakdown'].length} inventory categories managed',
+                      '- ${inventory['categoryBreakdown'].length} inventory categories managed',
                       style: pw.TextStyle(
                         fontSize: 11,
                         color: PdfColors.grey700,
@@ -1373,28 +1374,28 @@ class PdfReportService {
                     ),
                     pw.SizedBox(height: 8),
                     pw.Text(
-                      '• Use bar charts for revenue vs expenses comparison',
+                      '- Use bar charts for revenue vs expenses comparison',
                       style: pw.TextStyle(
                         fontSize: 11,
                         color: PdfColors.grey700,
                       ),
                     ),
                     pw.Text(
-                      '• Pie charts work best for payment method distribution',
+                      '- Pie charts work best for payment method distribution',
                       style: pw.TextStyle(
                         fontSize: 11,
                         color: PdfColors.grey700,
                       ),
                     ),
                     pw.Text(
-                      '• Doughnut charts show payment status breakdown clearly',
+                      '- Doughnut charts show payment status breakdown clearly',
                       style: pw.TextStyle(
                         fontSize: 11,
                         color: PdfColors.grey700,
                       ),
                     ),
                     pw.Text(
-                      '• Line charts track sales trends over time effectively',
+                      '- Line charts track sales trends over time effectively',
                       style: pw.TextStyle(
                         fontSize: 11,
                         color: PdfColors.grey700,
@@ -1766,5 +1767,23 @@ class PdfReportService {
     } catch (e) {
       throw Exception('Failed to save and share PDF: $e');
     }
+  }
+
+  static String _formatDateSimple(DateTime date) {
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return '${months[date.month - 1]} ${date.day.toString().padLeft(2, '0')}, ${date.year}';
   }
 }

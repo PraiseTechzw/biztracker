@@ -99,6 +99,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   Future<void> _exportReport() async {
     try {
+      print('Starting PDF export...');
       if (businessProfile == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -138,6 +139,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
       );
 
       // Generate PDF report
+      print('Calling PdfReportService.generateBusinessReportBytes...');
       final pdfBytes = await PdfReportService.generateBusinessReportBytes(
         businessProfile: businessProfile!,
         sales: sales,
@@ -147,6 +149,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         startDate: startDate,
         endDate: endDate,
       );
+      print('PDF generated successfully: ${pdfBytes.length} bytes');
 
       // Close loading dialog
       Navigator.of(context).pop();
@@ -178,6 +181,20 @@ class _ReportsScreenState extends State<ReportsScreen> {
               onPressed: () => Navigator.of(context).pop(),
               child: const Text('Close'),
             ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _testPdfViewer(pdfBytes);
+              },
+              child: const Text('Test Viewer'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _testSimplePdfViewer(pdfBytes);
+              },
+              child: const Text('Simple Viewer'),
+            ),
           ],
         ),
       );
@@ -198,20 +215,97 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   Future<void> _viewReportInApp(Uint8List pdfBytes) async {
     try {
+      print('Saving PDF to temp directory...');
       final tempDir = await getTemporaryDirectory();
       final file = File('${tempDir.path}/business_report.pdf');
       await file.writeAsBytes(pdfBytes);
+      print('PDF saved to: ${file.path}');
 
       // Navigate to PDF viewer screen
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (context) => PdfViewerScreen(pdfPath: file.path),
+          builder: (context) =>
+              PdfViewerScreen(pdfPath: file.path, pdfBytes: pdfBytes),
         ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error viewing PDF: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _testSimplePdfViewer(Uint8List pdfBytes) async {
+    try {
+      print('Testing simple PDF viewer with ${pdfBytes.length} bytes');
+
+      // Show a simple dialog with PDF info
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('PDF Info'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('PDF Size: ${pdfBytes.length} bytes'),
+              const SizedBox(height: 16),
+              const Text('PDF generated successfully!'),
+              const SizedBox(height: 8),
+              const Text('The PDF viewer is having issues.'),
+              const SizedBox(height: 8),
+              const Text('You can still share the PDF.'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _shareReport(pdfBytes);
+              },
+              child: const Text('Share PDF'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      print('Simple PDF viewer error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error with simple viewer: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _testPdfViewer(Uint8List pdfBytes) async {
+    try {
+      print('Testing PDF viewer with ${pdfBytes.length} bytes');
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}/test_report.pdf');
+      await file.writeAsBytes(pdfBytes);
+      print('Test PDF saved to: ${file.path}');
+
+      // Navigate to PDF viewer screen
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) =>
+              PdfViewerScreen(pdfPath: file.path, pdfBytes: pdfBytes),
+        ),
+      );
+    } catch (e) {
+      print('Test PDF viewer error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error testing PDF viewer: $e'),
           backgroundColor: Colors.red,
         ),
       );
