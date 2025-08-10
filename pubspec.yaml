@@ -54,6 +54,12 @@ dependencies:
   open_file: ^3.3.2
   google_mobile_ads: ^6.0.0
   shared_preferences: ^2.2.2
+  
+  # Payment and In-App Purchase dependencies
+  in_app_purchase: ^3.1.13
+  in_app_purchase_android: ^0.4.0+3
+  in_app_purchase_storekit: ^0.3.6+1
+
 
 dev_dependencies:
   flutter_test:
