@@ -25,28 +25,26 @@ class PdfReportService {
     pw.MemoryImage? logoImage;
     try {
       // Try to load logo using Flutter's asset system
-      final ByteData logoData = await rootBundle.load(
-        'assets/images/logo.png',
-      );
+      final ByteData logoData = await rootBundle.load('assets/images/logo.png');
       if (logoData != null) {
         final Uint8List logoBytes = logoData.buffer.asUint8List();
         logoImage = pw.MemoryImage(logoBytes);
-        print('Logo loaded successfully from assets');
+        // Logo loaded successfully from assets
       } else {
-        print('Logo not found in assets');
+        // Logo not found in assets
       }
     } catch (e) {
-      print('Logo loading error: $e');
+      // Logo loading error, trying file system fallback
       // Fallback: try file system
       try {
         final logoFile = File('assets/images/logo.png');
         if (await logoFile.exists()) {
           final logoBytes = await logoFile.readAsBytes();
           logoImage = pw.MemoryImage(logoBytes);
-          print('Logo loaded from file system');
+          // Logo loaded from file system
         }
       } catch (e2) {
-        print('File system logo loading error: $e2');
+        // File system logo loading error
       }
     }
 
@@ -88,7 +86,7 @@ class PdfReportService {
 
     // Return PDF bytes for in-app viewing
     final bytes = await pdf.save();
-    print('PDF generated successfully: ${bytes.length} bytes');
+    // PDF generated successfully
     return bytes;
   }
 
@@ -107,28 +105,26 @@ class PdfReportService {
     pw.MemoryImage? logoImage;
     try {
       // Try to load logo using Flutter's asset system
-      final ByteData logoData = await rootBundle.load(
-        'assets/images/logo.png',
-      );
+      final ByteData logoData = await rootBundle.load('assets/images/logo.png');
       if (logoData != null) {
         final Uint8List logoBytes = logoData.buffer.asUint8List();
         logoImage = pw.MemoryImage(logoBytes);
-        print('Logo loaded successfully from assets');
+        // Logo loaded successfully from assets
       } else {
-        print('Logo not found in assets');
+        // Logo not found in assets
       }
     } catch (e) {
-      print('Logo loading error: $e');
+      // Logo loading error, trying file system fallback
       // Fallback: try file system
       try {
         final logoFile = File('assets/images/logo.png');
         if (await logoFile.exists()) {
           final logoBytes = await logoFile.readAsBytes();
           logoImage = pw.MemoryImage(logoBytes);
-          print('Logo loaded from file system');
+          // Logo loaded from file system
         }
       } catch (e2) {
-        print('File system logo loading error: $e2');
+        // File system logo loading error
       }
     }
 

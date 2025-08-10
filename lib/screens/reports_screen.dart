@@ -150,7 +150,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         startDate: startDate,
         endDate: endDate,
       );
-      print('PDF generated successfully: ${pdfBytes.length} bytes');
+      // PDF generated successfully
 
       // Close loading dialog
       Navigator.of(context).pop();

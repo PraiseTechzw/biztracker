@@ -761,7 +761,7 @@ class DatabaseService {
     // You can implement cleaning logic here
     // For now, just log invalid barcodes
     if (invalidStocks.isNotEmpty) {
-      print('Found ${invalidStocks.length} stocks with invalid barcodes');
+      // Found stocks with invalid barcodes
     }
   }
 }

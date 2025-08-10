@@ -247,7 +247,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         });
       }
     } catch (e) {
-      print('Error loading notification count: $e');
+      // Error loading notification count silently handled
       if (mounted) {
         setState(() {
           unreadNotifications = 0;
