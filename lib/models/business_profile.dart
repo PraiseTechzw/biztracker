@@ -52,11 +52,9 @@ class BusinessProfile {
   late DateTime updatedAt;
 
   // Helper method to check if profile is complete
+  @ignore
   bool get isProfileComplete {
-    return businessName.isNotEmpty &&
-        businessType.isNotEmpty &&
-        phoneNumber != null &&
-        phoneNumber!.isNotEmpty;
+    return businessName.isNotEmpty && businessType.isNotEmpty;
   }
 
   // Helper method to get full address

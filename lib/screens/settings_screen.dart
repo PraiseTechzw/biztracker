@@ -6,6 +6,7 @@ import '../utils/glassmorphism_theme.dart';
 import '../services/database_service.dart';
 import '../models/business_profile.dart';
 import 'notifications_screen.dart';
+import 'welcome_screen.dart'; // Added import for WelcomeScreen
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -283,6 +284,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
               'Open source licenses',
               Icons.description_outlined,
               onTap: _showLicenses,
+            ),
+          ]),
+          const SizedBox(height: 24),
+          _buildSection('Account', [
+            _buildSettingTile(
+              'Logout',
+              'Sign out and clear all data',
+              Icons.logout,
+              onTap: _showLogoutDialog,
+              isDestructive: true,
             ),
           ]),
         ],
@@ -815,9 +826,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
 
     try {
-      // In a real app, you would implement proper data clearing
-      // For now, we'll just show a success message
-      await Future.delayed(const Duration(seconds: 1));
+      // Clear all business data
+      await DatabaseService.clearAllBusinessData();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -826,12 +836,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
             backgroundColor: Colors.green,
           ),
         );
+
+        // Navigate to welcome screen after clearing data
+        Navigator.of(context).pushAndRemoveUntil(
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                const WelcomeScreen(),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+                  return FadeTransition(opacity: animation, child: child);
+                },
+            transitionDuration: const Duration(milliseconds: 500),
+          ),
+          (route) => false,
+        );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to clear data'),
+          SnackBar(
+            content: Text('Failed to clear data: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -1201,6 +1225,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
           borderRadius: BorderRadius.circular(12),
         ),
         child: const Icon(Icons.business, color: Colors.white, size: 24),
+      ),
+    );
+  }
+
+  void _showLogoutDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: GlassmorphismTheme.surfaceColor,
+        title: const Text(
+          'Logout',
+          style: TextStyle(color: GlassmorphismTheme.textColor),
+        ),
+        content: const Text(
+          'Are you sure you want to sign out and clear all your data? This action cannot be undone.',
+          style: TextStyle(color: GlassmorphismTheme.textColor),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _clearAllData(); // Re-use _clearAllData for logout
+              // Navigation is handled in _clearAllData
+            },
+            child: const Text('Logout', style: TextStyle(color: Colors.red)),
+          ),
+        ],
       ),
     );
   }
