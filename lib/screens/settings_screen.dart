@@ -324,7 +324,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             leading: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: GlassmorphismTheme.primaryColor.withOpacity(0.2),
+                color: GlassmorphismTheme.primaryColor.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(
@@ -392,8 +392,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
           color: isDestructive
-              ? Colors.red.withOpacity(0.2)
-              : GlassmorphismTheme.primaryColor.withOpacity(0.2),
+              ? Colors.red.withValues(alpha: 0.2)
+              : GlassmorphismTheme.primaryColor.withValues(alpha: 0.2),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(
@@ -438,7 +438,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.2),
+          color: color.withValues(alpha: 0.2),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(icon, color: color, size: 20),
@@ -511,7 +511,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'exportDate': DateTime.now().toIso8601String(),
         'appInfo': {
           'appName': 'BizTracker',
-          'version': '1.0.0',
+          'version': '1.0.1',
           'developer': 'Appixia Software',
           'developerContact': 'praisemasunga@appixia.co.zw',
           'website': 'www.appixia.co.zw',
