@@ -58,6 +58,7 @@ class BusinessProfile {
   }
 
   // Helper method to get full address
+  @ignore
   String get fullAddress {
     List<String> addressParts = [];
     if (address != null && address!.isNotEmpty) addressParts.add(address!);
@@ -72,6 +73,7 @@ class BusinessProfile {
   }
 
   // Helper method to get display name
+  @ignore
   String get displayName {
     return businessName.isNotEmpty ? businessName : 'Unnamed Business';
   }

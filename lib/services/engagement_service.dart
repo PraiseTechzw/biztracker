@@ -503,7 +503,7 @@ class EngagementService {
       (a) => a.type == AchievementType.special && !a.isUnlocked,
     )) {
       if (achievement.id == 'complete_profile' &&
-          businessProfile?.isProfileComplete == true) {
+          await DatabaseService.hasCompleteBusinessProfile()) {
         await _unlockAchievement(achievement);
       }
     }

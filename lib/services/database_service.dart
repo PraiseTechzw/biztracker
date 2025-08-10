@@ -491,26 +491,16 @@ class DatabaseService {
 
   // Business Profile operations
   static Future<void> saveBusinessProfile(BusinessProfile profile) async {
-    print('Debug: Saving business profile: ${profile.businessName}');
-    print('Debug: Profile business type: ${profile.businessType}');
-    print('Debug: Profile isProfileComplete: ${profile.isProfileComplete}');
-
     await isar.writeTxn(() async {
       await isar.businessProfiles.put(profile);
     });
-
-    print('Debug: Business profile saved successfully');
   }
 
   static Future<BusinessProfile?> getBusinessProfile() async {
     final profiles = await isar.businessProfiles.where().findAll();
-    print('Debug: Found ${profiles.length} business profiles');
 
     if (profiles.isNotEmpty) {
       final profile = profiles.first;
-      print('Debug: Profile business name: ${profile.businessName}');
-      print('Debug: Profile business type: ${profile.businessType}');
-      print('Debug: Profile isProfileComplete: ${profile.isProfileComplete}');
 
       // Only migrate if the profile is missing required fields
       bool needsUpdate = false;
@@ -530,13 +520,11 @@ class DatabaseService {
 
       // Only update if necessary
       if (needsUpdate) {
-        print('Debug: Updating profile due to missing fields');
         await updateBusinessProfile(profile);
       }
 
       return profile;
     }
-    print('Debug: No business profiles found');
     return null;
   }
 
@@ -565,9 +553,26 @@ class DatabaseService {
     });
   }
 
+  // Clear only business profile (for profile reset)
+  static Future<void> clearBusinessProfile() async {
+    await isar.writeTxn(() async {
+      await isar.businessProfiles.clear();
+    });
+  }
+
   static Future<bool> hasBusinessProfile() async {
     final profiles = await isar.businessProfiles.where().findAll();
     return profiles.isNotEmpty;
+  }
+
+  // Check if business profile exists and is complete
+  static Future<bool> hasCompleteBusinessProfile() async {
+    final profiles = await isar.businessProfiles.where().findAll();
+    if (profiles.isNotEmpty) {
+      final profile = profiles.first;
+      return profile.businessName.isNotEmpty && profile.businessType.isNotEmpty;
+    }
+    return false;
   }
 
   // Enhanced reporting methods

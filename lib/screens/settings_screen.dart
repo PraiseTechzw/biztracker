@@ -209,13 +209,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Icons.backup,
               onTap: _showBackupSettings,
             ),
-            _buildSettingTile(
-              'Clear All Data',
-              'Delete all business records',
-              Icons.delete_forever,
-              onTap: _showClearDataDialog,
-              isDestructive: true,
-            ),
           ]),
           const SizedBox(height: 24),
           _buildSection('App Settings', [
@@ -290,9 +283,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildSection('Account', [
             _buildSettingTile(
               'Logout',
-              'Sign out and clear all data',
+              'Sign out and clear profile data',
               Icons.logout,
               onTap: _showLogoutDialog,
+              isDestructive: true,
+            ),
+            _buildSettingTile(
+              'Clear All Data',
+              'Delete all business records and data',
+              Icons.delete_forever,
+              onTap: _showClearDataDialog,
               isDestructive: true,
             ),
           ]),
@@ -794,10 +794,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
         backgroundColor: GlassmorphismTheme.surfaceColor,
         title: const Text(
           'Clear All Data',
-          style: TextStyle(color: GlassmorphismTheme.textColor),
+          style: TextStyle(color: Colors.red),
         ),
         content: const Text(
-          'Are you sure you want to delete all your business data? This action cannot be undone.',
+          '⚠️ WARNING: This will permanently delete ALL your business data including:\n\n'
+          '• Sales records\n'
+          '• Expense records\n'
+          '• Stock inventory\n'
+          '• Capital records\n'
+          '• Business profile\n'
+          '• All reports and analytics\n\n'
+          'This action cannot be undone. Are you absolutely sure?',
           style: TextStyle(color: GlassmorphismTheme.textColor),
         ),
         actions: [
@@ -811,7 +818,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               await _clearAllData();
             },
             child: const Text(
-              'Clear Data',
+              'Clear All Data',
               style: TextStyle(color: Colors.red),
             ),
           ),
@@ -1239,7 +1246,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           style: TextStyle(color: GlassmorphismTheme.textColor),
         ),
         content: const Text(
-          'Are you sure you want to sign out and clear all your data? This action cannot be undone.',
+          'Are you sure you want to sign out? This will clear your business profile and return you to the welcome screen. Your business data (sales, expenses, etc.) will be preserved.',
           style: TextStyle(color: GlassmorphismTheme.textColor),
         ),
         actions: [
@@ -1250,13 +1257,59 @@ class _SettingsScreenState extends State<SettingsScreen> {
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
-              await _clearAllData(); // Re-use _clearAllData for logout
-              // Navigation is handled in _clearAllData
+              await _logout();
             },
             child: const Text('Logout', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _logout() async {
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      // Clear only business profile
+      await DatabaseService.clearBusinessProfile();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Logged out successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // Navigate to welcome screen after logout
+        Navigator.of(context).pushAndRemoveUntil(
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                const WelcomeScreen(),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+                  return FadeTransition(opacity: animation, child: child);
+                },
+            transitionDuration: const Duration(milliseconds: 500),
+          ),
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to logout: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 }

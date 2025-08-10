@@ -95,18 +95,12 @@ class _SplashScreenState extends State<SplashScreen>
 
   Future<void> _checkBusinessProfile() async {
     try {
-      final existingProfile = await DatabaseService.getBusinessProfile();
-
-      // Debug logging
-      print('Debug: Existing profile: ${existingProfile?.businessName}');
-      print('Debug: Profile complete: ${existingProfile?.isProfileComplete}');
-      print('Debug: Business name: ${existingProfile?.businessName}');
-      print('Debug: Business type: ${existingProfile?.businessType}');
+      final hasCompleteProfile =
+          await DatabaseService.hasCompleteBusinessProfile();
 
       if (mounted) {
-        if (existingProfile != null && existingProfile.isProfileComplete) {
+        if (hasCompleteProfile) {
           // Profile exists and is complete, go to main navigation
-          print('Debug: Navigating to MainNavigationScreen');
           Navigator.of(context).pushReplacement(
             PageRouteBuilder(
               pageBuilder: (context, animation, secondaryAnimation) =>
@@ -120,7 +114,6 @@ class _SplashScreenState extends State<SplashScreen>
           );
         } else {
           // No profile or incomplete profile, go to welcome screen
-          print('Debug: Navigating to WelcomeScreen');
           Navigator.of(context).pushReplacement(
             PageRouteBuilder(
               pageBuilder: (context, animation, secondaryAnimation) =>
@@ -136,7 +129,6 @@ class _SplashScreenState extends State<SplashScreen>
       }
     } catch (e) {
       // If there's an error, default to welcome screen
-      print('Debug: Error checking profile: $e');
       if (mounted) {
         Navigator.of(context).pushReplacement(
           PageRouteBuilder(
