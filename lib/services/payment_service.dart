@@ -7,6 +7,7 @@ import 'package:in_app_purchase_android/in_app_purchase_android.dart';
 import 'package:in_app_purchase_storekit/in_app_purchase_storekit.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../config/payment_config.dart';
 
 enum PaymentMethod { inAppPurchase, directPayment }
 
@@ -16,29 +17,12 @@ class PaymentService {
       _instance ??= PaymentService._internal();
   PaymentService._internal();
 
-  static const String _monthlyProductId = 'biztracker_monthly_premium';
-  static const String _annualProductId = 'biztracker_annual_premium';
-  static const String _lifetimeProductId = 'biztracker_lifetime_premium';
-
-  // Payment gateway configuration (you can use any local payment gateway)
-  static const String _paymentGatewayUrl =
-      'https://your-payment-gateway.com/api/payment';
-  static const String _merchantId = 'your_merchant_id';
-  static const String _merchantName = 'BizTracker Premium';
-
   final InAppPurchase _inAppPurchase = InAppPurchase.instance;
 
   StreamSubscription<List<PurchaseDetails>>? _subscription;
   List<ProductDetails> _products = [];
   bool _isAvailable = false;
   bool _purchasePending = false;
-
-  // Product IDs mapping
-  static const Map<String, String> _productIds = {
-    'monthly': _monthlyProductId,
-    'annual': _annualProductId,
-    'lifetime': _lifetimeProductId,
-  };
 
   /// Initialize payment service
   Future<void> initialize() async {
@@ -69,7 +53,7 @@ class PaymentService {
   Future<void> _loadProducts() async {
     try {
       final ProductDetailsResponse response = await _inAppPurchase
-          .queryProductDetails(_productIds.values.toSet());
+          .queryProductDetails(PaymentConfig.productIds.values.toSet());
 
       if (response.notFoundIDs.isNotEmpty) {
         debugPrint(
@@ -95,7 +79,7 @@ class PaymentService {
 
   /// Get product by plan type
   ProductDetails? getProductByPlan(String planType) {
-    final productId = _productIds[planType];
+    final productId = PaymentConfig.productIds[planType];
     if (productId == null) return null;
 
     try {
@@ -123,7 +107,7 @@ class PaymentService {
 
       bool success = false;
 
-      if (product.id == _lifetimeProductId) {
+      if (planType == 'lifetime') {
         success = await _inAppPurchase.buyNonConsumable(
           purchaseParam: purchaseParam,
         );
@@ -159,9 +143,9 @@ class PaymentService {
 
       // Create payment request
       final paymentRequest = {
-        'merchant_id': _merchantId,
+        'merchant_id': PaymentConfig.merchantId,
         'amount': amount,
-        'currency': 'USD',
+        'currency': PaymentConfig.defaultCurrency,
         'plan_type': planType,
         'payment_method': paymentDetails['method'],
         'customer_details': {
@@ -171,17 +155,21 @@ class PaymentService {
         },
         'payment_data': paymentDetails['paymentData'] ?? {},
         'timestamp': DateTime.now().toIso8601String(),
+        'local_amount': amount * PaymentConfig.usdToZwlRate,
+        'local_currency': PaymentConfig.localCurrency,
       };
 
       // Send payment request to your backend/payment gateway
-      final response = await http.post(
-        Uri.parse(_paymentGatewayUrl),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${paymentDetails['apiKey'] ?? ''}',
-        },
-        body: jsonEncode(paymentRequest),
-      );
+      final response = await http
+          .post(
+            Uri.parse(PaymentConfig.paymentGatewayUrl),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ${PaymentConfig.apiKey}',
+            },
+            body: jsonEncode(paymentRequest),
+          )
+          .timeout(Duration(seconds: PaymentConfig.paymentTimeoutSeconds));
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
@@ -261,15 +249,28 @@ class PaymentService {
     final now = DateTime.now();
     final isWeekend =
         now.weekday == DateTime.saturday || now.weekday == DateTime.sunday;
+    final isHoliday = _isHoliday(now);
 
-    if (isWeekend) {
+    if (isHoliday) {
+      return {
+        'title': 'Holiday Special! 🎊',
+        'subtitle': 'Get 25% off Annual Plan',
+        'discount': '25%',
+        'plan': 'annual',
+        'originalPrice': PaymentConfig.pricing['annual']!,
+        'discountedPrice': PaymentConfig.pricing['annual']! * 0.75,
+        'validUntil': 'Limited holiday offer',
+        'backgroundColor': 0xFFE91E63,
+        'textColor': 0xFFFFFFFF,
+      };
+    } else if (isWeekend) {
       return {
         'title': 'Weekend Special! 🎉',
         'subtitle': 'Get 20% off Annual Plan',
         'discount': '20%',
         'plan': 'annual',
-        'originalPrice': 39.99,
-        'discountedPrice': 31.99,
+        'originalPrice': PaymentConfig.pricing['annual']!,
+        'discountedPrice': PaymentConfig.pricing['annual']! * 0.80,
         'validUntil': 'This weekend only',
         'backgroundColor': 0xFF4CAF50,
         'textColor': 0xFFFFFFFF,
@@ -280,13 +281,31 @@ class PaymentService {
         'subtitle': 'Save 15% on Monthly Plan',
         'discount': '15%',
         'plan': 'monthly',
-        'originalPrice': 4.99,
-        'discountedPrice': 4.24,
+        'originalPrice': PaymentConfig.pricing['monthly']!,
+        'discountedPrice': PaymentConfig.pricing['monthly']! * 0.85,
         'validUntil': 'Limited time only',
         'backgroundColor': 0xFFFF9800,
         'textColor': 0xFFFFFFFF,
       };
     }
+  }
+
+  /// Check if date is a holiday (you can expand this list)
+  bool _isHoliday(DateTime date) {
+    // Add Zimbabwe holidays here
+    final holidays = [
+      DateTime(date.year, 1, 1), // New Year's Day
+      DateTime(date.year, 4, 18), // Independence Day
+      DateTime(date.year, 5, 1), // Workers' Day
+      DateTime(date.year, 8, 11), // Heroes' Day
+      DateTime(date.year, 8, 12), // Defence Forces Day
+      DateTime(date.year, 12, 25), // Christmas Day
+      DateTime(date.year, 12, 26), // Boxing Day
+    ];
+
+    return holidays.any(
+      (holiday) => holiday.day == date.day && holiday.month == date.month,
+    );
   }
 
   /// Get available payment methods for Zimbabwe
@@ -298,36 +317,39 @@ class PaymentService {
         'description': 'Purchase through app store',
         'icon': '🛒',
         'available': _isAvailable,
+        'instructions': 'Secure payment through Google Play Store',
+        'processingTime': 'Instant',
       },
-      {
-        'id': 'ecocash',
-        'name': 'EcoCash',
-        'description': 'Mobile money payment',
-        'icon': '📱',
-        'available': true,
-      },
-      {
-        'id': 'onemoney',
-        'name': 'OneMoney',
-        'description': 'Mobile money payment',
-        'icon': '💳',
-        'available': true,
-      },
-      {
-        'id': 'bank_transfer',
-        'name': 'Bank Transfer',
-        'description': 'Direct bank transfer',
-        'icon': '🏦',
-        'available': true,
-      },
-      {
-        'id': 'cash_deposit',
-        'name': 'Cash Deposit',
-        'description': 'Cash deposit to bank account',
-        'icon': '💰',
-        'available': true,
-      },
+      ...PaymentConfig.supportedPaymentMethods.map(
+        (method) => ({...method, 'available': true}),
+      ),
     ];
+  }
+
+  /// Get payment instructions for a specific method
+  String getPaymentInstructions(String methodId) {
+    final method = PaymentConfig.supportedPaymentMethods.firstWhere(
+      (method) => method['id'] == methodId,
+      orElse: () => {
+        'instructions': 'Contact support for payment instructions',
+      },
+    );
+    return method['instructions'];
+  }
+
+  /// Get local currency amount
+  double getLocalAmount(double usdAmount) {
+    return usdAmount * PaymentConfig.usdToZwlRate;
+  }
+
+  /// Get support contact information
+  Map<String, String> getSupportInfo() {
+    return {
+      'email': PaymentConfig.supportEmail,
+      'phone': PaymentConfig.supportPhone,
+      'whatsapp': PaymentConfig.supportWhatsApp,
+      'businessHours': PaymentConfig.businessHours,
+    };
   }
 
   /// Dispose resources

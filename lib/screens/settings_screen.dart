@@ -6,7 +6,8 @@ import '../utils/glassmorphism_theme.dart';
 import '../services/database_service.dart';
 import '../models/business_profile.dart';
 import 'notifications_screen.dart';
-import 'welcome_screen.dart'; // Added import for WelcomeScreen
+import 'welcome_screen.dart';
+import 'business_profile_screen.dart'; // Added import for BusinessProfileScreen
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -463,11 +464,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _editBusinessProfile() {
     // Navigate to business profile screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Navigate to Business Profile screen'),
-        backgroundColor: GlassmorphismTheme.primaryColor,
-      ),
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const BusinessProfileScreen()),
     );
   }
 
@@ -476,6 +474,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
       setState(() {
         isLoading = true;
       });
+
+      // Show progress dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          backgroundColor: GlassmorphismTheme.surfaceColor,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(
+                color: GlassmorphismTheme.primaryColor,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Exporting your business data...',
+                style: TextStyle(color: GlassmorphismTheme.textColor),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
 
       // Get all data from database
       final sales = await DatabaseService.getAllSales();
@@ -488,6 +509,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
       // Create export data structure
       final exportData = {
         'exportDate': DateTime.now().toIso8601String(),
+        'appInfo': {
+          'appName': 'BizTracker',
+          'version': '1.0.0',
+          'developer': 'Appixia Software',
+          'developerContact': 'praisemasunga@appixia.co.zw',
+          'website': 'www.appixia.co.zw',
+        },
         'businessProfile': profile != null
             ? {
                 'businessName': profile.businessName,
@@ -560,18 +588,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
           'biztracker_export_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.json';
       final file = File('${directory.path}/$fileName');
 
+      // Convert to proper JSON string
+      final jsonString = exportData.toString().replaceAll("'", '"');
+
       // Write data to file
-      await file.writeAsString(exportData.toString());
+      await file.writeAsString(jsonString);
+
+      // Close progress dialog
+      if (mounted) {
+        Navigator.pop(context);
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Data exported successfully to: $fileName'),
             backgroundColor: Colors.green,
+            duration: const Duration(seconds: 4),
             action: SnackBarAction(
-              label: 'Open',
+              label: 'Open Folder',
               onPressed: () {
-                // In a real app, you would open the file
+                // In a real app, you would open the file or folder
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('File saved to Documents folder'),
@@ -584,11 +621,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
         );
       }
     } catch (e) {
+      // Close progress dialog if there's an error
+      if (mounted) {
+        Navigator.pop(context);
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Export failed: $e'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
           ),
         );
       }
@@ -608,14 +651,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
           'Import Data',
           style: TextStyle(color: GlassmorphismTheme.textColor),
         ),
-        content: const Text(
-          'This feature will be available in the next update. You can manually restore data by copying the exported JSON file.',
-          style: TextStyle(color: GlassmorphismTheme.textColor),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Data Import Feature',
+              style: TextStyle(
+                color: GlassmorphismTheme.textColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 16),
+            Text(
+              'This feature will be available in the next update. For now, you can:\n\n'
+              '• Export your current data as backup\n'
+              '• Manually restore data by copying the exported JSON file\n'
+              '• Contact support for assistance\n\n'
+              'Coming soon: One-click data import and restore functionality.',
+              style: TextStyle(color: GlassmorphismTheme.textColor),
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Contact: support@appixia.co.zw',
+              style: TextStyle(
+                color: GlassmorphismTheme.primaryColor,
+                fontSize: 12,
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
+            child: const Text('Close'),
           ),
         ],
       ),
@@ -647,8 +716,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
               '• Daily backup at 2:00 AM\n'
               '• Keep last 7 backups\n'
               '• Backup to local storage\n'
-              '• Encrypt sensitive data',
+              '• Encrypt sensitive data\n'
+              '• Auto-cleanup old backups',
               style: TextStyle(color: GlassmorphismTheme.textColor),
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Manual Backup:',
+              style: TextStyle(
+                color: GlassmorphismTheme.textColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              '• Export data anytime\n'
+              '• Save to Documents folder\n'
+              '• JSON format for compatibility\n'
+              '• Include all business data',
+              style: TextStyle(color: GlassmorphismTheme.textColor),
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Contact: support@appixia.co.zw',
+              style: TextStyle(
+                color: GlassmorphismTheme.primaryColor,
+                fontSize: 12,
+              ),
             ),
           ],
         ),
@@ -673,7 +767,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         content: const Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Text(
+              'Current Theme:',
+              style: TextStyle(
+                color: GlassmorphismTheme.textColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 8),
             ListTile(
               title: Text(
                 'Dark Theme',
@@ -692,6 +795,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
               trailing: Icon(
                 Icons.check,
                 color: GlassmorphismTheme.primaryColor,
+              ),
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Coming Soon:',
+              style: TextStyle(
+                color: GlassmorphismTheme.textColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              '• Light theme option\n'
+              '• Custom color schemes\n'
+              '• Font size adjustments\n'
+              '• High contrast mode',
+              style: TextStyle(color: GlassmorphismTheme.textColor),
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Contact: support@appixia.co.zw',
+              style: TextStyle(
+                color: GlassmorphismTheme.primaryColor,
+                fontSize: 12,
               ),
             ),
           ],
@@ -717,7 +844,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         content: const Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Text(
+              'Business Alerts:',
+              style: TextStyle(
+                color: GlassmorphismTheme.textColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 8),
             ListTile(
               title: Text(
                 'Low Stock Alerts',
@@ -738,6 +874,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 style: TextStyle(color: GlassmorphismTheme.textColor),
               ),
               trailing: Switch(value: false, onChanged: null),
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Coming Soon:',
+              style: TextStyle(
+                color: GlassmorphismTheme.textColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              '• Custom notification times\n'
+              '• Sound and vibration options\n'
+              '• Priority level settings\n'
+              '• Do not disturb mode',
+              style: TextStyle(color: GlassmorphismTheme.textColor),
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Contact: support@appixia.co.zw',
+              style: TextStyle(
+                color: GlassmorphismTheme.primaryColor,
+                fontSize: 12,
+              ),
             ),
           ],
         ),
@@ -778,6 +938,46 @@ class _SettingsScreenState extends State<SettingsScreen> {
               '• Analytics are disabled\n'
               '• Your privacy is protected',
               style: TextStyle(color: GlassmorphismTheme.textColor),
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Data Security:',
+              style: TextStyle(
+                color: GlassmorphismTheme.textColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              '• Local encryption for sensitive data\n'
+              '• No cloud synchronization\n'
+              '• No third-party access\n'
+              '• Complete data ownership',
+              style: TextStyle(color: GlassmorphismTheme.textColor),
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Your Rights:',
+              style: TextStyle(
+                color: GlassmorphismTheme.textColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              '• Export your data anytime\n'
+              '• Delete all data permanently\n'
+              '• No tracking or profiling\n'
+              '• Full control over your information',
+              style: TextStyle(color: GlassmorphismTheme.textColor),
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Contact: support@appixia.co.zw',
+              style: TextStyle(
+                color: GlassmorphismTheme.primaryColor,
+                fontSize: 12,
+              ),
             ),
           ],
         ),
@@ -837,6 +1037,53 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
 
     try {
+      // Show final confirmation dialog
+      final shouldClear = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: GlassmorphismTheme.surfaceColor,
+          title: const Text(
+            'Final Warning',
+            style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+          ),
+          content: const Text(
+            '⚠️ This is your FINAL warning!\n\n'
+            'This action will permanently delete ALL your business data including:\n\n'
+            '• Sales records\n'
+            '• Expense records\n'
+            '• Stock inventory\n'
+            '• Capital records\n'
+            '• Business profile\n'
+            '• All reports and analytics\n\n'
+            'This action cannot be undone. Are you absolutely sure?',
+            style: TextStyle(color: GlassmorphismTheme.textColor),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text(
+                'Yes, Delete Everything',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+
+      if (shouldClear != true) {
+        setState(() {
+          isLoading = false;
+        });
+        return;
+      }
+
       // Clear all business data
       await DatabaseService.clearAllBusinessData();
 
@@ -845,6 +1092,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SnackBar(
             content: Text('All data cleared successfully'),
             backgroundColor: Colors.green,
+            duration: Duration(seconds: 3),
           ),
         );
 
@@ -868,6 +1116,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           SnackBar(
             content: Text('Failed to clear data: $e'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
           ),
         );
       }
@@ -912,8 +1161,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'Q: How do I record a sale?\n'
                 'A: Go to Sales and tap the + button\n\n'
                 'Q: How do I view reports?\n'
-                'A: Go to Reports to see detailed analytics',
+                'A: Go to Reports to see detailed analytics\n\n'
+                'Q: How do I backup my data?\n'
+                'A: Go to Settings > Data Management > Export Data\n\n'
+                'Q: How do I change business profile?\n'
+                'A: Go to Settings > Business Profile and tap to edit',
                 style: TextStyle(color: GlassmorphismTheme.textColor),
+              ),
+              SizedBox(height: 16),
+              Text(
+                'Need More Help?',
+                style: TextStyle(
+                  color: GlassmorphismTheme.textColor,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Contact our support team:\n'
+                'support@appixia.co.zw\n'
+                'www.appixia.co.zw',
+                style: TextStyle(
+                  color: GlassmorphismTheme.primaryColor,
+                  fontSize: 12,
+                ),
               ),
             ],
           ),
@@ -955,22 +1226,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 color: GlassmorphismTheme.primaryColor,
               ),
               title: Text(
-                'Email Support',
+                'General Support',
                 style: TextStyle(color: GlassmorphismTheme.textColor),
               ),
               subtitle: Text(
-                'support@biztracker.app',
+                'support@appixia.co.zw',
                 style: TextStyle(color: GlassmorphismTheme.textSecondaryColor),
               ),
             ),
             ListTile(
-              leading: Icon(Icons.chat, color: GlassmorphismTheme.primaryColor),
+              leading: Icon(
+                Icons.person,
+                color: GlassmorphismTheme.primaryColor,
+              ),
               title: Text(
-                'Live Chat',
+                'Developer Contact',
                 style: TextStyle(color: GlassmorphismTheme.textColor),
               ),
               subtitle: Text(
-                'Available 24/7',
+                'praisemasunga@appixia.co.zw',
+                style: TextStyle(color: GlassmorphismTheme.textSecondaryColor),
+              ),
+            ),
+            ListTile(
+              leading: Icon(
+                Icons.language,
+                color: GlassmorphismTheme.primaryColor,
+              ),
+              title: Text(
+                'Website',
+                style: TextStyle(color: GlassmorphismTheme.textColor),
+              ),
+              subtitle: Text(
+                'www.appixia.co.zw',
                 style: TextStyle(color: GlassmorphismTheme.textSecondaryColor),
               ),
             ),
@@ -1012,7 +1300,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               '• Include steps to reproduce\n'
               '• Mention your device and OS\n'
               '• Attach screenshots if possible\n\n'
-              'Email: bugs@biztracker.app',
+              'Email: support@appixia.co.zw',
               style: TextStyle(color: GlassmorphismTheme.textColor),
             ),
           ],
@@ -1047,23 +1335,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            SizedBox(height: 8),
-            Text(
+            const SizedBox(height: 8),
+            const Text(
               'A modern business tracking app with glassmorphism UI design. '
               'Track your capital, inventory, sales, expenses, and generate '
               'detailed profit reports.',
               style: TextStyle(color: GlassmorphismTheme.textColor),
             ),
-            SizedBox(height: 16),
-            Text(
+            const SizedBox(height: 16),
+            const Text(
               'Features:',
               style: TextStyle(
                 color: GlassmorphismTheme.textColor,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            SizedBox(height: 8),
-            Text(
+            const SizedBox(height: 8),
+            const Text(
               '• Capital Management\n'
               '• Stock/Inventory Tracking\n'
               '• Sales Recording\n'
@@ -1074,12 +1362,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
               '• Professional UI Design',
               style: TextStyle(color: GlassmorphismTheme.textColor),
             ),
-            SizedBox(height: 16),
-            Text(
-              'Developed with ❤️ for small businesses',
+            const SizedBox(height: 16),
+            const Text(
+              'Developed by:',
+              style: TextStyle(
+                color: GlassmorphismTheme.textColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Appixia Software\n'
+              'Praise Masunga',
               style: TextStyle(
                 color: GlassmorphismTheme.primaryColor,
                 fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Contact: support@appixia.co.zw\n'
+              'Website: www.appixia.co.zw',
+              style: TextStyle(
+                color: GlassmorphismTheme.textSecondaryColor,
+                fontSize: 12,
               ),
             ),
           ],
@@ -1115,36 +1421,54 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   fontSize: 12,
                 ),
               ),
-              SizedBox(height: 16),
-              Text(
+              const SizedBox(height: 16),
+              const Text(
                 'Your Privacy Matters',
                 style: TextStyle(
                   color: GlassmorphismTheme.textColor,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              SizedBox(height: 8),
-              Text(
+              const SizedBox(height: 8),
+              const Text(
                 'BizTracker is committed to protecting your privacy. '
                 'All your business data is stored locally on your device '
                 'and is never transmitted to external servers without your explicit consent.',
                 style: TextStyle(color: GlassmorphismTheme.textColor),
               ),
-              SizedBox(height: 16),
-              Text(
+              const SizedBox(height: 16),
+              const Text(
                 'Data Collection:',
                 style: TextStyle(
                   color: GlassmorphismTheme.textColor,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              SizedBox(height: 8),
-              Text(
+              const SizedBox(height: 8),
+              const Text(
                 '• We collect only the data you enter\n'
                 '• All data is stored locally\n'
                 '• No analytics or tracking\n'
                 '• No third-party data sharing',
                 style: TextStyle(color: GlassmorphismTheme.textColor),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Contact Information:',
+                style: TextStyle(
+                  color: GlassmorphismTheme.textColor,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'For privacy concerns, contact:\n'
+                'support@appixia.co.zw\n'
+                'www.appixia.co.zw',
+                style: TextStyle(
+                  color: GlassmorphismTheme.primaryColor,
+                  fontSize: 12,
+                ),
               ),
             ],
           ),
@@ -1180,35 +1504,54 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   fontSize: 12,
                 ),
               ),
-              SizedBox(height: 16),
-              Text(
+              const SizedBox(height: 16),
+              const Text(
                 'Acceptance of Terms',
                 style: TextStyle(
                   color: GlassmorphismTheme.textColor,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              SizedBox(height: 8),
-              Text(
+              const SizedBox(height: 8),
+              const Text(
                 'By using BizTracker, you agree to these terms of service. '
                 'The app is provided "as is" without warranties of any kind.',
                 style: TextStyle(color: GlassmorphismTheme.textColor),
               ),
-              SizedBox(height: 16),
-              Text(
+              const SizedBox(height: 16),
+              const Text(
                 'Use of Service:',
                 style: TextStyle(
                   color: GlassmorphismTheme.textColor,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              SizedBox(height: 8),
-              Text(
+              const SizedBox(height: 8),
+              const Text(
                 '• Use the app for legitimate business purposes\n'
                 '• Maintain accurate and up-to-date information\n'
                 '• Keep your data secure\n'
                 '• Respect intellectual property rights',
                 style: TextStyle(color: GlassmorphismTheme.textColor),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Developer Information:',
+                style: TextStyle(
+                  color: GlassmorphismTheme.textColor,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'BizTracker is developed by:\n'
+                'Appixia Software\n'
+                'Praise Masunga\n'
+                'support@appixia.co.zw',
+                style: TextStyle(
+                  color: GlassmorphismTheme.primaryColor,
+                  fontSize: 12,
+                ),
               ),
             ],
           ),
@@ -1237,6 +1580,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         child: const Icon(Icons.business, color: Colors.white, size: 24),
       ),
+      applicationLegalese:
+          'Developed by Appixia Software\nPraise Masunga\nsupport@appixia.co.zw',
     );
   }
 
@@ -1276,6 +1621,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
 
     try {
+      // Show confirmation dialog
+      final shouldLogout = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: GlassmorphismTheme.surfaceColor,
+          title: const Text(
+            'Confirm Logout',
+            style: TextStyle(color: GlassmorphismTheme.textColor),
+          ),
+          content: const Text(
+            'Are you sure you want to sign out? This will clear your business profile and return you to the welcome screen. Your business data (sales, expenses, etc.) will be preserved.',
+            style: TextStyle(color: GlassmorphismTheme.textColor),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Logout', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        ),
+      );
+
+      if (shouldLogout != true) {
+        setState(() {
+          isLoading = false;
+        });
+        return;
+      }
+
       // Clear only business profile
       await DatabaseService.clearBusinessProfile();
 
@@ -1284,6 +1662,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SnackBar(
             content: Text('Logged out successfully'),
             backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
           ),
         );
 
@@ -1307,6 +1686,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           SnackBar(
             content: Text('Failed to logout: $e'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
           ),
         );
       }

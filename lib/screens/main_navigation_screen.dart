@@ -9,6 +9,7 @@ import 'sales_screen.dart';
 import 'reports_screen.dart';
 import 'achievements_screen.dart';
 import 'profile_screen.dart';
+import 'ad_debug_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -41,6 +42,22 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         ],
       ),
       bottomNavigationBar: _buildBottomNavigationBar(),
+      floatingActionButton: _buildFloatingActionButton(),
+    );
+  }
+
+  Widget _buildFloatingActionButton() {
+    return FloatingActionButton(
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const AdDebugScreen()),
+        );
+      },
+      backgroundColor: GlassmorphismTheme.primaryColor,
+      foregroundColor: Colors.white,
+      tooltip: 'Ad Debug',
+      child: const Icon(Icons.bug_report),
     );
   }
 

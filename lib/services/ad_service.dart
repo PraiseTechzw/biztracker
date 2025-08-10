@@ -1,27 +1,20 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'premium_service.dart';
+import '../config/ad_config.dart';
 
 class AdService {
   static AdService? _instance;
   static AdService get instance => _instance ??= AdService._internal();
   AdService._internal();
 
-  // Real AdMob Ad Unit IDs
-  static const String _bannerAdUnitId =
-      'ca-app-pub-4135089940496442/6305305810'; // Banner Ad
-  static const String _interstitialAdUnitId =
-      'ca-app-pub-4135089940496442/6720270606'; // Interstitial Ad Unit
-  static const String _rewardedAdUnitId =
-      'ca-app-pub-4135089940496442/1408202358'; // Rewarded Ad Unit
-
   bool _isInitialized = false;
   InterstitialAd? _interstitialAd;
   RewardedAd? _rewardedAd;
   int _interstitialLoadAttempts = 0;
   int _rewardedLoadAttempts = 0;
-  static const int _maxFailedLoadAttempts = 3;
 
   // Ad preferences
   bool _adsEnabled = true;
@@ -31,55 +24,51 @@ class AdService {
 
   // Ad frequency control
   int _interstitialAdCounter = 0;
-  static const int _interstitialAdFrequency = 5; // Show every 5 actions
 
   /// Initialize the ad service
   Future<void> initialize() async {
     if (_isInitialized) return;
 
     try {
+      // Configure test devices for development
+      final testDeviceIds = AdConfig.getTestDeviceIds();
+      if (testDeviceIds.isNotEmpty) {
+        MobileAds.instance.updateRequestConfiguration(
+          RequestConfiguration(testDeviceIds: testDeviceIds),
+        );
+      }
+
       await MobileAds.instance.initialize();
       _isInitialized = true;
 
-      // Load initial ads
-      _loadInterstitialAd();
-      _loadRewardedAd();
+      // Load initial ads with delay to ensure proper initialization
+      Future.delayed(AdConfig.adLoadDelay, () {
+        _loadInterstitialAd();
+        _loadRewardedAd();
+      });
 
-      debugPrint('AdService: Initialized successfully');
+      if (AdConfig.enableAdLogging) {
+        debugPrint(
+          'AdService: Initialized successfully (Test Mode: ${AdConfig.isTestMode})',
+        );
+        debugPrint(
+          'AdService: Using ad unit IDs - Banner: ${AdConfig.getBannerAdUnitId()}',
+        );
+      }
     } catch (e) {
       debugPrint('AdService: Failed to initialize - $e');
+      _isInitialized = false;
     }
   }
 
-  /// Get banner ad unit ID based on platform
-  String get bannerAdUnitId {
-    if (Platform.isAndroid) {
-      return _bannerAdUnitId;
-    } else if (Platform.isIOS) {
-      return _bannerAdUnitId; // Use same ID for now, replace with iOS ID
-    }
-    return _bannerAdUnitId;
-  }
+  /// Get banner ad unit ID
+  String get bannerAdUnitId => AdConfig.getBannerAdUnitId();
 
-  /// Get interstitial ad unit ID based on platform
-  String get interstitialAdUnitId {
-    if (Platform.isAndroid) {
-      return _interstitialAdUnitId;
-    } else if (Platform.isIOS) {
-      return _interstitialAdUnitId; // Use same ID for now, replace with iOS ID
-    }
-    return _interstitialAdUnitId;
-  }
+  /// Get interstitial ad unit ID
+  String get interstitialAdUnitId => AdConfig.getInterstitialAdUnitId();
 
-  /// Get rewarded ad unit ID based on platform
-  String get rewardedAdUnitId {
-    if (Platform.isAndroid) {
-      return _rewardedAdUnitId;
-    } else if (Platform.isIOS) {
-      return _rewardedAdUnitId; // Use same ID for now, replace with iOS ID
-    }
-    return _rewardedAdUnitId;
-  }
+  /// Get rewarded ad unit ID
+  String get rewardedAdUnitId => AdConfig.getRewardedAdUnitId();
 
   /// Check if ads are enabled
   bool get adsEnabled => _adsEnabled;
@@ -88,9 +77,11 @@ class AdService {
   Future<bool> get showBannerAds async {
     final shouldShow = await PremiumService.instance.shouldShowAds();
     final result = _adsEnabled && _showBannerAds && shouldShow;
-    debugPrint(
-      'AdService: showBannerAds = $result (adsEnabled: $_adsEnabled, showBannerAds: $_showBannerAds, shouldShow: $shouldShow)',
-    );
+    if (AdConfig.enableAdLogging) {
+      debugPrint(
+        'AdService: showBannerAds = $result (adsEnabled: $_adsEnabled, showBannerAds: $_showBannerAds, shouldShow: $shouldShow)',
+      );
+    }
     return result;
   }
 
@@ -109,99 +100,179 @@ class AdService {
   /// Toggle ads on/off
   void toggleAds(bool enabled) {
     _adsEnabled = enabled;
-    debugPrint('AdService: Ads ${enabled ? 'enabled' : 'disabled'}');
+    if (AdConfig.enableAdLogging) {
+      debugPrint('AdService: Ads ${enabled ? 'enabled' : 'disabled'}');
+    }
   }
 
   /// Toggle banner ads
   void toggleBannerAds(bool enabled) {
     _showBannerAds = enabled;
-    debugPrint('AdService: Banner ads ${enabled ? 'enabled' : 'disabled'}');
+    if (AdConfig.enableAdLogging) {
+      debugPrint('AdService: Banner ads ${enabled ? 'enabled' : 'disabled'}');
+    }
   }
 
   /// Toggle interstitial ads
   void toggleInterstitialAds(bool enabled) {
     _showInterstitialAds = enabled;
-    debugPrint(
-      'AdService: Interstitial ads ${enabled ? 'enabled' : 'disabled'}',
-    );
+    if (AdConfig.enableAdLogging) {
+      debugPrint(
+        'AdService: Interstitial ads ${enabled ? 'enabled' : 'disabled'}',
+      );
+    }
   }
 
   /// Toggle rewarded ads
   void toggleRewardedAds(bool enabled) {
     _showRewardedAds = enabled;
-    debugPrint('AdService: Rewarded ads ${enabled ? 'enabled' : 'disabled'}');
+    if (AdConfig.enableAdLogging) {
+      debugPrint('AdService: Rewarded ads ${enabled ? 'enabled' : 'disabled'}');
+    }
   }
 
-  /// Load interstitial ad
+  /// Load interstitial ad with improved error handling
   void _loadInterstitialAd() async {
     if (!_isInitialized) return;
     final shouldShow = await showInterstitialAds;
     if (!shouldShow) return;
 
-    InterstitialAd.load(
-      adUnitId: interstitialAdUnitId,
-      request: const AdRequest(),
-      adLoadCallback: InterstitialAdLoadCallback(
-        onAdLoaded: (InterstitialAd ad) {
-          _interstitialAd = ad;
-          _interstitialLoadAttempts = 0;
-          debugPrint('AdService: Interstitial ad loaded successfully');
-        },
-        onAdFailedToLoad: (LoadAdError error) {
-          _interstitialLoadAttempts += 1;
-          _interstitialAd = null;
-          debugPrint('AdService: Interstitial ad failed to load: $error');
+    try {
+      InterstitialAd.load(
+        adUnitId: interstitialAdUnitId,
+        request: const AdRequest(),
+        adLoadCallback: InterstitialAdLoadCallback(
+          onAdLoaded: (InterstitialAd ad) {
+            _interstitialAd = ad;
+            _interstitialLoadAttempts = 0;
+            if (AdConfig.enableAdLogging) {
+              debugPrint('AdService: Interstitial ad loaded successfully');
+            }
 
-          if (_interstitialLoadAttempts < _maxFailedLoadAttempts) {
-            _loadInterstitialAd();
-          }
-        },
-      ),
-    );
+            // Set up ad lifecycle callbacks
+            ad.fullScreenContentCallback = FullScreenContentCallback(
+              onAdDismissedFullScreenContent: (ad) {
+                ad.dispose();
+                _interstitialAd = null;
+                _loadInterstitialAd(); // Load next ad
+              },
+              onAdFailedToShowFullScreenContent: (ad, error) {
+                if (AdConfig.enableAdLogging) {
+                  debugPrint(
+                    'AdService: Interstitial ad failed to show: $error',
+                  );
+                }
+                ad.dispose();
+                _interstitialAd = null;
+                _loadInterstitialAd(); // Try to load again
+              },
+            );
+          },
+          onAdFailedToLoad: (LoadAdError error) {
+            _interstitialLoadAttempts += 1;
+            _interstitialAd = null;
+            if (AdConfig.enableAdLogging) {
+              debugPrint('AdService: Interstitial ad failed to load: $error');
+            }
+
+            if (_interstitialLoadAttempts < AdConfig.maxFailedLoadAttempts) {
+              // Exponential backoff for retry
+              final delay = Duration(seconds: _interstitialLoadAttempts * 2);
+              Future.delayed(delay, _loadInterstitialAd);
+            }
+          },
+        ),
+      );
+    } catch (e) {
+      if (AdConfig.enableAdLogging) {
+        debugPrint('AdService: Exception loading interstitial ad: $e');
+      }
+    }
   }
 
-  /// Load rewarded ad
+  /// Load rewarded ad with improved error handling
   void _loadRewardedAd() async {
     if (!_isInitialized) return;
     final shouldShow = await showRewardedAds;
     if (!shouldShow) return;
 
-    RewardedAd.load(
-      adUnitId: rewardedAdUnitId,
-      request: const AdRequest(),
-      rewardedAdLoadCallback: RewardedAdLoadCallback(
-        onAdLoaded: (RewardedAd ad) {
-          _rewardedAd = ad;
-          _rewardedLoadAttempts = 0;
-          debugPrint('AdService: Rewarded ad loaded successfully');
-        },
-        onAdFailedToLoad: (LoadAdError error) {
-          _rewardedLoadAttempts += 1;
-          _rewardedAd = null;
-          debugPrint('AdService: Rewarded ad failed to load: $error');
+    try {
+      RewardedAd.load(
+        adUnitId: rewardedAdUnitId,
+        request: const AdRequest(),
+        rewardedAdLoadCallback: RewardedAdLoadCallback(
+          onAdLoaded: (RewardedAd ad) {
+            _rewardedAd = ad;
+            _rewardedLoadAttempts = 0;
+            if (AdConfig.enableAdLogging) {
+              debugPrint('AdService: Rewarded ad loaded successfully');
+            }
 
-          if (_rewardedLoadAttempts < _maxFailedLoadAttempts) {
-            _loadRewardedAd();
-          }
-        },
-      ),
-    );
+            // Set up ad lifecycle callbacks
+            ad.fullScreenContentCallback = FullScreenContentCallback(
+              onAdDismissedFullScreenContent: (ad) {
+                ad.dispose();
+                _rewardedAd = null;
+                _loadRewardedAd(); // Load next ad
+              },
+              onAdFailedToShowFullScreenContent: (ad, error) {
+                if (AdConfig.enableAdLogging) {
+                  debugPrint('AdService: Rewarded ad failed to show: $error');
+                }
+                ad.dispose();
+                _rewardedAd = null;
+                _loadRewardedAd(); // Try to load again
+              },
+            );
+          },
+          onAdFailedToLoad: (LoadAdError error) {
+            _rewardedLoadAttempts += 1;
+            _rewardedAd = null;
+            if (AdConfig.enableAdLogging) {
+              debugPrint('AdService: Rewarded ad failed to load: $error');
+            }
+
+            if (_rewardedLoadAttempts < AdConfig.maxFailedLoadAttempts) {
+              // Exponential backoff for retry
+              final delay = Duration(seconds: _rewardedLoadAttempts * 2);
+              Future.delayed(delay, _loadRewardedAd);
+            }
+          },
+        ),
+      );
+    } catch (e) {
+      if (AdConfig.enableAdLogging) {
+        debugPrint('AdService: Exception loading rewarded ad: $e');
+      }
+    }
   }
 
   /// Show interstitial ad (with frequency control)
   Future<bool> showInterstitialAd() async {
     if (!_isInitialized || _interstitialAd == null) {
+      if (AdConfig.enableAdLogging) {
+        debugPrint('AdService: No interstitial ad available to show');
+      }
       return false;
     }
+
     final shouldShow = await showInterstitialAds;
     if (!shouldShow) {
+      if (AdConfig.enableAdLogging) {
+        debugPrint('AdService: Interstitial ads disabled');
+      }
       return false;
     }
 
     _interstitialAdCounter++;
 
     // Only show ad every N actions
-    if (_interstitialAdCounter < _interstitialAdFrequency) {
+    if (_interstitialAdCounter < AdConfig.interstitialAdFrequency) {
+      if (AdConfig.enableAdLogging) {
+        debugPrint(
+          'AdService: Interstitial ad counter: $_interstitialAdCounter/${AdConfig.interstitialAdFrequency}',
+        );
+      }
       return false;
     }
 
@@ -209,12 +280,16 @@ class AdService {
 
     try {
       await _interstitialAd!.show();
-      _interstitialAd = null;
-      _loadInterstitialAd(); // Load next ad
-      debugPrint('AdService: Interstitial ad shown successfully');
+      if (AdConfig.enableAdLogging) {
+        debugPrint('AdService: Interstitial ad shown successfully');
+      }
       return true;
     } catch (e) {
-      debugPrint('AdService: Failed to show interstitial ad - $e');
+      if (AdConfig.enableAdLogging) {
+        debugPrint('AdService: Failed to show interstitial ad - $e');
+      }
+      _interstitialAd = null;
+      _loadInterstitialAd(); // Try to load again
       return false;
     }
   }
@@ -225,11 +300,18 @@ class AdService {
     required Function() onFailed,
   }) async {
     if (!_isInitialized || _rewardedAd == null) {
+      if (AdConfig.enableAdLogging) {
+        debugPrint('AdService: No rewarded ad available to show');
+      }
       onFailed();
       return false;
     }
+
     final shouldShow = await showRewardedAds;
     if (!shouldShow) {
+      if (AdConfig.enableAdLogging) {
+        debugPrint('AdService: Rewarded ads disabled');
+      }
       onFailed();
       return false;
     }
@@ -238,39 +320,51 @@ class AdService {
       await _rewardedAd!.show(
         onUserEarnedReward: (AdWithoutView ad, RewardItem reward) {
           onRewarded();
-          debugPrint(
-            'AdService: User earned reward: ${reward.amount} ${reward.type}',
-          );
+          if (AdConfig.enableAdLogging) {
+            debugPrint(
+              'AdService: User earned reward: ${reward.amount} ${reward.type}',
+            );
+          }
         },
       );
 
-      _rewardedAd = null;
-      _loadRewardedAd(); // Load next ad
-      debugPrint('AdService: Rewarded ad shown successfully');
+      if (AdConfig.enableAdLogging) {
+        debugPrint('AdService: Rewarded ad shown successfully');
+      }
       return true;
     } catch (e) {
-      debugPrint('AdService: Failed to show rewarded ad - $e');
+      if (AdConfig.enableAdLogging) {
+        debugPrint('AdService: Failed to show rewarded ad - $e');
+      }
       onFailed();
       return false;
     }
   }
 
-  /// Create banner ad widget
+  /// Create banner ad widget with improved error handling
   Widget createBannerAd() {
-    debugPrint(
-      'AdService: createBannerAd called, initialized: $_isInitialized',
-    );
+    if (AdConfig.enableAdLogging) {
+      debugPrint(
+        'AdService: createBannerAd called, initialized: $_isInitialized',
+      );
+    }
+
     if (!_isInitialized) {
-      debugPrint('AdService: Not initialized, returning empty widget');
+      if (AdConfig.enableAdLogging) {
+        debugPrint('AdService: Not initialized, returning empty widget');
+      }
       return const SizedBox.shrink();
     }
 
     return FutureBuilder<bool>(
       future: showBannerAds,
       builder: (context, snapshot) {
-        debugPrint(
-          'AdService: FutureBuilder snapshot: ${snapshot.connectionState}, data: ${snapshot.data}',
-        );
+        if (AdConfig.enableAdLogging) {
+          debugPrint(
+            'AdService: FutureBuilder snapshot: ${snapshot.connectionState}, data: ${snapshot.data}',
+          );
+        }
+
         if (snapshot.hasData && snapshot.data == true) {
           return SizedBox(
             width: double.infinity,
@@ -282,11 +376,28 @@ class AdService {
                 request: const AdRequest(),
                 listener: BannerAdListener(
                   onAdLoaded: (ad) {
-                    debugPrint('AdService: Banner ad loaded successfully');
+                    if (AdConfig.enableAdLogging) {
+                      debugPrint('AdService: Banner ad loaded successfully');
+                    }
                   },
                   onAdFailedToLoad: (ad, error) {
-                    debugPrint('AdService: Banner ad failed to load: $error');
+                    if (AdConfig.enableAdLogging) {
+                      debugPrint('AdService: Banner ad failed to load: $error');
+                    }
                     ad.dispose();
+
+                    // Don't retry banner ads immediately to avoid spam
+                    // They will be recreated when the widget rebuilds
+                  },
+                  onAdOpened: (ad) {
+                    if (AdConfig.enableAdLogging) {
+                      debugPrint('AdService: Banner ad opened');
+                    }
+                  },
+                  onAdClosed: (ad) {
+                    if (AdConfig.enableAdLogging) {
+                      debugPrint('AdService: Banner ad closed');
+                    }
                   },
                 ),
               )..load(),
@@ -318,10 +429,14 @@ class AdService {
     return await showRewardedAd(
       onRewarded: () {
         // Grant temporary access to premium feature
-        debugPrint('AdService: User earned access to $feature');
+        if (AdConfig.enableAdLogging) {
+          debugPrint('AdService: User earned access to $feature');
+        }
       },
       onFailed: () {
-        debugPrint('AdService: Failed to earn access to $feature');
+        if (AdConfig.enableAdLogging) {
+          debugPrint('AdService: Failed to earn access to $feature');
+        }
       },
     );
   }
@@ -330,7 +445,9 @@ class AdService {
   void dispose() {
     _interstitialAd?.dispose();
     _rewardedAd?.dispose();
-    debugPrint('AdService: Disposed');
+    if (AdConfig.enableAdLogging) {
+      debugPrint('AdService: Disposed');
+    }
   }
 
   /// Get ad statistics
@@ -341,7 +458,25 @@ class AdService {
       'showInterstitialAds': _showInterstitialAds,
       'showRewardedAds': _showRewardedAds,
       'interstitialCounter': _interstitialAdCounter,
-      'interstitialFrequency': _interstitialAdFrequency,
+      'interstitialFrequency': AdConfig.interstitialAdFrequency,
+      'isTestMode': AdConfig.isTestMode,
+      'isInitialized': _isInitialized,
+      'adUnitIds': {
+        'banner': bannerAdUnitId,
+        'interstitial': interstitialAdUnitId,
+        'rewarded': rewardedAdUnitId,
+      },
     };
+  }
+
+  /// Force reload ads
+  void reloadAds() {
+    if (_isInitialized) {
+      _loadInterstitialAd();
+      _loadRewardedAd();
+      if (AdConfig.enableAdLogging) {
+        debugPrint('AdService: Forced reload of ads');
+      }
+    }
   }
 }

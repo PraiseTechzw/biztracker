@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import '../utils/glassmorphism_theme.dart';
 import '../services/premium_service.dart';
 import '../services/ad_service.dart';
+import '../services/payment_service.dart';
+import '../widgets/promotion_banner_widget.dart';
+import '../widgets/payment_method_dialog.dart';
 
 class PremiumScreen extends StatefulWidget {
   const PremiumScreen({super.key});
@@ -13,11 +16,28 @@ class PremiumScreen extends StatefulWidget {
 class _PremiumScreenState extends State<PremiumScreen> {
   Map<String, dynamic>? _premiumStatus;
   bool _isLoading = true;
+  late PaymentService _paymentService;
 
   @override
   void initState() {
     super.initState();
-    _loadPremiumStatus();
+    _paymentService = PaymentService.instance;
+    _initializeServices();
+  }
+
+  Future<void> _initializeServices() async {
+    try {
+      // Initialize payment service
+      await _paymentService.initialize();
+
+      // Load premium status
+      await _loadPremiumStatus();
+    } catch (e) {
+      debugPrint('PremiumScreen: Initialization error - $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _loadPremiumStatus() async {
@@ -62,6 +82,17 @@ class _PremiumScreenState extends State<PremiumScreen> {
                       children: [
                         _buildAppBar(),
                         const SizedBox(height: 24),
+
+                        // Promotion Banner
+                        if (!_premiumStatus!['isPremium'])
+                          PromotionBannerWidget(
+                            onTap: () {
+                              // Scroll to premium plans
+                              // You can implement smooth scrolling here
+                            },
+                          ),
+
+                        const SizedBox(height: 24),
                         _buildCurrentStatus(),
                         const SizedBox(height: 24),
                         _buildRewardedAdsSection(),
@@ -95,6 +126,16 @@ class _PremiumScreenState extends State<PremiumScreen> {
             color: GlassmorphismTheme.textColor,
           ),
         ),
+        const Spacer(),
+        if (!_premiumStatus!['isPremium'])
+          IconButton(
+            onPressed: _restorePurchases,
+            icon: const Icon(
+              Icons.restore,
+              color: GlassmorphismTheme.primaryColor,
+            ),
+            tooltip: 'Restore Purchases',
+          ),
       ],
     );
   }
@@ -342,7 +383,7 @@ class _PremiumScreenState extends State<PremiumScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: isCurrentPlan ? null : () => _purchasePlan(plan),
+              onPressed: isCurrentPlan ? null : () => _showPaymentOptions(plan),
               style: ElevatedButton.styleFrom(
                 backgroundColor: isCurrentPlan
                     ? Colors.grey
@@ -459,16 +500,45 @@ class _PremiumScreenState extends State<PremiumScreen> {
     }
   }
 
-  Future<void> _purchasePlan(PremiumPlan plan) async {
+  void _showPaymentOptions(PremiumPlan plan) {
+    final planType = _getPlanTypeString(plan);
+    final amount = PremiumService.getPlanPrice(plan);
+
+    showDialog(
+      context: context,
+      builder: (context) => PaymentMethodDialog(
+        planType: planType,
+        amount: amount,
+        onSuccess: () {
+          _loadPremiumStatus();
+        },
+      ),
+    );
+  }
+
+  String _getPlanTypeString(PremiumPlan plan) {
+    switch (plan) {
+      case PremiumPlan.monthly:
+        return 'monthly';
+      case PremiumPlan.annual:
+        return 'annual';
+      case PremiumPlan.lifetime:
+        return 'lifetime';
+      case PremiumPlan.free:
+        return 'free';
+    }
+  }
+
+  Future<void> _restorePurchases() async {
     try {
-      final success = await PremiumService.instance.purchasePlan(plan);
+      final success = await _paymentService.restorePurchases();
 
       if (success) {
         await _loadPremiumStatus();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('${_getPlanName(plan)} purchased successfully!'),
+            const SnackBar(
+              content: Text('Purchases restored successfully!'),
               backgroundColor: Colors.green,
             ),
           );
@@ -477,8 +547,8 @@ class _PremiumScreenState extends State<PremiumScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Purchase failed. Please try again.'),
-              backgroundColor: Colors.red,
+              content: Text('No purchases found to restore.'),
+              backgroundColor: Colors.orange,
             ),
           );
         }

@@ -32,6 +32,11 @@ android {
         versionCode flutter.versionCode
         versionName flutter.versionName
         multiDexEnabled true
+        
+        // AdMob configuration
+        manifestPlaceholders = [
+            'admob_app_id': 'ca-app-pub-4135089940496442~6683745617'
+        ]
     }
 
     signingConfigs {
@@ -66,6 +71,13 @@ android {
 dependencies {
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
     implementation 'androidx.webkit:webkit:1.8.0'
+    
+    // Google Play Services for ads
+    implementation 'com.google.android.gms:play-services-ads:22.6.0'
+    implementation 'com.google.android.gms:play-services-basement:18.3.0'
+    
+    // MultiDex support
+    implementation 'androidx.multidex:multidex:2.0.1'
 }
 
 flutter {
