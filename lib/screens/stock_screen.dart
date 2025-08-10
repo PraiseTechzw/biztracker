@@ -43,21 +43,27 @@ class _StockScreenState extends State<StockScreen> {
   }
 
   Future<void> _loadStocks() async {
+    if (!mounted) return;
+
     setState(() {
       isLoading = true;
     });
 
     try {
       final data = await DatabaseService.getAllStocks();
-      setState(() {
-        stocks = data;
-        filteredStocks = data;
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          stocks = data;
+          filteredStocks = data;
+          isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 

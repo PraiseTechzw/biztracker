@@ -1695,7 +1695,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     // Only show chart if there's data
     if (monthlyData.values.any((value) => value > 0)) {
       return ChartWidget(
-        title: 'Monthly Sales Trend (${currentYear})',
+        title: 'Monthly Sales Trend ($currentYear)',
         type: ChartType.line,
         data: monthlyData,
         height: 200,

@@ -54,8 +54,12 @@ class PremiumService {
   Future<bool> shouldShowAds() async {
     final isPremiumUser = await isPremium();
     final hasAdFreePeriod = await this.hasAdFreePeriod();
+    final shouldShow = !isPremiumUser && !hasAdFreePeriod;
 
-    return !isPremiumUser && !hasAdFreePeriod;
+    debugPrint(
+      'PremiumService: shouldShowAds = $shouldShow (isPremium: $isPremiumUser, hasAdFreePeriod: $hasAdFreePeriod)',
+    );
+    return shouldShow;
   }
 
   /// Get current premium plan

@@ -41,6 +41,8 @@ class _CapitalScreenState extends State<CapitalScreen>
   }
 
   Future<void> _loadData() async {
+    if (!mounted) return;
+
     setState(() {
       isLoading = true;
       hasError = false;
@@ -50,17 +52,22 @@ class _CapitalScreenState extends State<CapitalScreen>
     try {
       final capitalData = await DatabaseService.getAllCapitals();
       final expenseData = await DatabaseService.getAllExpenses();
-      setState(() {
-        capitals = capitalData;
-        expenses = expenseData;
-        isLoading = false;
-      });
+
+      if (mounted) {
+        setState(() {
+          capitals = capitalData;
+          expenses = expenseData;
+          isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        isLoading = false;
-        hasError = true;
-        errorMessage = 'Failed to load data: $e';
-      });
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+          hasError = true;
+          errorMessage = 'Failed to load data: $e';
+        });
+      }
     }
   }
 

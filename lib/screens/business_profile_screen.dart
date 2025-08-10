@@ -197,6 +197,10 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen>
             ? null
             : _ownerEmailController.text.trim()
         ..isActive = _isActive
+        ..hasShownFirstSaleAchievement =
+            widget.existingProfile?.hasShownFirstSaleAchievement ?? false
+        ..hasShownProfitMilestoneAchievement =
+            widget.existingProfile?.hasShownProfitMilestoneAchievement ?? false
         ..createdAt = widget.existingProfile?.createdAt ?? DateTime.now()
         ..updatedAt = DateTime.now();
 

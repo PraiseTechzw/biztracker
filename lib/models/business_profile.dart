@@ -36,13 +36,13 @@ class BusinessProfile {
   String? ownerEmail;
 
   // Business Settings
-  late bool isActive;
+  bool isActive = true;
   String? logoPath; // Path to stored logo image
   String? bannerPath; // Path to stored banner image
 
   // Achievement tracking
-  late bool hasShownFirstSaleAchievement;
-  late bool hasShownProfitMilestoneAchievement;
+  bool hasShownFirstSaleAchievement = false;
+  bool hasShownProfitMilestoneAchievement = false;
 
   // Timestamps
   @Index()

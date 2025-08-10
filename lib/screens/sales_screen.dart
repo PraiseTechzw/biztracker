@@ -46,6 +46,8 @@ class _SalesScreenState extends State<SalesScreen>
   }
 
   Future<void> _loadData() async {
+    if (!mounted) return;
+
     setState(() {
       isLoading = true;
     });
@@ -53,6 +55,9 @@ class _SalesScreenState extends State<SalesScreen>
     try {
       final salesData = await DatabaseService.getAllSales();
       final stocksData = await DatabaseService.getAllStocks();
+
+      // Check if widget is still mounted before proceeding
+      if (!mounted) return;
 
       // Calculate totals
       double salesTotal = 0.0;
@@ -86,19 +91,23 @@ class _SalesScreenState extends State<SalesScreen>
       if (paidTotal.isNaN) paidTotal = 0.0;
       if (creditTotal.isNaN) creditTotal = 0.0;
 
-      setState(() {
-        sales = salesData;
-        stocks = stocksData;
-        totalSales = salesTotal;
-        totalProfit = profitTotal;
-        totalPaid = paidTotal;
-        totalCredit = creditTotal;
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          sales = salesData;
+          stocks = stocksData;
+          totalSales = salesTotal;
+          totalProfit = profitTotal;
+          totalPaid = paidTotal;
+          totalCredit = creditTotal;
+          isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 

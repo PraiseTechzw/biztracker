@@ -8,18 +8,13 @@ class AdService {
   static AdService get instance => _instance ??= AdService._internal();
   AdService._internal();
 
-  // Ad IDs - Replace with your actual ad unit IDs
+  // Real AdMob Ad Unit IDs
   static const String _bannerAdUnitId =
-      'ca-app-pub-4135089940496442/6305305810'; // Test ID
+      'ca-app-pub-4135089940496442/6305305810'; // Banner Ad
   static const String _interstitialAdUnitId =
-      'ca-app-pub-4135089940496442/6720270606'; // Test ID
+      'ca-app-pub-4135089940496442/6720270606'; // Interstitial Ad Unit
   static const String _rewardedAdUnitId =
-      'ca-app-pub-4135089940496442/1408202358'; // Test ID
-
-  // Production Ad IDs (Replace with your actual IDs)
-  // static const String _bannerAdUnitId = 'ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX';
-  // static const String _interstitialAdUnitId = 'ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX';
-  // static const String _rewardedAdUnitId = 'ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX';
+      'ca-app-pub-4135089940496442/1408202358'; // Rewarded Ad Unit
 
   bool _isInitialized = false;
   InterstitialAd? _interstitialAd;
@@ -92,7 +87,11 @@ class AdService {
   /// Check if banner ads should be shown
   Future<bool> get showBannerAds async {
     final shouldShow = await PremiumService.instance.shouldShowAds();
-    return _adsEnabled && _showBannerAds && shouldShow;
+    final result = _adsEnabled && _showBannerAds && shouldShow;
+    debugPrint(
+      'AdService: showBannerAds = $result (adsEnabled: $_adsEnabled, showBannerAds: $_showBannerAds, shouldShow: $shouldShow)',
+    );
+    return result;
   }
 
   /// Check if interstitial ads should be shown
@@ -258,31 +257,44 @@ class AdService {
 
   /// Create banner ad widget
   Widget createBannerAd() {
+    debugPrint(
+      'AdService: createBannerAd called, initialized: $_isInitialized',
+    );
     if (!_isInitialized) {
+      debugPrint('AdService: Not initialized, returning empty widget');
       return const SizedBox.shrink();
     }
-    // Note: This will be handled in the UI with FutureBuilder
-    return const SizedBox.shrink();
 
-    return Container(
-      width: double.infinity,
-      height: 50,
-      child: AdWidget(
-        ad: BannerAd(
-          adUnitId: bannerAdUnitId,
-          size: AdSize.banner,
-          request: const AdRequest(),
-          listener: BannerAdListener(
-            onAdLoaded: (ad) {
-              debugPrint('AdService: Banner ad loaded successfully');
-            },
-            onAdFailedToLoad: (ad, error) {
-              debugPrint('AdService: Banner ad failed to load: $error');
-              ad.dispose();
-            },
-          ),
-        )..load(),
-      ),
+    return FutureBuilder<bool>(
+      future: showBannerAds,
+      builder: (context, snapshot) {
+        debugPrint(
+          'AdService: FutureBuilder snapshot: ${snapshot.connectionState}, data: ${snapshot.data}',
+        );
+        if (snapshot.hasData && snapshot.data == true) {
+          return SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: AdWidget(
+              ad: BannerAd(
+                adUnitId: bannerAdUnitId,
+                size: AdSize.banner,
+                request: const AdRequest(),
+                listener: BannerAdListener(
+                  onAdLoaded: (ad) {
+                    debugPrint('AdService: Banner ad loaded successfully');
+                  },
+                  onAdFailedToLoad: (ad, error) {
+                    debugPrint('AdService: Banner ad failed to load: $error');
+                    ad.dispose();
+                  },
+                ),
+              )..load(),
+            ),
+          );
+        }
+        return const SizedBox.shrink();
+      },
     );
   }
 

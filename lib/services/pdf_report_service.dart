@@ -25,7 +25,7 @@ class PdfReportService {
     pw.MemoryImage? logoImage;
     try {
       // Try to load logo using Flutter's asset system
-      final ByteData? logoData = await rootBundle.load(
+      final ByteData logoData = await rootBundle.load(
         'assets/images/logo.png',
       );
       if (logoData != null) {
@@ -107,7 +107,7 @@ class PdfReportService {
     pw.MemoryImage? logoImage;
     try {
       // Try to load logo using Flutter's asset system
-      final ByteData? logoData = await rootBundle.load(
+      final ByteData logoData = await rootBundle.load(
         'assets/images/logo.png',
       );
       if (logoData != null) {
@@ -340,7 +340,7 @@ class PdfReportService {
                               ),
                               child: pw.Center(
                                 child: pw.Image(
-                                  logoImage!,
+                                  logoImage,
                                   width: 80,
                                   height: 80,
                                 ),

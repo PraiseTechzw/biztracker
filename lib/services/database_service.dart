@@ -498,7 +498,22 @@ class DatabaseService {
 
   static Future<BusinessProfile?> getBusinessProfile() async {
     final profiles = await isar.businessProfiles.where().findAll();
-    return profiles.isNotEmpty ? profiles.first : null;
+    if (profiles.isNotEmpty) {
+      final profile = profiles.first;
+      // Migrate existing profile to include new fields
+      if (!profile.hasShownFirstSaleAchievement) {
+        profile.hasShownFirstSaleAchievement = false;
+      }
+      if (!profile.hasShownProfitMilestoneAchievement) {
+        profile.hasShownProfitMilestoneAchievement = false;
+      }
+      if (!profile.isActive) {
+        profile.isActive = true;
+      }
+      await updateBusinessProfile(profile);
+      return profile;
+    }
+    return null;
   }
 
   static Future<void> updateBusinessProfile(BusinessProfile profile) async {

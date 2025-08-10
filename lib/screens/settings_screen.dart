@@ -26,6 +26,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _loadData() async {
+    if (!mounted) return;
+
     setState(() {
       isLoading = true;
     });
@@ -34,15 +36,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final profile = await DatabaseService.getBusinessProfile();
       final stats = await DatabaseService.getBusinessMetrics();
 
-      setState(() {
-        businessProfile = profile;
-        appStats = stats;
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          businessProfile = profile;
+          appStats = stats;
+          isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 

@@ -25,20 +25,26 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
   }
 
   Future<void> _loadExpenses() async {
+    if (!mounted) return;
+
     setState(() {
       isLoading = true;
     });
 
     try {
       final data = await DatabaseService.getAllExpenses();
-      setState(() {
-        expenses = data;
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          expenses = data;
+          isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 

@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
-import 'dart:typed_data';
-import 'dart:math';
 import '../models/business_data.dart';
 import 'database_service.dart';
 
@@ -680,7 +678,7 @@ class NotificationService {
 
   Future<void> removeCustomSchedule(String scheduleId) async {
     _schedules.removeWhere((schedule) => schedule.id == scheduleId);
-    await _notifications.cancel(int.parse(scheduleId));
+    await _notifications.cancel(scheduleId.hashCode.abs());
   }
 
   // Notification Preferences
@@ -939,8 +937,11 @@ class NotificationService {
       ),
     );
 
+    // Generate a numeric ID from the string ID
+    final numericId = schedule.id.hashCode.abs();
+
     await _notifications.zonedSchedule(
-      int.parse(schedule.id),
+      numericId,
       schedule.title,
       schedule.message,
       tz.TZDateTime.from(scheduledTime, tz.local),

@@ -1,7 +1,6 @@
 import 'package:biztracker/screens/capital_screen.dart';
 import 'package:biztracker/screens/sales_screen.dart';
 import 'package:biztracker/screens/stock_screen.dart';
-import 'package:biztracker/screens/reports_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:confetti/confetti.dart';
@@ -10,7 +9,6 @@ import '../utils/toast_utils.dart';
 import '../services/database_service.dart';
 import '../services/notification_service.dart';
 import '../services/engagement_service.dart';
-import '../models/business_data.dart';
 import 'settings_screen.dart';
 import 'notifications_screen.dart';
 
@@ -183,6 +181,8 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Future<void> _loadDashboardData() async {
+    if (!mounted) return;
+
     setState(() {
       isLoading = true;
       hasError = false;
@@ -198,34 +198,42 @@ class _DashboardScreenState extends State<DashboardScreen>
         DatabaseService.getTotalExpenses(),
       ]);
 
+      if (!mounted) return;
+
       final capital = results[0];
       final stockValue = results[1];
       final sales = results[2];
       final expenses = results[3];
       final profit = sales - expenses;
 
-      setState(() {
-        totalCapital = capital;
-        totalStockValue = stockValue;
-        totalSales = sales;
-        totalExpenses = expenses;
-        netProfit = profit;
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          totalCapital = capital;
+          totalStockValue = stockValue;
+          totalSales = sales;
+          totalExpenses = expenses;
+          netProfit = profit;
+          isLoading = false;
+        });
+      }
 
       // Check for achievements and show confetti
-      _checkAchievements(sales, profit);
+      if (mounted) {
+        _checkAchievements(sales, profit);
 
-      // Trigger notification animation if there are unread notifications
-      if (unreadNotifications > 0) {
-        _notificationAnimController.forward();
+        // Trigger notification animation if there are unread notifications
+        if (unreadNotifications > 0) {
+          _notificationAnimController.forward();
+        }
       }
     } catch (e) {
-      setState(() {
-        isLoading = false;
-        hasError = true;
-        errorMessage = 'Failed to load dashboard data: $e';
-      });
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+          hasError = true;
+          errorMessage = 'Failed to load dashboard data: $e';
+        });
+      }
     }
   }
 
@@ -233,14 +241,18 @@ class _DashboardScreenState extends State<DashboardScreen>
   Future<void> _loadNotificationCount() async {
     try {
       final count = NotificationService().getUnreadNotificationCount();
-      setState(() {
-        unreadNotifications = count;
-      });
+      if (mounted) {
+        setState(() {
+          unreadNotifications = count;
+        });
+      }
     } catch (e) {
       print('Error loading notification count: $e');
-      setState(() {
-        unreadNotifications = 0;
-      });
+      if (mounted) {
+        setState(() {
+          unreadNotifications = 0;
+        });
+      }
     }
   }
 
