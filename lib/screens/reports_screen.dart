@@ -100,7 +100,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   Future<void> _exportReport() async {
     try {
-      print('Starting PDF export...');
+      // Starting PDF export...
       if (businessProfile == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -140,7 +140,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
       );
 
       // Generate PDF report
-      print('Calling PdfReportService.generateBusinessReportBytes...');
+      // Calling PdfReportService.generateBusinessReportBytes...
       final pdfBytes = await PdfReportService.generateBusinessReportBytes(
         businessProfile: businessProfile!,
         sales: sales,

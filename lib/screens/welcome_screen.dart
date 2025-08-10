@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../utils/glassmorphism_theme.dart';
+import '../services/database_service.dart';
 import 'business_profile_screen.dart';
+import 'main_navigation_screen.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -22,6 +24,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   late Animation<double> _floatAnimation;
 
   int _currentFeatureIndex = 0;
+  bool _hasExistingProfile = false;
   final List<Map<String, dynamic>> _features = [
     {
       'icon': Icons.analytics,
@@ -43,6 +46,20 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       'description':
           'Monitor your revenue, expenses, and profit margins in real-time',
       'color': GlassmorphismTheme.accentColor,
+    },
+    {
+      'icon': Icons.assessment,
+      'title': 'Comprehensive Reports',
+      'description':
+          'Generate detailed reports and insights for better decision making',
+      'color': GlassmorphismTheme.primaryColor,
+    },
+    {
+      'icon': Icons.notifications,
+      'title': 'Smart Notifications',
+      'description':
+          'Stay updated with important business alerts and reminders',
+      'color': GlassmorphismTheme.secondaryColor,
     },
   ];
 
@@ -89,6 +106,24 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
     _startAnimations();
     _startFeatureRotation();
+    _checkExistingProfile();
+  }
+
+  Future<void> _checkExistingProfile() async {
+    try {
+      final hasProfile = await DatabaseService.hasCompleteBusinessProfile();
+      if (mounted) {
+        setState(() {
+          _hasExistingProfile = hasProfile;
+        });
+      }
+    } catch (e) {
+      // Handle error silently
+    }
+  }
+
+  String _getAppVersion() {
+    return '1.0.0';
   }
 
   void _startAnimations() async {
@@ -102,7 +137,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   }
 
   void _startFeatureRotation() {
-    Future.delayed(const Duration(seconds: 3), () {
+    Future.delayed(const Duration(seconds: 4), () {
       if (mounted) {
         setState(() {
           _currentFeatureIndex = (_currentFeatureIndex + 1) % _features.length;
@@ -174,8 +209,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                                         width: 1,
                                       ),
                                     ),
-                                    child: const Text(
-                                      'v1.0.0',
+                                    child: Text(
+                                      'v${_getAppVersion()}',
                                       style: TextStyle(
                                         fontSize: 12,
                                         color: GlassmorphismTheme
@@ -273,48 +308,133 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                                 position: _slideAnimation,
                                 child: Column(
                                   children: [
-                                    _buildActionButton(
-                                      title: 'Create Business Profile',
-                                      subtitle:
-                                          'Set up your business information',
-                                      icon: Icons.add_business,
-                                      gradient:
-                                          GlassmorphismTheme.primaryGradient,
-                                      onTap: () {
-                                        Navigator.of(context).push(
-                                          PageRouteBuilder(
-                                            pageBuilder:
-                                                (
-                                                  context,
-                                                  animation,
-                                                  secondaryAnimation,
-                                                ) =>
-                                                    const BusinessProfileScreen(),
-                                            transitionsBuilder:
-                                                (
-                                                  context,
-                                                  animation,
-                                                  secondaryAnimation,
-                                                  child,
-                                                ) {
-                                                  return SlideTransition(
-                                                    position: Tween<Offset>(
-                                                      begin: const Offset(
-                                                        1.0,
-                                                        0.0,
-                                                      ),
-                                                      end: Offset.zero,
-                                                    ).animate(animation),
-                                                    child: child,
-                                                  );
-                                                },
-                                            transitionDuration: const Duration(
-                                              milliseconds: 300,
+                                    if (_hasExistingProfile) ...[
+                                      _buildActionButton(
+                                        title: 'Restore Business Profile',
+                                        subtitle:
+                                            'Continue with your existing business',
+                                        icon: Icons.restore,
+                                        gradient: GlassmorphismTheme
+                                            .secondaryGradient,
+                                        onTap: () {
+                                          Navigator.of(context).pushReplacement(
+                                            PageRouteBuilder(
+                                              pageBuilder:
+                                                  (
+                                                    context,
+                                                    animation,
+                                                    secondaryAnimation,
+                                                  ) =>
+                                                      const MainNavigationScreen(),
+                                              transitionsBuilder:
+                                                  (
+                                                    context,
+                                                    animation,
+                                                    secondaryAnimation,
+                                                    child,
+                                                  ) {
+                                                    return FadeTransition(
+                                                      opacity: animation,
+                                                      child: child,
+                                                    );
+                                                  },
+                                              transitionDuration:
+                                                  const Duration(
+                                                    milliseconds: 500,
+                                                  ),
                                             ),
-                                          ),
-                                        );
-                                      },
-                                    ),
+                                          );
+                                        },
+                                      ),
+                                      const SizedBox(height: 16),
+                                      _buildActionButton(
+                                        title: 'Create New Profile',
+                                        subtitle:
+                                            'Start fresh with a new business',
+                                        icon: Icons.add_business,
+                                        gradient:
+                                            GlassmorphismTheme.primaryGradient,
+                                        onTap: () {
+                                          Navigator.of(context).push(
+                                            PageRouteBuilder(
+                                              pageBuilder:
+                                                  (
+                                                    context,
+                                                    animation,
+                                                    secondaryAnimation,
+                                                  ) =>
+                                                      const BusinessProfileScreen(),
+                                              transitionsBuilder:
+                                                  (
+                                                    context,
+                                                    animation,
+                                                    secondaryAnimation,
+                                                    child,
+                                                  ) {
+                                                    return SlideTransition(
+                                                      position: Tween<Offset>(
+                                                        begin: const Offset(
+                                                          1.0,
+                                                          0.0,
+                                                        ),
+                                                        end: Offset.zero,
+                                                      ).animate(animation),
+                                                      child: child,
+                                                    );
+                                                  },
+                                              transitionDuration:
+                                                  const Duration(
+                                                    milliseconds: 300,
+                                                  ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ] else ...[
+                                      _buildActionButton(
+                                        title: 'Create Business Profile',
+                                        subtitle:
+                                            'Set up your business information',
+                                        icon: Icons.add_business,
+                                        gradient:
+                                            GlassmorphismTheme.primaryGradient,
+                                        onTap: () {
+                                          Navigator.of(context).push(
+                                            PageRouteBuilder(
+                                              pageBuilder:
+                                                  (
+                                                    context,
+                                                    animation,
+                                                    secondaryAnimation,
+                                                  ) =>
+                                                      const BusinessProfileScreen(),
+                                              transitionsBuilder:
+                                                  (
+                                                    context,
+                                                    animation,
+                                                    secondaryAnimation,
+                                                    child,
+                                                  ) {
+                                                    return SlideTransition(
+                                                      position: Tween<Offset>(
+                                                        begin: const Offset(
+                                                          1.0,
+                                                          0.0,
+                                                        ),
+                                                        end: Offset.zero,
+                                                      ).animate(animation),
+                                                      child: child,
+                                                    );
+                                                  },
+                                              transitionDuration:
+                                                  const Duration(
+                                                    milliseconds: 300,
+                                                  ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ],
                                     const SizedBox(height: 16),
                                   ],
                                 ),
@@ -356,9 +476,9 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                                       ],
                                     ),
                                     const SizedBox(height: 8),
-                                    const Text(
-                                      '© 2024 BizTracker. All rights reserved.',
-                                      style: TextStyle(
+                                    Text(
+                                      '© ${DateTime.now().year} BizTracker. All rights reserved.',
+                                      style: const TextStyle(
                                         fontSize: 10,
                                         color: GlassmorphismTheme
                                             .textSecondaryColor,
@@ -552,7 +672,20 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 ],
               ),
             ),
-            // Removed trailing arrow icon for compactness and to avoid overflow
+            // Add trailing arrow icon to show button is pressable
+            Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: GlassmorphismTheme.textSecondaryColor,
+              ),
+            ),
           ],
         ),
       ),

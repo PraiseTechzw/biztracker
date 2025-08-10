@@ -53,6 +53,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  String _getAppVersion() {
+    return '1.0.0';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1032,12 +1036,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           'About BizTracker',
           style: TextStyle(color: GlassmorphismTheme.textColor),
         ),
-        content: const Column(
+        content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'BizTracker v1.0.0',
+              'BizTracker v${_getAppVersion()}',
               style: TextStyle(
                 color: GlassmorphismTheme.textColor,
                 fontWeight: FontWeight.bold,

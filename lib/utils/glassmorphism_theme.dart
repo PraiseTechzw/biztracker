@@ -16,6 +16,12 @@ class GlassmorphismTheme {
     end: Alignment.bottomRight,
   );
 
+  static const LinearGradient secondaryGradient = LinearGradient(
+    colors: [secondaryColor, accentColor],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
   static const LinearGradient accentGradient = LinearGradient(
     colors: [accentColor, Color(0xFF0891B2)],
     begin: Alignment.topLeft,
