@@ -4,7 +4,7 @@ import '../services/ad_service.dart';
 import 'profile_update_screen.dart';
 import 'premium_screen.dart';
 import '../models/business_profile.dart';
-import '../services/database_service.dart';
+import '../services/sqlite_database_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -27,7 +27,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() {
       _isLoading = true;
     });
-    final profile = await DatabaseService.getBusinessProfile();
+    final profile = await SQLiteDatabaseService().getFirstBusinessProfile();
     setState(() {
       _profile = profile;
       _isLoading = false;

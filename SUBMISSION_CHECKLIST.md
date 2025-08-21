@@ -138,7 +138,7 @@
 - **Min SDK**: 21 (Android 5.0)
 - **Permissions**: 4 (Camera, Storage, Notifications, Vibration)
 - **Dependencies**: 20+ Flutter packages
-- **Database**: Isar (local NoSQL)
+- **Database**: SQLite (local relational database)
 
 ## 🎯 Marketing Strategy
 

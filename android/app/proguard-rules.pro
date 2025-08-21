@@ -31,7 +31,7 @@
 # AdMob specific rules
 -keep class com.google.android.gms.ads.** { *; }
 
-# Isar database rules
+# SQLite database rules
 -keep class com.appixia.biztracker.biztracker.models.** { *; }
 -keep class com.appixia.biztracker.biztracker.services.** { *; }
 

@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import '../services/sqlite_database_service.dart';
+import '../models/business_data_sqlite.dart';
 import '../utils/glassmorphism_theme.dart';
 import '../utils/toast_utils.dart';
-import '../services/database_service.dart';
+import '../utils/formatters.dart';
+import '../utils/search_filter_utils.dart';
 import '../services/notification_service.dart';
 import '../services/engagement_service.dart';
 import '../services/ad_service.dart';
-import '../models/business_data.dart';
-import '../utils/search_filter_utils.dart';
 import 'barcode_scanner_screen.dart';
 
 class StockScreen extends StatefulWidget {
@@ -50,7 +52,7 @@ class _StockScreenState extends State<StockScreen> {
     });
 
     try {
-      final data = await DatabaseService.getAllStocks();
+      final data = await SQLiteDatabaseService().getAllStocks();
       if (mounted) {
         setState(() {
           stocks = data;
@@ -273,8 +275,8 @@ class _StockScreenState extends State<StockScreen> {
               );
               if (result != null) {
                 // Use database service to find stock by barcode
-                final stockWithBarcode =
-                    await DatabaseService.getStockByBarcode(result);
+                final stockWithBarcode = await SQLiteDatabaseService()
+                    .getStockByBarcode(result);
 
                 if (stockWithBarcode != null) {
                   setState(() {
@@ -1166,31 +1168,34 @@ class _StockScreenState extends State<StockScreen> {
 
                                 if (stock == null) {
                                   // Add new stock
-                                  final newStock = Stock()
-                                    ..name = nameController.text
-                                    ..description = descriptionController.text
-                                    ..category = categoryController.text
-                                    ..barcode = barcodeController.text.isEmpty
+                                  final newStock = Stock(
+                                    name: nameController.text,
+                                    description: descriptionController.text,
+                                    category: categoryController.text,
+                                    barcode: barcodeController.text.isEmpty
                                         ? null
-                                        : barcodeController.text
-                                    ..supplierName =
+                                        : barcodeController.text,
+                                    supplierName:
                                         supplierNameController.text.isEmpty
                                         ? null
-                                        : supplierNameController.text
-                                    ..supplierContact =
+                                        : supplierNameController.text,
+                                    supplierContact:
                                         supplierContactController.text.isEmpty
                                         ? null
-                                        : supplierContactController.text
-                                    ..imagePath = selectedImagePath
-                                    ..quantity = quantity
-                                    ..unitCostPrice = costPrice
-                                    ..unitSellingPrice = sellingPrice
-                                    ..totalValue = totalValue
-                                    ..reorderLevel = reorderLevel
-                                    ..createdAt = DateTime.now()
-                                    ..updatedAt = DateTime.now();
+                                        : supplierContactController.text,
+                                    imagePath: selectedImagePath,
+                                    quantity: quantity,
+                                    unitCostPrice: costPrice,
+                                    unitSellingPrice: sellingPrice,
+                                    totalValue: totalValue,
+                                    reorderLevel: reorderLevel,
+                                    createdAt: DateTime.now(),
+                                    updatedAt: DateTime.now(),
+                                  );
 
-                                  await DatabaseService.addStock(newStock);
+                                  await SQLiteDatabaseService().insertStock(
+                                    newStock,
+                                  );
 
                                   // Record activity for engagement tracking
                                   EngagementService().recordActivity();
@@ -1231,7 +1236,9 @@ class _StockScreenState extends State<StockScreen> {
                                   stock.reorderLevel = reorderLevel;
                                   stock.updatedAt = DateTime.now();
 
-                                  await DatabaseService.updateStock(stock);
+                                  await SQLiteDatabaseService().updateStock(
+                                    stock,
+                                  );
 
                                   // Check for low stock notification after update
                                   if (quantity <= reorderLevel) {
@@ -1485,7 +1492,7 @@ class _StockScreenState extends State<StockScreen> {
           ),
           TextButton(
             onPressed: () async {
-              await DatabaseService.deleteStock(stock.id);
+              await SQLiteDatabaseService().deleteStock(stock.id);
               Navigator.pop(context);
               _loadStocks();
             },

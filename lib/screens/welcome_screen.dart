@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../utils/glassmorphism_theme.dart';
-import '../services/database_service.dart';
+import '../services/sqlite_database_service.dart';
 import 'business_profile_screen.dart';
 import 'main_navigation_screen.dart';
 
@@ -111,7 +111,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
   Future<void> _checkExistingProfile() async {
     try {
-      final hasProfile = await DatabaseService.hasCompleteBusinessProfile();
+      final hasProfile = await SQLiteDatabaseService()
+          .hasCompleteBusinessProfile();
       if (mounted) {
         setState(() {
           _hasExistingProfile = hasProfile;

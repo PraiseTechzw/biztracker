@@ -1,12 +1,12 @@
-import 'database_service.dart';
+import 'sqlite_database_service.dart';
 
 class AnalyticsService {
   // Get business summary
   static Future<Map<String, double>> getBusinessSummary() async {
-    final capital = await DatabaseService.getTotalCapital();
-    final stockValue = await DatabaseService.getTotalStockValue();
-    final sales = await DatabaseService.getTotalSales();
-    final expenses = await DatabaseService.getTotalExpenses();
+    final capital = await SQLiteDatabaseService().getTotalCapital();
+    final stockValue = await SQLiteDatabaseService().getTotalStockValue();
+    final sales = await SQLiteDatabaseService().getTotalSales();
+    final expenses = await SQLiteDatabaseService().getTotalSales();
     final netProfit = sales - expenses;
 
     return {
@@ -19,7 +19,7 @@ class AnalyticsService {
     };
   }
 
-    // Get monthly trends
+  // Get monthly trends
   static Future<Map<String, dynamic>> getMonthlyTrends() async {
     final now = DateTime.now();
     final months = <String>[];
@@ -30,12 +30,15 @@ class AnalyticsService {
     for (int i = 5; i >= 0; i--) {
       final month = DateTime(now.year, now.month - i, 1);
       months.add('${month.month}/${month.year}');
-      
+
       final startDate = DateTime(month.year, month.month, 1);
       final endDate = DateTime(month.year, month.month + 1, 0);
-      
-      final profit = await DatabaseService.calculateProfit(startDate, endDate);
-      
+
+      final profit = await SQLiteDatabaseService().calculateProfit(
+        startDate,
+        endDate,
+      );
+
       salesData.add(profit.revenue);
       expensesData.add(profit.expenses);
       profitData.add(profit.netProfit);
@@ -51,7 +54,7 @@ class AnalyticsService {
 
   // Get top selling products
   static Future<List<Map<String, dynamic>>> getTopSellingProducts() async {
-    final sales = await DatabaseService.getAllSales();
+    final sales = await SQLiteDatabaseService().getAllSales();
     final productSales = <String, double>{};
 
     for (final sale in sales) {
@@ -70,7 +73,7 @@ class AnalyticsService {
 
   // Get expense categories breakdown
   static Future<List<Map<String, dynamic>>> getExpenseCategories() async {
-    final expenses = await DatabaseService.getAllExpenses();
+    final expenses = await SQLiteDatabaseService().getAllExpenses();
     final categoryExpenses = <String, double>{};
 
     for (final expense in expenses) {

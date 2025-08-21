@@ -3,7 +3,7 @@ import 'package:intl/intl.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import '../utils/glassmorphism_theme.dart';
-import '../services/database_service.dart';
+import '../services/sqlite_database_service.dart';
 import '../models/business_profile.dart';
 import 'notifications_screen.dart';
 import 'welcome_screen.dart';
@@ -35,8 +35,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
 
     try {
-      final profile = await DatabaseService.getBusinessProfile();
-      final stats = await DatabaseService.getBusinessMetrics();
+      final profile = await SQLiteDatabaseService().getFirstBusinessProfile();
+      final stats = await SQLiteDatabaseService().getBusinessMetrics();
 
       if (mounted) {
         setState(() {
@@ -499,12 +499,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       );
 
       // Get all data from database
-      final sales = await DatabaseService.getAllSales();
-      final expenses = await DatabaseService.getAllExpenses();
-      final stocks = await DatabaseService.getAllStocks();
-      final capitals = await DatabaseService.getAllCapitals();
-      final profits = await DatabaseService.getAllProfits();
-      final profile = await DatabaseService.getBusinessProfile();
+      final sales = await SQLiteDatabaseService().getAllSales();
+      final expenses = await SQLiteDatabaseService().getAllExpenses();
+      final stocks = await SQLiteDatabaseService().getAllStocks();
+      final capitals = await SQLiteDatabaseService().getAllCapitals();
+      final profits = await SQLiteDatabaseService().getAllProfits();
+      final profile = await SQLiteDatabaseService().getFirstBusinessProfile();
 
       // Create export data structure
       final exportData = {
@@ -1085,7 +1085,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
 
       // Clear all business data
-      await DatabaseService.clearAllBusinessData();
+      await SQLiteDatabaseService().clearAllBusinessData();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1655,7 +1655,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
 
       // Clear only business profile
-      await DatabaseService.clearBusinessProfile();
+      await SQLiteDatabaseService().clearBusinessProfile();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../utils/glassmorphism_theme.dart';
 import '../models/business_profile.dart';
-import '../services/database_service.dart';
+import '../services/sqlite_database_service.dart';
 import 'business_profile_screen.dart';
 
 class ProfileUpdateScreen extends StatefulWidget {
@@ -23,7 +23,7 @@ class _ProfileUpdateScreenState extends State<ProfileUpdateScreen> {
 
   Future<void> _loadCurrentProfile() async {
     try {
-      final profile = await DatabaseService.getBusinessProfile();
+      final profile = await SQLiteDatabaseService().getFirstBusinessProfile();
       setState(() {
         _currentProfile = profile;
         _isLoading = false;

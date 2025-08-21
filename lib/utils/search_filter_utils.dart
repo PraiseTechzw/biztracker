@@ -1,4 +1,4 @@
-import '../models/business_data.dart';
+import '../models/business_data_sqlite.dart';
 
 class SearchFilterUtils {
   // Search stocks by name, description, category, supplier, or barcode

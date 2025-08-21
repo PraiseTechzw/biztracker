@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
-import '../models/business_data.dart';
-import 'database_service.dart';
+import '../models/business_data_sqlite.dart';
+import 'sqlite_database_service.dart';
 
 class NotificationItem {
   final String id;

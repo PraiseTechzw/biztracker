@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'database_service.dart';
+import 'sqlite_database_service.dart';
 import 'notification_service.dart';
 
 class Achievement {

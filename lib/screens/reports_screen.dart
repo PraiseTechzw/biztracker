@@ -7,10 +7,10 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:open_file/open_file.dart';
 import '../utils/glassmorphism_theme.dart';
-import '../services/database_service.dart';
+import '../services/sqlite_database_service.dart';
 import '../services/pdf_report_service.dart';
 import '../services/ad_service.dart';
-import '../models/business_data.dart';
+import '../models/business_data_sqlite.dart';
 import '../widgets/chart_widget.dart';
 
 class ReportsScreen extends StatefulWidget {
@@ -54,12 +54,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
     try {
       final results = await Future.wait([
-        DatabaseService.getAllProfits(),
-        DatabaseService.getAllSales(),
-        DatabaseService.getAllExpenses(),
-        DatabaseService.getAllStocks(),
-        DatabaseService.getAllCapitals(),
-        DatabaseService.getBusinessProfile(),
+        SQLiteDatabaseService().getAllProfits(),
+        SQLiteDatabaseService().getAllSales(),
+        SQLiteDatabaseService().getAllExpenses(),
+        SQLiteDatabaseService().getAllStocks(),
+        SQLiteDatabaseService().getAllCapitals(),
+        SQLiteDatabaseService().getFirstBusinessProfile(),
       ]);
 
       setState(() {
@@ -88,8 +88,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
     });
 
     try {
-      final profit = await DatabaseService.calculateProfit(startDate, endDate);
-      await DatabaseService.saveProfit(profit);
+      final profit = await SQLiteDatabaseService().calculateProfit(
+        startDate,
+        endDate,
+      );
+      await SQLiteDatabaseService().saveProfit(profit);
       await _loadAllData();
     } catch (e) {
       setState(() {

@@ -1,8 +1,8 @@
 # BizTracker Production Configuration
 
 ## Version Information
-- **App Version**: 1.0.0
-- **Build Number**: 1
+- **App Version**: 1.0.1
+- **Build Number**: 2
 - **Target SDK**: Latest stable
 - **Min SDK**: 23 (Android 6.0)
 
@@ -15,12 +15,14 @@
 - **Debug Logging**: Disabled
 - **Performance Optimization**: Maximum
 - **Security**: Enhanced
+- **Multi-Architecture Support**: Enabled
 
 ### 🔧 Build Configuration
 - **Release Mode**: Full optimization
 - **Signing**: Release keystore required
-- **Target Platforms**: android-arm64
+- **Target Platforms**: Multi-architecture (armeabi-v7a, arm64-v8a, x86_64)
 - **Output Formats**: APK + App Bundle (.aab)
+- **Universal APK**: Enabled for compatibility
 
 ## Play Store Requirements
 
@@ -28,11 +30,13 @@
 - **File**: `build/app/outputs/bundle/release/app-release.aab`
 - **Size**: Optimized for Play Store
 - **Format**: Android App Bundle (recommended)
+- **Architecture Support**: Multi-ABI for maximum compatibility
 
 ### 📦 APK (Alternative)
 - **File**: `build/app/outputs/flutter-apk/app-release.apk`
 - **Size**: Larger than bundle
-- **Format**: Traditional APK
+- **Format**: Universal APK with all architectures
+- **Compatibility**: Ensures existing users can upgrade
 
 ## Build Commands
 
@@ -48,10 +52,15 @@ flutter clean
 flutter pub get
 flutter packages pub run build_runner build --delete-conflicting-outputs
 
-# Build for production
+# Build for production (multi-architecture)
 flutter build appbundle --release
 # or
 flutter build apk --release
+```
+
+### Rollback Build (if needed)
+```bash
+./rollback_release.sh <version>
 ```
 
 ## Pre-Release Checklist
@@ -66,10 +75,26 @@ flutter build apk --release
 - [ ] Privacy policy updated
 - [ ] Terms of service ready
 - [ ] App store listing prepared
+- [ ] Multi-architecture support verified
+- [ ] Compatibility with existing users confirmed
 
 ## Post-Release
 
 - [ ] Monitor crash reports
 - [ ] Track user feedback
 - [ ] Monitor performance metrics
-- [ ] Plan next version update 
+- [ ] Plan next version update
+- [ ] Verify upgrade path for existing users
+
+## Troubleshooting
+
+### Common Issues
+1. **Upgrade Compatibility Error**: Ensure multi-architecture support
+2. **AAB Rollout Issues**: Use universal APK as fallback
+3. **Version Conflicts**: Check version codes and names
+
+### Rollback Procedure
+1. Use rollback script: `./rollback_release.sh <version>`
+2. Upload rollback bundle to Play Console
+3. Set as active release
+4. Investigate original issue 

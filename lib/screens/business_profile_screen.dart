@@ -146,63 +146,63 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen>
     });
 
     try {
-      final profile = BusinessProfile()
-        ..businessName = _businessNameController.text.trim()
-        ..businessType = _selectedBusinessType
-        ..businessDescription =
-            _businessDescriptionController.text.trim().isEmpty
+      final profile = BusinessProfile(
+        businessName: _businessNameController.text.trim(),
+        businessType: _selectedBusinessType,
+        businessDescription: _businessDescriptionController.text.trim().isEmpty
             ? null
-            : _businessDescriptionController.text.trim()
-        ..phoneNumber = _phoneController.text.trim().isEmpty
+            : _businessDescriptionController.text.trim(),
+        phoneNumber: _phoneController.text.trim().isEmpty
             ? null
-            : _phoneController.text.trim()
-        ..email = _emailController.text.trim().isEmpty
+            : _phoneController.text.trim(),
+        email: _emailController.text.trim().isEmpty
             ? null
-            : _emailController.text.trim()
-        ..website = _websiteController.text.trim().isEmpty
+            : _emailController.text.trim(),
+        website: _websiteController.text.trim().isEmpty
             ? null
-            : _websiteController.text.trim()
-        ..address = _addressController.text.trim().isEmpty
+            : _websiteController.text.trim(),
+        address: _addressController.text.trim().isEmpty
             ? null
-            : _addressController.text.trim()
-        ..city = _cityController.text.trim().isEmpty
+            : _addressController.text.trim(),
+        city: _cityController.text.trim().isEmpty
             ? null
-            : _cityController.text.trim()
-        ..state = _stateController.text.trim().isEmpty
+            : _cityController.text.trim(),
+        state: _stateController.text.trim().isEmpty
             ? null
-            : _stateController.text.trim()
-        ..country = _countryController.text.trim().isEmpty
+            : _stateController.text.trim(),
+        country: _countryController.text.trim().isEmpty
             ? null
-            : _countryController.text.trim()
-        ..postalCode = _postalCodeController.text.trim().isEmpty
+            : _countryController.text.trim(),
+        postalCode: _postalCodeController.text.trim().isEmpty
             ? null
-            : _postalCodeController.text.trim()
-        ..taxId = _taxIdController.text.trim().isEmpty
+            : _postalCodeController.text.trim(),
+        taxId: _taxIdController.text.trim().isEmpty
             ? null
-            : _taxIdController.text.trim()
-        ..registrationNumber = _registrationNumberController.text.trim().isEmpty
+            : _taxIdController.text.trim(),
+        registrationNumber: _registrationNumberController.text.trim().isEmpty
             ? null
-            : _registrationNumberController.text.trim()
-        ..industry = _industryController.text.trim().isEmpty
+            : _registrationNumberController.text.trim(),
+        industry: _industryController.text.trim().isEmpty
             ? null
-            : _industryController.text.trim()
-        ..currency = _selectedCurrency
-        ..ownerName = _ownerNameController.text.trim().isEmpty
+            : _industryController.text.trim(),
+        currency: _selectedCurrency,
+        ownerName: _ownerNameController.text.trim().isEmpty
             ? null
-            : _ownerNameController.text.trim()
-        ..ownerPhone = _ownerPhoneController.text.trim().isEmpty
+            : _ownerNameController.text.trim(),
+        ownerPhone: _ownerPhoneController.text.trim().isEmpty
             ? null
-            : _ownerPhoneController.text.trim()
-        ..ownerEmail = _ownerEmailController.text.trim().isEmpty
+            : _ownerPhoneController.text.trim(),
+        ownerEmail: _ownerEmailController.text.trim().isEmpty
             ? null
-            : _ownerEmailController.text.trim()
-        ..isActive = _isActive
-        ..hasShownFirstSaleAchievement =
-            widget.existingProfile?.hasShownFirstSaleAchievement ?? false
-        ..hasShownProfitMilestoneAchievement =
-            widget.existingProfile?.hasShownProfitMilestoneAchievement ?? false
-        ..createdAt = widget.existingProfile?.createdAt ?? DateTime.now()
-        ..updatedAt = DateTime.now();
+            : _ownerEmailController.text.trim(),
+        isActive: _isActive,
+        hasShownFirstSaleAchievement:
+            widget.existingProfile?.hasShownFirstSaleAchievement ?? false,
+        hasShownProfitMilestoneAchievement:
+            widget.existingProfile?.hasShownProfitMilestoneAchievement ?? false,
+        createdAt: widget.existingProfile?.createdAt ?? DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
 
       await DatabaseService.saveBusinessProfile(profile);
 

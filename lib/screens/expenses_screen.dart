@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import '../services/sqlite_database_service.dart';
+import '../models/business_data_sqlite.dart';
 import '../utils/glassmorphism_theme.dart';
-import '../services/database_service.dart';
-import '../services/notification_service.dart';
-import '../services/engagement_service.dart';
-import '../services/ad_service.dart';
-import '../models/business_data.dart';
+import '../utils/toast_utils.dart';
+import '../utils/formatters.dart';
 
 class ExpensesScreen extends StatefulWidget {
   const ExpensesScreen({super.key});
@@ -32,7 +32,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
     });
 
     try {
-      final data = await DatabaseService.getAllExpenses();
+      final data = await SQLiteDatabaseService().getAllExpenses();
       if (mounted) {
         setState(() {
           expenses = data;
@@ -615,28 +615,28 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                         child: ElevatedButton(
                           onPressed: () async {
                             if (formKey.currentState!.validate()) {
-                              final expense = Expense()
-                                ..category = categoryController.text
-                                ..description = descriptionController.text
-                                ..amount = double.parse(amountController.text)
-                                ..paymentMethod = paymentMethodController.text
-                                ..expenseDate = selectedDate
-                                ..createdAt = DateTime.now();
+                              final expense = Expense(
+                                category: categoryController.text,
+                                description: descriptionController.text,
+                                amount: double.parse(amountController.text),
+                                paymentMethod: paymentMethodController.text,
+                                expenseDate: selectedDate,
+                              );
 
-                              await DatabaseService.addExpense(expense);
+                              await SQLiteDatabaseService().addExpense(expense);
 
                               // Show notification for the expense
-                              await NotificationService()
-                                  .showExpenseNotification(expense);
+                              // await NotificationService()
+                              //     .showExpenseNotification(expense);
 
                               // Record activity for engagement tracking
-                              EngagementService().recordActivity();
-                              EngagementService().checkForNewAchievements();
+                              // EngagementService().recordActivity();
+                              // EngagementService().checkForNewAchievements();
 
                               // Show interstitial ad for expense action
-                              AdService.instance.showAdForAction(
-                                'expense_added',
-                              );
+                              // AdService.instance.showAdForAction(
+                              //   'expense_added',
+                              // );
 
                               Navigator.pop(context);
                               _loadExpenses();
@@ -805,7 +805,9 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                                   paymentMethodController.text;
                               expense.expenseDate = selectedDate;
 
-                              await DatabaseService.updateExpense(expense);
+                              await SQLiteDatabaseService().updateExpense(
+                                expense,
+                              );
 
                               Navigator.pop(context);
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -875,7 +877,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
             ElevatedButton(
               onPressed: () async {
                 try {
-                  await DatabaseService.deleteExpense(expense.id);
+                  await SQLiteDatabaseService().deleteExpense(expense.id);
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(

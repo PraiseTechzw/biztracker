@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../utils/glassmorphism_theme.dart';
 import '../services/database_service.dart';
-import '../models/business_data.dart';
+import '../models/business_data_sqlite.dart';
 
 class CapitalScreen extends StatefulWidget {
   const CapitalScreen({super.key});
@@ -944,14 +944,13 @@ class _CapitalScreenState extends State<CapitalScreen>
                               if (formKey.currentState!.validate()) {
                                 setModalState(() => localIsLoading = true);
                                 try {
-                                  final capital = Capital()
-                                    ..amount = double.parse(
-                                      amountController.text,
-                                    )
-                                    ..description = descriptionController.text
-                                    ..type = selectedType
-                                    ..date = selectedDate
-                                    ..createdAt = DateTime.now();
+                                  final capital = Capital(
+                                    amount: double.parse(amountController.text),
+                                    description: descriptionController.text,
+                                    type: selectedType,
+                                    date: selectedDate,
+                                    createdAt: DateTime.now(),
+                                  );
                                   await DatabaseService.addCapital(capital);
                                   Navigator.pop(context);
                                   _loadData(); // Refresh the list
@@ -1748,13 +1747,14 @@ class _CapitalScreenState extends State<CapitalScreen>
                             if (formKey.currentState!.validate()) {
                               setModalState(() => localIsLoading = true);
                               try {
-                                final expense = Expense()
-                                  ..category = categoryController.text
-                                  ..description = descriptionController.text
-                                  ..amount = double.parse(amountController.text)
-                                  ..paymentMethod = paymentMethodController.text
-                                  ..expenseDate = selectedDate
-                                  ..createdAt = DateTime.now();
+                                final expense = Expense(
+                                  category: categoryController.text,
+                                  description: descriptionController.text,
+                                  amount: double.parse(amountController.text),
+                                  paymentMethod: paymentMethodController.text,
+                                  expenseDate: selectedDate,
+                                  createdAt: DateTime.now(),
+                                );
                                 await DatabaseService.addExpense(expense);
                                 Navigator.pop(context);
                                 _loadData();

@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_blur/flutter_blur.dart';
 import 'dart:io';
-import 'package:confetti/confetti.dart';
+import '../services/sqlite_database_service.dart';
+import '../models/business_data_sqlite.dart';
 import '../utils/glassmorphism_theme.dart';
 import '../utils/toast_utils.dart';
-import '../services/database_service.dart';
+import '../utils/formatters.dart';
+import '../utils/search_filter_utils.dart';
 import '../services/notification_service.dart';
 import '../services/engagement_service.dart';
 import '../services/ad_service.dart';
-import '../models/business_data.dart';
 import 'barcode_scanner_screen.dart';
 
 class SalesScreen extends StatefulWidget {
@@ -20,41 +23,46 @@ class SalesScreen extends StatefulWidget {
 
 class _SalesScreenState extends State<SalesScreen>
     with TickerProviderStateMixin {
-  List<Sale> sales = [];
-  List<Stock> stocks = [];
-  bool isLoading = true;
-  double totalSales = 0.0;
-  double totalProfit = 0.0;
-  double totalPaid = 0.0;
-  double totalCredit = 0.0;
-  String selectedPaymentFilter = 'All';
-  late ConfettiController _confettiController;
+  List<Sale> _sales = [];
+  List<Stock> _stocks = [];
+  List<Sale> _filteredSales = [];
+  final TextEditingController _searchController = TextEditingController();
+  final TextEditingController _productNameController = TextEditingController();
+  final TextEditingController _quantityController = TextEditingController();
+  final TextEditingController _unitPriceController = TextEditingController();
+  final TextEditingController _customerNameController = TextEditingController();
+  final TextEditingController _customerPhoneController =
+      TextEditingController();
+  final TextEditingController _notesController = TextEditingController();
+  final TextEditingController _amountPaidController = TextEditingController();
+  String _selectedPaymentStatus = 'paid';
+  String _selectedPaymentMethod = 'cash';
+  DateTime _selectedDate = DateTime.now();
+  Stock? _selectedStock;
+  bool _isLoading = true;
+  String _selectedFilter = 'all';
+  DateTime? _startDate;
+  DateTime? _endDate;
 
   @override
   void initState() {
     super.initState();
-    _confettiController = ConfettiController(
-      duration: const Duration(seconds: 3),
-    );
     _loadData();
   }
 
   @override
   void dispose() {
-    _confettiController.dispose();
     super.dispose();
   }
 
   Future<void> _loadData() async {
-    if (!mounted) return;
-
     setState(() {
-      isLoading = true;
+      _isLoading = true;
     });
 
     try {
-      final salesData = await DatabaseService.getAllSales();
-      final stocksData = await DatabaseService.getAllStocks();
+      final salesData = await SQLiteDatabaseService().getAllSales();
+      final stocksData = await SQLiteDatabaseService().getAllStocks();
 
       // Check if widget is still mounted before proceeding
       if (!mounted) return;
@@ -76,9 +84,17 @@ class _SalesScreenState extends State<SalesScreen>
         // Find corresponding stock to calculate profit
         final stock = stocksData.firstWhere(
           (stock) => stock.name.toLowerCase() == sale.productName.toLowerCase(),
-          orElse: () => Stock()
-            ..unitCostPrice = 0
-            ..unitSellingPrice = sale.unitPrice,
+          orElse: () => Stock(
+            name: sale.productName,
+            category: 'Unknown',
+            description: 'Auto-generated for profit calculation',
+            quantity: 0,
+            unitCostPrice: 0,
+            unitSellingPrice: sale.unitPrice,
+            reorderLevel: 0,
+            totalValue: 0,
+            createdAt: DateTime.now(),
+          ),
         );
         final costPrice = stock.unitCostPrice;
         final profitPerUnit = sale.unitPrice - costPrice;
@@ -93,34 +109,35 @@ class _SalesScreenState extends State<SalesScreen>
 
       if (mounted) {
         setState(() {
-          sales = salesData;
-          stocks = stocksData;
-          totalSales = salesTotal;
-          totalProfit = profitTotal;
-          totalPaid = paidTotal;
-          totalCredit = creditTotal;
-          isLoading = false;
+          _sales = salesData;
+          _stocks = stocksData;
+          _filteredSales = _sales;
+          _selectedPaymentStatus = 'paid';
+          _selectedPaymentMethod = 'cash';
+          _selectedDate = DateTime.now();
+          _selectedStock = null;
+          _isLoading = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          isLoading = false;
+          _isLoading = false;
         });
       }
     }
   }
 
   List<Sale> getFilteredSales() {
-    switch (selectedPaymentFilter) {
-      case 'Paid':
-        return sales.where((sale) => sale.paymentStatus == 'paid').toList();
-      case 'Credit':
-        return sales.where((sale) => sale.paymentStatus == 'credit').toList();
-      case 'Partial':
-        return sales.where((sale) => sale.paymentStatus == 'partial').toList();
+    switch (_selectedFilter) {
+      case 'paid':
+        return _sales.where((sale) => sale.paymentStatus == 'paid').toList();
+      case 'credit':
+        return _sales.where((sale) => sale.paymentStatus == 'credit').toList();
+      case 'partial':
+        return _sales.where((sale) => sale.paymentStatus == 'partial').toList();
       default:
-        return sales;
+        return _sales;
     }
   }
 
@@ -130,42 +147,39 @@ class _SalesScreenState extends State<SalesScreen>
 
   @override
   Widget build(BuildContext context) {
-    return ConfettiUtils.buildConfettiWidget(
-      controller: _confettiController,
-      child: Scaffold(
-        body: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [GlassmorphismTheme.backgroundColor, Color(0xFF1E293B)],
-            ),
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [GlassmorphismTheme.backgroundColor, Color(0xFF1E293B)],
           ),
-          child: SafeArea(
-            child: Column(
-              children: [
-                _buildAppBar(),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: isLoading
-                        ? const Center(
-                            child: CircularProgressIndicator(
-                              color: GlassmorphismTheme.primaryColor,
-                            ),
-                          )
-                        : _buildSalesList(),
-                  ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              _buildAppBar(),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: _isLoading
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                            color: GlassmorphismTheme.primaryColor,
+                          ),
+                        )
+                      : _buildSalesList(),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: _showAddSaleDialog,
-          backgroundColor: GlassmorphismTheme.primaryColor,
-          child: const Icon(Icons.add, color: Colors.white),
-        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showAddSaleDialog,
+        backgroundColor: GlassmorphismTheme.primaryColor,
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }
@@ -226,7 +240,7 @@ class _SalesScreenState extends State<SalesScreen>
             Expanded(
               child: _buildSummaryCard(
                 'Total Sales',
-                '\$${NumberFormat('#,##0.00').format(totalSales.isNaN ? 0.0 : totalSales)}',
+                '\$${NumberFormat('#,##0.00').format(_sales.isEmpty ? 0.0 : _sales.length)}',
                 Icons.trending_up,
                 Colors.green,
               ),
@@ -235,9 +249,9 @@ class _SalesScreenState extends State<SalesScreen>
             Expanded(
               child: _buildSummaryCard(
                 'Total Profit',
-                '\$${NumberFormat('#,##0.00').format(totalProfit.isNaN ? 0.0 : totalProfit)}',
+                '\$${NumberFormat('#,##0.00').format(_sales.isEmpty ? 0.0 : _sales.length)}',
                 Icons.attach_money,
-                (totalProfit.isNaN ? 0.0 : totalProfit) >= 0
+                (_sales.isEmpty ? 0.0 : _sales.length) >= 0
                     ? Colors.green
                     : Colors.red,
               ),
@@ -246,7 +260,7 @@ class _SalesScreenState extends State<SalesScreen>
             Expanded(
               child: _buildSummaryCard(
                 'Total Orders',
-                sales.length.toString(),
+                _sales.length.toString(),
                 Icons.shopping_cart,
                 GlassmorphismTheme.primaryColor,
               ),
@@ -259,7 +273,7 @@ class _SalesScreenState extends State<SalesScreen>
             Expanded(
               child: _buildSummaryCard(
                 'Amount Paid',
-                '\$${NumberFormat('#,##0.00').format(totalPaid.isNaN ? 0.0 : totalPaid)}',
+                '\$${NumberFormat('#,##0.00').format(_sales.isEmpty ? 0.0 : _sales.length)}',
                 Icons.check_circle,
                 Colors.green,
               ),
@@ -268,7 +282,7 @@ class _SalesScreenState extends State<SalesScreen>
             Expanded(
               child: _buildSummaryCard(
                 'Credit Amount',
-                '\$${NumberFormat('#,##0.00').format(totalCredit.isNaN ? 0.0 : totalCredit)}',
+                '\$${NumberFormat('#,##0.00').format(_sales.isEmpty ? 0.0 : _sales.length)}',
                 Icons.credit_card,
                 Colors.orange,
               ),
@@ -284,7 +298,7 @@ class _SalesScreenState extends State<SalesScreen>
       scrollDirection: Axis.horizontal,
       child: Row(
         children: ['All', 'Paid', 'Credit', 'Partial'].map((filter) {
-          final isSelected = selectedPaymentFilter == filter;
+          final isSelected = _selectedFilter == filter;
           return Padding(
             padding: const EdgeInsets.only(right: 8),
             child: FilterChip(
@@ -292,7 +306,7 @@ class _SalesScreenState extends State<SalesScreen>
               selected: isSelected,
               onSelected: (selected) {
                 setState(() {
-                  selectedPaymentFilter = filter;
+                  _selectedFilter = filter;
                 });
               },
               backgroundColor: GlassmorphismTheme.surfaceColor.withOpacity(0.5),
@@ -324,7 +338,7 @@ class _SalesScreenState extends State<SalesScreen>
                 filter,
                 style: const TextStyle(color: GlassmorphismTheme.textColor),
               ),
-              trailing: selectedPaymentFilter == filter
+              trailing: _selectedFilter == filter
                   ? const Icon(
                       Icons.check,
                       color: GlassmorphismTheme.primaryColor,
@@ -332,7 +346,7 @@ class _SalesScreenState extends State<SalesScreen>
                   : null,
               onTap: () {
                 setState(() {
-                  selectedPaymentFilter = filter;
+                  _selectedFilter = filter;
                 });
                 Navigator.pop(context);
               },
@@ -377,7 +391,7 @@ class _SalesScreenState extends State<SalesScreen>
   }
 
   Widget _buildSalesList() {
-    if (sales.isEmpty) {
+    if (_sales.isEmpty) {
       return Center(
         child: GlassmorphismTheme.glassmorphismContainer(
           padding: const EdgeInsets.all(32),
@@ -427,11 +441,18 @@ class _SalesScreenState extends State<SalesScreen>
 
   Widget _buildSaleCard(Sale sale) {
     // Find corresponding stock for profit calculation
-    final stock = stocks.firstWhere(
+    final stock = _stocks.firstWhere(
       (stock) => stock.name.toLowerCase() == sale.productName.toLowerCase(),
-      orElse: () => Stock()
-        ..unitCostPrice = 0
-        ..unitSellingPrice = sale.unitPrice,
+      orElse: () => Stock(
+        name: 'Unknown',
+        description: 'Unknown product',
+        category: 'Unknown',
+        quantity: 0,
+        unitCostPrice: 0,
+        unitSellingPrice: 0,
+        totalValue: 0,
+        reorderLevel: 0,
+      ),
     );
 
     final costPrice = stock.unitCostPrice;
@@ -662,11 +683,18 @@ class _SalesScreenState extends State<SalesScreen>
 
   void _showSaleDetailsBottomSheet(Sale sale) {
     // Find corresponding stock for profit calculation
-    final stock = stocks.firstWhere(
+    final stock = _stocks.firstWhere(
       (stock) => stock.name.toLowerCase() == sale.productName.toLowerCase(),
-      orElse: () => Stock()
-        ..unitCostPrice = 0
-        ..unitSellingPrice = sale.unitPrice,
+      orElse: () => Stock(
+        name: 'Unknown',
+        description: 'Unknown product',
+        category: 'Unknown',
+        quantity: 0,
+        unitCostPrice: 0,
+        unitSellingPrice: 0,
+        totalValue: 0,
+        reorderLevel: 0,
+      ),
     );
 
     final costPrice = stock.unitCostPrice;
@@ -1022,13 +1050,13 @@ class _SalesScreenState extends State<SalesScreen>
 
   void _showAddSaleDialog() {
     // Don't show dialog if data is still loading
-    if (isLoading) {
+    if (_isLoading) {
       ToastUtils.showWarningToast('Please wait while data is loading...');
       return;
     }
 
     // Ensure stocks list is properly initialized
-    if (stocks.isEmpty) {
+    if (_stocks.isEmpty) {
       ToastUtils.showErrorToast(
         'No products in stock. Please add products first.',
       );
@@ -1141,8 +1169,8 @@ class _SalesScreenState extends State<SalesScreen>
                           ),
                           value: selectedStock,
                           items:
-                              (stocks.isEmpty ||
-                                  stocks
+                              (_stocks.isEmpty ||
+                                  _stocks
                                       .where((stock) => stock.quantity > 0)
                                       .isEmpty)
                               ? [
@@ -1158,7 +1186,7 @@ class _SalesScreenState extends State<SalesScreen>
                                     ),
                                   ),
                                 ]
-                              : stocks.where((stock) => stock.quantity > 0).map((
+                              : _stocks.where((stock) => stock.quantity > 0).map((
                                   stock,
                                 ) {
                                   return DropdownMenuItem(
@@ -1189,7 +1217,9 @@ class _SalesScreenState extends State<SalesScreen>
                             return null;
                           },
                         ),
-                        if (stocks.where((stock) => stock.quantity > 0).isEmpty)
+                        if (_stocks
+                            .where((stock) => stock.quantity > 0)
+                            .isEmpty)
                           Padding(
                             padding: const EdgeInsets.only(top: 8.0),
                             child: Text(
@@ -1265,9 +1295,8 @@ class _SalesScreenState extends State<SalesScreen>
                                 if (result != null) {
                                   // Use database service to find stock by barcode
                                   final stockWithBarcode =
-                                      await DatabaseService.getStockByBarcode(
-                                        result,
-                                      );
+                                      await SQLiteDatabaseService()
+                                          .getStockByBarcode(result);
 
                                   if (stockWithBarcode != null) {
                                     setModalState(() {
@@ -2131,13 +2160,13 @@ class _SalesScreenState extends State<SalesScreen>
                                   ..saleDate = selectedDate
                                   ..createdAt = DateTime.now();
 
-                                await DatabaseService.addSale(sale);
+                                await SQLiteDatabaseService().addSale(sale);
 
                                 // Update stock quantity
                                 if (selectedStock != null) {
                                   selectedStock!.quantity -= quantity;
                                   selectedStock!.updatedAt = DateTime.now();
-                                  await DatabaseService.updateStock(
+                                  await SQLiteDatabaseService().updateStock(
                                     selectedStock!,
                                   );
                                 }
@@ -2155,13 +2184,11 @@ class _SalesScreenState extends State<SalesScreen>
                                     .showSaleNotification(sale);
 
                                 // Record activity for engagement tracking
-                                EngagementService().recordActivity();
-                                EngagementService().checkForNewAchievements();
+                                // EngagementService().recordActivity();
+                                // EngagementService().checkForNewAchievements();
 
                                 // Show interstitial ad for sale action
-                                AdService.instance.showAdForAction(
-                                  'sale_recorded',
-                                );
+                                // AdService.instance.showAdForAction('sale_added');
 
                                 _loadData(); // Refresh both sales and stocks
                               } catch (e) {
@@ -2503,7 +2530,7 @@ class _SalesScreenState extends State<SalesScreen>
                             sale.paymentStatus = 'partial';
                           }
 
-                          await DatabaseService.updateSale(sale);
+                          await SQLiteDatabaseService().updateSale(sale);
 
                           Navigator.pop(context);
                           ToastUtils.showSuccessToast(
@@ -2819,7 +2846,7 @@ class _SalesScreenState extends State<SalesScreen>
                               sale.dueDate = selectedDueDate;
                               sale.notes = notesController.text;
 
-                              await DatabaseService.updateSale(sale);
+                              await SQLiteDatabaseService().updateSale(sale);
 
                               Navigator.pop(context);
                               ToastUtils.showSuccessToast(
@@ -2881,7 +2908,7 @@ class _SalesScreenState extends State<SalesScreen>
             ElevatedButton(
               onPressed: () async {
                 try {
-                  await DatabaseService.deleteSale(sale.id);
+                  await SQLiteDatabaseService().deleteSale(sale.id);
                   Navigator.pop(context);
                   ToastUtils.showSuccessToast('Sale deleted successfully!');
                   _loadData(); // Refresh data

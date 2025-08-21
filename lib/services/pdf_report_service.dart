@@ -7,7 +7,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import '../models/business_profile.dart';
-import '../models/business_data.dart';
+import '../models/business_data_sqlite.dart';
 
 class PdfReportService {
   static Future<Uint8List> generateBusinessReport({

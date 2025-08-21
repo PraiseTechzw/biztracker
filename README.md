@@ -82,7 +82,7 @@ flutter run
 
 ### Database Setup
 
-The app uses Isar database for local data storage. The database is automatically initialized when the app starts.
+The app uses SQLite database for local data storage. The database is automatically initialized when the app starts.
 
 To generate the necessary database schema files:
    ```bash

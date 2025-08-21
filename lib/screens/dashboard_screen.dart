@@ -6,7 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:confetti/confetti.dart';
 import '../utils/glassmorphism_theme.dart';
 import '../utils/toast_utils.dart';
-import '../services/database_service.dart';
+import '../services/sqlite_database_service.dart';
 import '../services/notification_service.dart';
 import '../services/engagement_service.dart';
 import 'settings_screen.dart';
@@ -192,10 +192,10 @@ class _DashboardScreenState extends State<DashboardScreen>
     try {
       // Load all business data in parallel for better performance
       final results = await Future.wait([
-        DatabaseService.getTotalCapital(),
-        DatabaseService.getTotalStockValue(),
-        DatabaseService.getTotalSales(),
-        DatabaseService.getTotalExpenses(),
+        SQLiteDatabaseService().getTotalCapital(),
+        SQLiteDatabaseService().getTotalStockValue(),
+        SQLiteDatabaseService().getTotalSales(),
+        SQLiteDatabaseService().getTotalExpenses(),
       ]);
 
       if (!mounted) return;
@@ -263,11 +263,11 @@ class _DashboardScreenState extends State<DashboardScreen>
   void _checkAchievements(double sales, double profit) async {
     // Check for first sale achievement
     if (sales > 0 && !_hasShownFirstSaleConfetti) {
-      final hasShownFirstSale =
-          await DatabaseService.hasShownFirstSaleAchievement();
+      final hasShownFirstSale = await SQLiteDatabaseService()
+          .hasShownFirstSaleAchievement();
       if (!hasShownFirstSale) {
         _hasShownFirstSaleConfetti = true;
-        await DatabaseService.markFirstSaleAchievementAsShown();
+        await SQLiteDatabaseService().markFirstSaleAchievementAsShown();
         ConfettiUtils.showAchievementConfetti(_confettiController);
         ToastUtils.showInfoToast('🎉 First sale recorded! Keep it up!');
         // Show phone notification
@@ -280,14 +280,14 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     // Check for profit milestones
     if (profit >= 1000 && !_hasShownProfitMilestoneConfetti) {
-      final hasShownProfitMilestone =
-          await DatabaseService.hasShownProfitMilestoneAchievement();
+      final hasShownProfitMilestone = await SQLiteDatabaseService()
+          .hasShownProfitMilestoneAchievement();
       if (!hasShownProfitMilestone) {
         _hasShownProfitMilestoneConfetti = true;
-        await DatabaseService.markProfitMilestoneAchievementAsShown();
+        await SQLiteDatabaseService().markProfitMilestoneAchievementAsShown();
         ConfettiUtils.showMilestoneConfetti(_confettiController);
         ToastUtils.showInfoToast(
-          '🎊 Congratulations! You\'ve reached \$1,000 in profit!',
+          '🎯 Profit milestone reached! You\'re doing great!',
         );
         // Show phone notification
         NotificationService().showAchievementNotification(
@@ -320,7 +320,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   Future<void> _loadBusinessName() async {
     try {
-      final profile = await DatabaseService.getBusinessProfile();
+      final profile = await SQLiteDatabaseService().getFirstBusinessProfile();
       final newBusinessName = profile?.businessName ?? '';
 
       if (newBusinessName != businessName) {
@@ -348,13 +348,14 @@ class _DashboardScreenState extends State<DashboardScreen>
       final activities = <ActivityItem>[];
 
       // Get recent sales (last 5)
-      final recentSales = await DatabaseService.getAllSales();
+      final recentSales = await SQLiteDatabaseService().getAllSales();
       for (final sale in recentSales.take(5)) {
         activities.add(
           ActivityItem(
             type: ActivityType.sale,
             title: 'Sale recorded',
-            subtitle: '${sale.productName} - ${sale.customerName}',
+            subtitle:
+                '${sale.productName} - \$${sale.totalAmount.toStringAsFixed(2)}',
             amount: sale.totalAmount,
             date: sale.saleDate,
             icon: Icons.shopping_cart,
@@ -364,29 +365,31 @@ class _DashboardScreenState extends State<DashboardScreen>
       }
 
       // Get recent expenses (last 5)
-      final recentExpenses = await DatabaseService.getAllExpenses();
+      final recentExpenses = await SQLiteDatabaseService().getAllExpenses();
       for (final expense in recentExpenses.take(5)) {
         activities.add(
           ActivityItem(
             type: ActivityType.expense,
             title: 'Expense recorded',
-            subtitle: '${expense.category} - ${expense.description}',
+            subtitle:
+                '${expense.description} - \$${expense.amount.toStringAsFixed(2)}',
             amount: expense.amount,
             date: expense.expenseDate,
-            icon: Icons.receipt,
+            icon: Icons.money_off,
             color: Colors.red,
           ),
         );
       }
 
       // Get recent capital additions (last 5)
-      final recentCapitals = await DatabaseService.getAllCapitals();
+      final recentCapitals = await SQLiteDatabaseService().getAllCapitals();
       for (final capital in recentCapitals.take(5)) {
         activities.add(
           ActivityItem(
             type: ActivityType.capital,
             title: 'Capital added',
-            subtitle: capital.description,
+            subtitle:
+                '${capital.description} - \$${capital.amount.toStringAsFixed(2)}',
             amount: capital.amount,
             date: capital.date,
             icon: Icons.account_balance_wallet,
@@ -396,7 +399,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       }
 
       // Get recent stock updates (last 5)
-      final recentStocks = await DatabaseService.getAllStocks();
+      final recentStocks = await SQLiteDatabaseService().getAllStocks();
       for (final stock in recentStocks.take(5)) {
         activities.add(
           ActivityItem(

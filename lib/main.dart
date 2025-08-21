@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'services/database_service.dart';
+import 'services/sqlite_database_service.dart';
 import 'services/notification_service.dart';
 import 'services/engagement_service.dart';
 import 'services/ad_service.dart';
@@ -18,7 +18,7 @@ void main() async {
   ]);
 
   // Initialize database
-  await DatabaseService.initialize();
+  await SQLiteDatabaseService().database;
 
   // Initialize notification service
   await NotificationService().initialize();
@@ -95,8 +95,8 @@ class _SplashScreenState extends State<SplashScreen>
 
   Future<void> _checkBusinessProfile() async {
     try {
-      final hasCompleteProfile =
-          await DatabaseService.hasCompleteBusinessProfile();
+      final hasCompleteProfile = await SQLiteDatabaseService()
+          .hasCompleteBusinessProfile();
 
       if (mounted) {
         if (hasCompleteProfile) {
